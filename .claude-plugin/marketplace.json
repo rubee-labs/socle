@@ -1,0 +1,18 @@
+{
+  "name": "rubee-labs",
+  "owner": {
+    "name": "Benjamin Hamon",
+    "email": "benjamin.hamon@rubee.company"
+  },
+  "plugins": [
+    {
+      "name": "claude-forge",
+      "source": "./",
+      "description": "Structured memory layer for Claude Code — subjects with γ lifecycle, typed decisions/discussions, cross-subject cascade. The 4th memory layer.",
+      "version": "0.1.0",
+      "author": {
+        "name": "Benjamin Hamon"
+      }
+    }
+  ]
+}
