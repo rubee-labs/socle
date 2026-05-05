@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+# forge — claude-forge CLI dispatcher
+#
+# Dispatch vers les engines Python du Subject Pool.
+#
+# Usage :
+#   forge documente <subcommand> [args]   → documente_engine.py
+#   forge engine <subject-path>           → forge_engine.py
+#   forge scanner <args>                  → forge_scanner.py
+#   forge --version
+#
+# Le binaire détermine son propre chemin via BASH_SOURCE pour rester
+# portable peu importe le cwd ou la méthode d'install.
+
+set -e
+
+BIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "$BIN_DIR/.." && pwd)"
+
+case "$1" in
+  documente)
+    shift
+    exec python3 "$BIN_DIR/documente_engine.py" "$@"
+    ;;
+  engine)
+    shift
+    exec python3 "$BIN_DIR/forge_engine.py" "$@"
+    ;;
+  scanner)
+    shift
+    exec python3 "$BIN_DIR/forge_scanner.py" "$@"
+    ;;
+  --version|-v)
+    cat "$ROOT_DIR/VERSION"
+    ;;
+  --help|-h|"")
+    cat <<EOF
+forge — claude-forge CLI
+
+Sous-commandes :
+  documente <subcommand> [args]   Engine /documente (prepare, infer-type, write-capture, ...)
+  engine <subject-path>           Cycle γ et re-synthèse Quick (forge_engine)
+  scanner [args]                  Régénérateur des index globaux (SUBJECTS-INDEX, METRICS)
+
+Options :
+  --version, -v                   Affiche la version
+  --help, -h                      Affiche cette aide
+
+Documentation : https://github.com/rubee-labs/claude-forge
+EOF
+    ;;
+  *)
+    echo "forge: sous-commande inconnue '$1'" >&2
+    echo "Lance 'forge --help' pour la liste des sous-commandes." >&2
+    exit 1
+    ;;
+esac

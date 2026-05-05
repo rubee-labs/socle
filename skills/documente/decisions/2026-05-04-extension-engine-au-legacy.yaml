@@ -1,0 +1,65 @@
+---
+date: 2026-05-04
+type: decision
+produced_by: human
+decided_by: benjamin
+status: active
+parameters:
+  cible: étendre documente_engine.py au workflow legacy + proposer migration subject pool
+  motivation: Benjamin observe que /documente legacy reste lent (4 min sur amazon-it/cas/IT) car LLM-only. Souhaite gain perf + pousser à terme tout vers subject pool.
+  modifications_skill_md:
+    phase_l0_ajoutee: proposition systématique de migration legacy → subject pool avec 3 options [A] migrer / [B] continuer legacy / [C] annuler
+    phase_l2_python: write-capture invoqué pour composer frontmatter discussion (LLM ne fournit que le body)
+    phase_l3_python: write-capture invoqué pour composer frontmatter decision
+    phase_l3_5_llm: check-coherence non invoqué (format MEMORY.md legacy = markdown sections, pas frontmatter — LLM compare manuellement)
+    phase_l4_llm: MAJ MEMORY.md reste LLM only (format markdown, pas de patch-frontmatter applicable)
+    phase_l5_python: scan-impacted invoqué pour lister candidats, LLM juge pertinence
+    phase_l6_python: commit-atomic invoqué pour stage/commit/push
+  commandes_reutilisees: write-capture + scan-impacted + commit-atomic (déjà génériques)
+  commandes_non_reutilisees: list-subjects, infer-type, cascade-last-event (subject pool spécifiques)
+  gain_estime_legacy: ~30-40% tokens (vs ~70% sur subject pool)
+  garde_fou_phase_l0:
+    - Ne pas proposer migration sur dossiers figés (skills/tools sans cycle de vie)
+    - Ne pas re-proposer si refus précédent (marqueur migration_subject_pool: refused)
+  version_skill_avant: "2.2"
+  version_skill_apres: "2.3"
+affects:
+  - entreprise/skills/documente/SKILL.md
+upstream_discussions: []
+upstream_analyses: []
+---
+
+# Extension documente_engine.py au workflow legacy + proposition migration
+
+## Contexte
+
+Après bascule du workflow Subject Pool vers documente_engine.py (décision 2026-05-04-bascule-engine-python), Benjamin observe que les `/documente` sur dossiers legacy (sans `/subjects/` dans le path) restent lents — 4 minutes sur `entreprise/skills/optimisation-campagne-amazon/cas/IT/`. Cause identifiée via le log d'instrumentation : zéro invocation du binaire car le workflow legacy n'avait pas été instrumenté.
+
+## Décision
+
+1. **Étendre 3 commandes génériques du binaire au workflow legacy** : `write-capture`, `scan-impacted`, `commit-atomic`. Les autres commandes (subject pool spécifiques) restent réservées au workflow subject pool.
+
+2. **Ajouter Phase L0 — Proposition migration** au début du workflow legacy. À chaque invocation `/documente` sur path non-subject-pool, proposer systématiquement à Benjamin de migrer vers subject pool (3 options : migrer / continuer legacy / annuler).
+
+## Pourquoi
+
+- **Gain de perf sur legacy** : ~30-40% de tokens en moins, élimine corruption YAML sur les fichiers de capture
+- **Pousser à terme tout vers subject pool** : la proposition systématique invite Benjamin à se poser la question "ce dossier mérite-t-il un cycle de vie ?" à chaque session — au fil du temps, le legacy se vide
+- **Réutilisation pure** : pas de nouveau code Python à écrire, juste 3 invocations dans le SKILL.md
+
+## Garde-fous
+
+- **Ne pas proposer migration** sur dossiers figés (skills/tools sans cycle de vie évolutif)
+- **Ne pas re-proposer** si Benjamin a refusé sur ce path précédemment (chercher marqueur `migration_subject_pool: refused` dans `decisions/` du dossier)
+- **Phase L4 reste LLM-only** : le format MEMORY.md legacy est markdown structuré (sections "## Décisions actives", "## Doctrine en vigueur"), pas du frontmatter. `patch-frontmatter` ne s'applique pas. Adapter demanderait `patch-markdown-section` (nouveau code Python) — à faire seulement si on observe que cette phase est lente.
+- **Phase L3.5 reste LLM-only** : `check-coherence` lit le frontmatter MEMORY.md (subject pool format) pour `active_decisions`. En legacy, cette liste est dans le markdown. Adapter demanderait nouveau code — pas justifié pour l'instant.
+
+## Mesure attendue
+
+Au prochain `/documente legacy`, le log `documente_engine.log` doit contenir :
+- 1 entrée `write-capture` pour la discussion
+- 1 entrée `write-capture` pour la décision (si aboutie)
+- 1 entrée `scan-impacted`
+- 1 entrée `commit-atomic`
+
+Soit 3-4 invocations Python (vs 0 avant cette décision).

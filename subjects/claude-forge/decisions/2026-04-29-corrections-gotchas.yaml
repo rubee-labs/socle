@@ -1,0 +1,61 @@
+---
+date: 2026-04-29
+type: decision
+produced_by: human_and_claude
+decided_by: claude
+sujet: Corrections des gotchas détectés lors du test Phase 0
+status: active
+upstream_discussions:
+  - 2026-04-29-rapport-test-phase-0.md
+upstream_analyses: []
+---
+
+contexte: |
+  Le test end-to-end du Subject Pool Phase 0 a révélé 4 gotchas, dont 2 critiques.
+  Décisions sur les corrections à appliquer immédiatement vs reporter.
+
+corrections_appliquees:
+  - id: gotcha-1
+    description: "/forge bump conviction à 50 lors de la transition debating → tentative"
+    fichier: entreprise/skills/forge/SKILL.md
+    raison: |
+      Sans ce bump, la formule +10 par stress-test ne permet pas d'atteindre conviction 60
+      (seuil doctrine) en moins de 6 stress-tests. Avec bump à 50 + 3 stress-tests à +10 = 80,
+      on atteint exactement le seuil compile-doctrine de manière naturelle.
+    effet:
+      - tableau "Transitions autorisées" enrichi
+      - section Gotchas mise à jour
+
+  - id: gotcha-2
+    description: "/compile-doctrine gère le cas MEMORY.md de domaine inexistant"
+    fichier: entreprise/skills/compile-doctrine/SKILL.md
+    raison: |
+      services/achats/MEMORY.md (et la plupart des MEMORY.md de service) n'existent pas
+      actuellement. Le skill devait pouvoir proposer création, cible alternative ou annulation.
+    effet:
+      - Phase 4a enrichie avec vérification existence + 3 options
+
+corrections_reportees:
+  - id: gotcha-3
+    description: "Timestamp SUBJECTS-INDEX.md change à chaque run"
+    impact: mineur
+    decision: pas_de_correction
+    raison: à observer sur 2-3 semaines, ajouter au .gitignore si bruit excessif
+
+  - id: gotcha-4
+    description: "Liens orphelins (linked_subjects pointant vers des subjects inexistants)"
+    impact: mineur
+    decision: pas_de_correction_immediate
+    raison: |
+      Déjà couvert par /subject-create qui refuse les liens cassés.
+      Backlog Phase 0.5 : enrichir scanner forge pour détecter les liens orphelins.
+
+validation:
+  validee_par: claude (autonome, test sans Benjamin)
+  date_validation: 2026-04-29
+  via: rapport de test 2026-04-29-rapport-test-phase-0.md
+
+prochaines_actions:
+  - Commit + push des corrections + rapport
+  - Marquer Phase 0 comme validée dans le projet subject-pool
+  - Brainstorm Tower-Control / super-agents par dossier en session séparée

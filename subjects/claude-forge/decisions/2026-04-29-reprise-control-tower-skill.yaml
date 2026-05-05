@@ -1,0 +1,109 @@
+---
+date: 2026-04-29
+type: decision
+produced_by: human
+decided_by: benjamin
+sujet: Reprise de Tower-Control sous /control-tower (skill enterprise multi-service Phase 1)
+status: active
+revises: "2026-04-29 — Tower-Control reclassé en super-agent par dossier (hors scope Phase 0)"
+upstream_discussions: []
+upstream_analyses: []
+---
+
+contexte: |
+  Toma (responsable achats Rubee) est en arrêt depuis le 2026-04-28. Les fournisseurs,
+  transitaires et partenaires sont redirigés vers l'alias relais-toma@rubee.fr
+  (alias de benjamin.hamon@rubee.fr). Benjamin doit traiter les emails à la main,
+  ce qui est chronophage et risqué (paiements, BL, douane manqués).
+
+  Un skill privé Tower-Control-Achats (2026-04-28) a été créé dans benjamin-perso/
+  mais ne s'intègre pas au subject pool fraîchement validé en Phase 0 (2026-04-29).
+  La décision initiale du 2026-04-29 reclassait Tower-Control "hors scope Phase 0,
+  à brainstormer après tests du subject pool".
+
+  Décision révisée le 2026-04-29 (soir) face à l'urgence opérationnelle : on livre
+  un skill manuel multi-service maintenant, on documente la migration vers archi C
+  pour plus tard.
+
+decision: |
+  Création du skill /control-tower (visibilité enterprise) dans entreprise/skills/control-tower/
+  avec :
+  - Architecture multi-service via configs YAML par service (services/<service>.yaml)
+  - Phase 1 : --achats uniquement (urgence Toma)
+  - Détection 3-niveaux des emails relais reprise depuis l'ancien skill privé
+    (Vault Toma metadata + whitelist-extra + signaux contextuels)
+  - Intégration au subject pool : matching cascade + /subject-create + /forge
+  - Mise en perspective email vs contenu de l'instance subject matchée
+  - Validation Benjamin sur CHAQUE écriture (auto-apply L0/L1 reporté Phase 2)
+  - Pas d'envoi mail automatique (create_draft uniquement, jamais send_email)
+  - Idempotence via log JSONL + ordre log → mark_as_read
+
+  L'ancien skill Tower-Control-Achats (privé, benjamin-perso) est archivé :
+  symlink supprimé de claude-enterprise, note d'archivage en tête du fichier privé.
+
+phases:
+  phase_1:
+    statut: livré 2026-04-29
+    périmètre: skill manuel /control-tower --achats, validation explicite, log JSONL
+    fichiers_livres:
+      - entreprise/skills/control-tower/SKILL.md
+      - entreprise/skills/control-tower/README.md
+      - entreprise/skills/control-tower/services/achats.yaml
+      - entreprise/skills/control-tower/prompts/classify-email.md
+      - entreprise/skills/control-tower/prompts/match-subject.md
+      - entreprise/skills/control-tower/prompts/draft-reply.md
+      - entreprise/skills/control-tower/lib/relais-detection.md
+      - entreprise/skills/control-tower/logs/.gitkeep
+  phase_2:
+    statut: pending (~1 semaine après production Phase 1)
+    périmètre:
+      - Auto-apply L0/L1 events factuels quand classification > 90% précision sur pattern
+      - Cron via agent-server/coordinator.py (3x/jour matin/midi/soir)
+      - Validation async via mcp__slack__send_dm + wait_for_reply
+      - Mémoire d'agent persistante (memory.md dédié)
+  phase_3:
+    statut: optionnel (si volume justifie / Toma absente longtemps)
+    périmètre:
+      - Migration archi C (Python + Agent SDK + hooks + query() imbriqué)
+      - Templates multi-service industrialisés (--ventes, --finance, --sav)
+      - Tableau de bord (subjects touchés / drafts en attente)
+
+contraintes_appliquees:
+  - doctrine CE "ne JAMAIS contourner un MCP" → tout via mcp__*
+  - doctrine subject pool : double validation (skill principal + skill invoqué) acceptée Phase 1
+  - aucun envoi mail automatique (create_draft uniquement)
+  - aucune fuite de données sensibles dans les brouillons (marges, soldes, clients tiers)
+  - chaque event créé mentionne email_id + from + subject_email en frontmatter (audit)
+
+eval_critères:
+  - EVAL 1 — Détection 3-niveaux ≥ 90% emails relais réels
+  - EVAL 2 — Idempotence stricte
+  - EVAL 3 — 0 écriture sans validation Phase 4
+  - EVAL 4 — 0 appel API direct
+  - EVAL 5 — 0 envoi mail auto
+  - EVAL 6 — Lien email→subject obligatoire
+  - EVAL 7 — Cohérence transitions γ (seed→debating et debating→tentative auto, autres manuelles)
+  - EVAL 8 — mark_as_read strictement après log JSONL OK
+  - EVAL 9 — Extensibilité : 0 modif SKILL.md pour ajouter un service
+  - EVAL 10 — 0 fuite données sensibles (vérifié sur 5 brouillons)
+
+artefacts_livres:
+  skill:
+    - entreprise/skills/control-tower/ (8 fichiers, ~990 lignes)
+  config_modifs:
+    - .gitignore (ajout entreprise/skills/control-tower/logs/*.jsonl)
+    - entreprise/projets/subject-pool/MEMORY.md (révision décision Tower-Control)
+  migration:
+    - .claude/commands/Tower-Control-Achats.md (symlink supprimé)
+    - benjamin-perso/.claude/commands/Tower-Control-Achats.md (note d'archivage en tête)
+
+prochaines_actions:
+  - Test end-to-end sur 1-2 emails réels relais Toma
+  - Mesurer EVAL 1 (détection 3-niveaux) sur 1 semaine
+  - Revue cas niveau 3-flag pour enrichir whitelist-extra.txt
+  - Phase 2 brainstorm si volume / précision le justifie
+
+validation:
+  validee_par: benjamin
+  date_validation: 2026-04-29
+  via: plan approuvé via ExitPlanMode (~/.claude/plans/merry-nibbling-lamport.md)

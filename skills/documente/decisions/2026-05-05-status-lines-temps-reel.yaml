@@ -1,0 +1,75 @@
+---
+date: 2026-05-05
+type: decision
+produced_by: human
+decided_by: benjamin
+status: active
+parameters:
+  cible: rendre l'avancement de /documente visible en temps réel
+  mecanisme: emission d'une ligne de status AVANT chaque phase
+  format: "▸ <code> <nom-phase>  (<info brève>)"
+  codes_subject_pool: [A, B, C, D, E, F, G, H, I, J]
+  codes_legacy: [L0, L1, L2, L3, L3.5, L4, L5, L6]
+  recap_final: obligatoire avec count phases + count fichiers + sha-court
+  silence_si_phase_skip: true (pas de ligne `▸ X skip` redondante)
+  version_skill_avant: "2.4"
+  version_skill_apres: "2.5"
+  api_utilisateur: inchangée
+  cout_runtime: zéro (juste lignes de texte au lieu de silence)
+  cout_tokens_sortie: ~10 lignes par invocation
+affects:
+  - entreprise/skills/documente/SKILL.md
+upstream_discussions: []
+upstream_analyses: []
+---
+
+# Status lines temps réel pour /documente
+
+## Contexte
+
+Benjamin a remarqué que `/documente` est très long (typiquement 25-60s) sans aucune indication de ce qui se passe pendant l'exécution. Il a demandé à comprendre ce qui prend du temps.
+
+L'analyse des phases a montré :
+
+| Phase | Coût typique | Acteur |
+|-------|--------------|--------|
+| A prepare | ~200 ms | Python |
+| B infer-type | ~300 ms (ou +interactif) | Python+LLM |
+| **C capture** | **5-15 s** | **LLM lourd** |
+| D write-capture | ~200 ms × N | Python |
+| E forge_engine | ~500 ms-1 s | Python |
+| **F quick+détails** | **5-10 s** | **LLM lourd** |
+| G patch-frontmatter | ~200 ms | Python |
+| **H cascade** | **2-8 s × N linked** | Python+LLM |
+| I scan-impacted | 2-5 s | Python+LLM |
+| J commit+push | 2-5 s | Python (réseau) |
+
+3 phases LLM dominent (C, F, H). Aucune n'est compressible (rédaction). Mais l'absence de feedback rendait le skill anxiogène à l'usage.
+
+## Décision
+
+Ajouter une section « Communication en temps réel » dans `SKILL.md` qui force l'émission d'une ligne de status **avant** chaque phase, au format strict :
+
+```
+▸ <code> <nom-phase>  (<info brève — état parsé, count, ou décision prise>)
+```
+
+Phases skip : pas de ligne (silence > redondance).
+Récap final obligatoire après J : `✓ /documente terminé — N phases, N fichiers, <sha>`.
+
+## Alternatives considérées
+
+- **Flag `--verbose` sur le moteur Python** pour afficher la durée de chaque commande → reporté, demande de toucher au moteur. Utile pour profiler mais pas indispensable pour résoudre le problème UX.
+- **Logger structuré côté Python** → over-engineering vs un simple changement de spec côté skill.
+- **Phase H en parallèle si plusieurs linked subjects** → optimisation perf intéressante mais hors périmètre de cette décision (visibilité ≠ vitesse).
+
+## Impact
+
+- Aucun changement d'API utilisateur
+- Aucun changement runtime (pure spec d'output)
+- Aucun fichier déterministe modifié (juste SKILL.md)
+- Bump version 2.4 → 2.5
+
+## Suite éventuelle
+
+Si Benjamin veut profiler plus finement, ajouter `--verbose` au moteur Python pour mesurer les durées réelles. À considérer après quelques semaines d'usage des status lines.

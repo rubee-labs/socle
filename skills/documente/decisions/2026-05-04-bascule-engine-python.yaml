@@ -1,0 +1,69 @@
+---
+date: 2026-05-04
+type: decision
+produced_by: human
+decided_by: benjamin
+status: active
+parameters:
+  cible: extraire les phases déterministes du skill /documente dans documente_engine.py
+  binaire: entreprise/config/feedback-loop/documente_engine.py
+  helpers: entreprise/config/feedback-loop/documente_lib.py
+  commandes_exposees:
+    - list-subjects
+    - prepare
+    - infer-type
+    - patch-frontmatter
+    - commit-atomic
+    - scan-impacted
+    - check-coherence
+    - write-capture
+    - cascade-last-event
+  bascule_strategie: bascule_seche_pas_de_feature_flag
+  rollback: tag git pre-documente-engine-cutover
+  hooks_claude_code: exclus du périmètre (cas A — seul /documente écrit dans decisions/)
+  version_skill_avant: "2.1"
+  version_skill_apres: "2.2"
+  api_utilisateur: inchangée (`/documente <subject-path> [--type <type>]`)
+affects:
+  - entreprise/skills/documente/SKILL.md
+  - entreprise/config/feedback-loop/documente_engine.py
+  - entreprise/config/feedback-loop/documente_lib.py
+upstream_discussions: []
+upstream_analyses: []
+---
+
+# Bascule /documente vers documente_engine.py
+
+## Contexte
+
+Le skill `/documente` consommait ~12-18k tokens par invocation pour des opérations majoritairement déterministes (édition frontmatter YAML, scan fichiers, commit git, vérification cohérence). Le LLM faisait du travail mécanique avec un risque non-nul de corruption YAML.
+
+## Décision
+
+Extraire 9 commandes déterministes dans un binaire CLI Python (`documente_engine.py`) calqué sur `forge_engine.py` (stdlib only, retour JSON sur stdout). Le skill devient un orchestrateur léger qui appelle ces commandes et garde le LLM uniquement pour :
+
+- Phase C : capture conversationnelle (extraction décision/discussion)
+- Phase F : synthèse Quick + Détails du MEMORY.md
+- Phase I-jugement : pertinence des fichiers exécutants impactés
+
+Les autres phases (0a-0e détection, 1 listing, 3 frontmatter, 3.5 cohérence, 6 patch, 7 cascade mécanique, 8 scan, 9 commit) sont déléguées à Python.
+
+## Pourquoi
+
+- Réduit ~70% les tokens consommés par invocation (de ~12-18k à ~3-5k)
+- Élimine le risque de corruption YAML par le LLM
+- Pattern réplicable (forge_engine.py existe déjà avec la même architecture)
+- Stdlib only → 0 dépendance ajoutée
+- Tests unittest + smoke + régression sur subjects réels (29 tests passent)
+
+## Approche écartée : hooks Claude Code
+
+Décision Benjamin (cas A) : tant que seul `/documente` écrit dans `decisions/` des subjects, les hooks PostToolUse pour auto-rebuilder forge_result n'apportent pas assez de valeur. À reconsidérer si un 2ème producteur apparaît.
+
+## Migration : bascule sèche
+
+Pas de feature flag. Tag git `pre-documente-engine-cutover` créé avant la bascule pour rollback via `git revert HEAD` ou `git reset --hard pre-documente-engine-cutover`.
+
+## Plan d'extraction
+
+Voir `entreprise/skills/documente/plans/2026-05-04-extraction-engine-python.md` (13 tasks, ~6 jours estimés, exécutées en ~1h en réalité avec TDD strict).

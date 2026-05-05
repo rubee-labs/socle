@@ -1,0 +1,97 @@
+---
+date: 2026-04-29
+type: decision
+produced_by: human
+decided_by: benjamin
+sujet: Adoption du pattern subject pool comme infrastructure unifiée de réceptacles de connaissance
+status: active
+upstream_discussions:
+  - 2026-04-29-design-pattern-unifie.md
+upstream_analyses: []
+---
+
+contexte: |
+  Benjamin a besoin d'un pattern unifié pour accumuler données / analyses / discussions /
+  décisions sur tous les sujets de l'entreprise (commandes, fournisseurs, gammes, projets,
+  incidents). Cible : niveau 3 World Model (compilation continue interrogeable) et pitch YC
+  "living map → executable skills file for AI".
+
+decision: |
+  Adoption du pattern Subject Pool en γ pragmatique :
+  - Subjects = réceptacles persistants (CE, supplier-simon, order-400, etc.)
+  - Hiérarchie type/instance avec REFERENCE.md (grille) + TEMPLATE.md (squelette)
+  - 4 sous-dossiers : events/, analyses/, discussions/, decisions/ (distingués par producteur)
+  - Cycle de vie γ : seed → debating → tentative → stress_testing → doctrine → in_service →
+    under_review → archived
+  - Compilation en exécutable (règle, skill, agent SDK, monitor, injection, negative kw)
+
+parametres:
+  nomenclature: anglais_us_snake_case
+  forging_states:
+    - seed
+    - debating
+    - tentative
+    - stress_testing
+    - doctrine
+    - in_service
+    - under_review
+    - archived
+  conviction_thresholds:
+    stress_testing_to_doctrine: 60
+    doctrine_to_compile: 80
+  stagnation_alert_days: 30
+  merger_overlap_threshold: 0.70
+
+artefacts_livres:
+  documentation:
+    - entreprise/config/rules/savoirs.md (section "Subject Pool")
+    - entreprise/config/rules/skills-agents.md (section "Format Subject")
+  type_exemple:
+    - services/achats/types/supplier-order/REFERENCE.md
+    - services/achats/types/supplier-order/TEMPLATE.md
+  skills:
+    - entreprise/skills/subject-create-type/SKILL.md
+    - entreprise/skills/subject-create/SKILL.md
+    - entreprise/skills/forge/SKILL.md
+    - entreprise/skills/stress-test/SKILL.md
+    - entreprise/skills/subject-merge/SKILL.md
+    - entreprise/skills/compile-doctrine/SKILL.md
+  scanner_et_hook:
+    - entreprise/config/feedback-loop/forge_scanner.py
+    - .claude/settings.json (hook SessionStart enrichi)
+    - entreprise/SUBJECTS-INDEX.md (régénéré au démarrage)
+  skill_etendu:
+    - entreprise/skills/documente/SKILL.md (Phase 0 subject pool + EVAL 6)
+
+contraintes:
+  - aucune migration forcée de l'existant
+  - frontmatter étendu OPTIONNEL (anciens fichiers restent valides)
+  - Labs CE/WM/Alter intacts, /CE-analyse /WM-analyse /alter-analyse inchangés
+  - architecture par dossier conservée (services/X/ comme réceptacle)
+  - Tower-Control reclassé en super-agent par dossier, hors scope Phase 0
+
+trajectoire:
+  phase_0: livrée 2026-04-29 (socle infrastructure)
+  phase_1: pending (premier subject réel, probablement une commande Simon)
+  phase_2: pending (adoption opportuniste sur les anciens fichiers touchés)
+  phase_3: optionnel long terme (wrapper Labs CE/WM/Alter)
+  phase_4: optionnel 6 mois+ (consolidation script de migration)
+
+prochaines_actions:
+  - Benjamin teste end-to-end sur subject test fictif (order-test-001)
+  - Si gotchas détectés, correction des SKILL.md
+  - Commit + push final
+  - Brainstorm Tower-Control / super-agents par dossier (archi C) en session séparée
+
+affects:
+  - fichier: entreprise/skills/documente/SKILL.md
+    champ: workflow (ajout Phase 0 subject pool)
+  - fichier: .claude/settings.json
+    champ: hooks.SessionStart (ajout forge_scanner.py)
+  - fichier: entreprise/SUBJECTS-INDEX.md
+    champ: créé (régénéré par hook)
+
+validation:
+  validee_par: benjamin
+  date_validation: 2026-04-29
+  via: plan approuvé via ExitPlanMode + implémentation Phase 0 confirmée
