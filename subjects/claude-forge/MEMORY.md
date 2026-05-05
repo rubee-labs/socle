@@ -1,7 +1,7 @@
 ---
-projet: subject-pool
-statut: phase-1-moteur-resynthese-operationnel
-derniere_maj: 2026-05-04
+projet: claude-forge
+statut: phase-2-extraction-plugin-livree
+derniere_maj: 2026-05-05
 auteur: benjamin
 ---
 
@@ -32,6 +32,7 @@ Voir aussi :
 - **2026-05-01 — Raffinements post-Phase 0 (4 décisions consolidées)** : (1) règle bilingue stricte (squelette anglais, contenu métier français) appliquée à supplier-order et garante dans `/subject-create-type`. (2) module dédié `entreprise/config/rules/subject-pool.md` (~280 lignes) comme "réacteur" de premier rang, sortie de `savoirs.md`. (3) KPIs Tier 1 ajoutés au scanner forge + génération `entreprise/SUBJECT-POOL-METRICS.md`. (4) fix sémantique : merger_candidate restreint aux subjects `horizon: permanent` (évite faux positifs sur instances bornées). Voir `decisions/2026-05-01-raffinements-post-phase-0.yaml`.
 - **2026-05-04 — Premortem invalidé sur prémisses fausses, leçons retenues** : le premortem du 2026-05-03 a été basé sur 2 prémisses fausses (Tower-Control "jamais construit" alors qu'il est en Phase 1 manuel actif, et "subjects en seed = cimetière vide" alors qu'ils contiennent des linked_records riches du MCP achats). Les causes #5 et #8 du premortem sont à rejeter. 6 causes restent valides comme veille (cimetière recadré, compilation jamais déclenchée, fatigue alerte avec faux positifs knowledge-coordinator, bilingue chaotique futur, cohabitation Labs, courbe apprentissage équipe). Aucun override de décision active. Voir `discussions/2026-05-04-premortem-lecons.md`.
 - **2026-05-04 — Refonte du moteur Forge : `/documente` 2.0 entry point unique** : gap structurel détecté en début de session — `/forge` était codé comme un opérateur de transition d'état pure, alors que la vision Benjamin était un **moteur de re-compilation continue** (verticale + horizontale). Plan envoyé à Ultraplan, qui a choisi une approche radicale : `/forge` SKILL.md **supprimé**, fonctionnalité fusionnée dans `/documente` 2.0. Architecture en 2 couches : `forge_engine.py` (Python déterministe, <500ms) + `/documente` (Claude sémantique, régénère Quick + Détails + cascade horizontale 1 niveau). Auto-déclenchement transparent par `/control-tower` après chaque event. Transitions auto limitées à `seed→debating` et `debating→tentative`. Validation end-to-end sur order-398 OK (chaînage seed→tentative, cascade vers supplier-weifang). Voir `discussions/2026-05-04-refonte-moteur-forge.md` + `decisions/2026-05-04-documente-2.0-entry-point-unique.yaml`.
+- **2026-05-05 — Extraction Subject Pool vers plugin Claude Code `claude-forge`** : Subject Pool reconnu comme 4ème couche de mémoire de Claude Code (après contexte session, auto-memory, CLAUDE.md), pas spécifique Rubee. Extraction big-bang depuis `claude-enterprise/entreprise/config/feedback-loop/` vers son propre repo Git autonome `rubee-labs/claude-forge` (privé GitHub). Distribué comme plugin Claude Code via `/plugin marketplace add`. Architecture hybride : code global (engines + skills + binaire `forge` dans PATH), données per-project (`<project>/subjects/<name>/`). Méta-réflexion (ce subject lui-même) migrée dans `claude-forge/subjects/claude-forge/` — dogfooding. Bug `get_project_dir()` corrigé en v0.1.1 (résolution cwd-based standard). Validé : `forge scanner` 15 actifs depuis claude-enterprise. Voir `discussions/2026-05-05-migration-claude-forge.md` + `decisions/2026-05-05-migration-claude-forge.yaml`.
 
 ## Décisions annulées
 
@@ -48,6 +49,23 @@ Voir aussi :
 - ✅ Hook SessionStart intégré (.claude/settings.json)
 - ✅ `/documente` étendu pour le frontmatter subject pool (puis refondu en 2.0 le 2026-05-04 — entry point unique du moteur forge)
 - ✅ `entreprise/SUBJECTS-INDEX.md` régénéré au démarrage de session
+
+## Phase 2 livrée (2026-05-05) — extraction plugin Claude Code
+
+Migration du moteur Subject Pool depuis claude-enterprise vers son propre repo plugin Claude Code.
+
+- ✅ Repo Git autonome `rubee-labs/claude-forge` (privé) avec marketplace.json + plugin.json
+- ✅ Engines Python (5 fichiers) + 4 skills (documente, subject-create*, subject-merge) + slash command + rules + templates + tests migrés
+- ✅ Binaire CLI `forge` (dispatcher documente/engine/scanner) auto-installé dans PATH par Claude Code
+- ✅ 17 refs vivantes patchées (`python3 entreprise/config/feedback-loop/<engine>.py` → `forge documente|engine`)
+- ✅ Hook `~/.claude/scripts/init-healthcheck.sh` invoque `forge` (PATH) avec fallback clone local
+- ✅ Hook `entreprise/scripts/log-documente-hook.py` log dans `entreprise/logs/documente_hook.log`
+- ✅ Méta-réflexion migrée vers `claude-forge/subjects/claude-forge/` (dogfooding)
+- ✅ Symlink local `claude-enterprise/harness/claude-forge` (gitignored)
+- ✅ Fix v0.1.1 : `get_project_dir()` cwd-based au lieu de `Path(__file__).parents[3]`
+- ✅ Validé end-to-end : `/plugin marketplace add rubee-labs/claude-forge` + `/plugin install claude-forge@rubee-labs` + `/reload-plugins` + `forge scanner` retourne `15 actifs` ✅
+
+Net : claude-forge +9929 lignes (commits `06ba19a` → `73317dc`), claude-enterprise -12423/+7 lignes (commit `dca6fd02`).
 
 ## Phase 1 livrée (2026-05-04) — moteur de re-synthèse opérationnel
 
