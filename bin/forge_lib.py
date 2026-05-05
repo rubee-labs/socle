@@ -12,18 +12,35 @@ Extraits de forge_scanner.py pour être réutilisés par forge_engine.py
 NE PAS dépendre de pyyaml ni d'autres packages externes — Python 3 stdlib only.
 """
 
+import os
 import re
 from datetime import datetime
 from pathlib import Path
 
 
 def get_project_dir() -> Path:
-    """Retourne le chemin absolu du repo claude-enterprise.
+    """Retourne le chemin absolu du repo de travail.
 
-    Dérivé du chemin de ce module : feedback-loop/ vit dans entreprise/config/,
-    donc le repo root est 3 niveaux au-dessus.
+    claude-forge est un binaire installé globalement (plugin Claude Code) qui
+    opère sur le repo dans lequel il est invoqué — pas sur son propre repo
+    d'install. La résolution suit donc l'ordre suivant :
+
+    1. Variable d'env CLAUDE_FORGE_PROJECT_DIR (override explicite)
+    2. Remontée depuis cwd jusqu'à un dossier .git (repo Git racine)
+    3. cwd (fallback si pas dans un repo Git)
     """
-    return Path(__file__).resolve().parents[3]
+    env_dir = os.environ.get("CLAUDE_FORGE_PROJECT_DIR")
+    if env_dir:
+        return Path(env_dir).resolve()
+
+    cwd = Path.cwd().resolve()
+    p = cwd
+    while p != p.parent:
+        if (p / ".git").exists():
+            return p
+        p = p.parent
+
+    return cwd
 
 
 def parse_frontmatter(path):
