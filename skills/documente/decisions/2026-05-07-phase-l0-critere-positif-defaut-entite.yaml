@@ -1,0 +1,74 @@
+date: 2026-05-07
+sujet: Phase L0 v2.6 — critère positif (objet métier durable vs modification d'entité), défaut = entité
+statut: aboutie
+auteur: benjamin + claude (session 2026-05-07)
+upstream_issue: rubee-labs/claude-forge#1
+upstream_discussions: []
+upstream_decisions:
+  - 2026-05-04-extension-engine-au-legacy
+
+modifications:
+  fichiers:
+    - skills/documente/SKILL.md (lignes 67 + 263-290 + bump version 2.5 -> 2.6)
+  approche: |
+    Reformulation de la Phase L0 du workflow legacy en critère POSITIF
+    explicite, avec inversion du défaut (entité au lieu de subject pool).
+
+    Avant (v2.3-v2.5) : "proposer systématiquement la migration vers
+    subject pool, sauf si dossier figé". Le mot "figé" était trop vague,
+    aucun skill évolutif ne se considère figé, donc le LLM proposait
+    la migration systématiquement.
+
+    Après (v2.6) :
+    - **A. Stocker dans `<entité>/decisions/` (défaut)** si la décision
+      modifie le code/comportement d'UNE entité spécifique, ponctuellement.
+    - **B. Migrer vers subject pool** si objet métier durable avec cycle γ
+      (transitions seed → debating → tentative → ...), itérations
+      successives prévues.
+    - **C. Doute** : demander à l'utilisateur. Défaut = A.
+
+    Plus de "ne pas proposer si dossier figé" (négatif). À la place :
+    "ne pas proposer B (migration) si les critères de B ne sont
+    clairement pas remplis" (positif, cas par défaut).
+
+contexte:
+  declencheur:
+    issue_github: rubee-labs/claude-forge#1 (créée le 2026-05-07 par powerbenben)
+    constat_terrain: |
+      Sur le repo claude-enterprise (Rubee), 154 décisions vivantes dans
+      les <entité>/decisions/ au 2026-05-07, mais aucune nouvelle pour
+      des skills très actifs récents (ex: control-tower : dernière
+      décision dans son entité datait du 2026-05-04 alors que 5+ feat
+      majeurs sur 4-7 mai). Les modifs de code n'étaient tracées nulle
+      part : ni en subject pool, ni en entité, juste dans les commits git.
+  cause_racine: |
+    Le critère "skills/tools figés" était trop vague. Combiné avec la
+    formulation explicite de la décision 2026-05-04-extension-engine-au-legacy
+    ("Pousser à terme tout vers subject pool : la proposition systématique
+    invite Benjamin à se poser la question..."), le système était
+    structurellement conçu pour vider le legacy.
+  consequence: |
+    Subject pool et <entité>/decisions/ sont DEUX mécanismes différents,
+    pas substituables. Le subject pool capture l'évolution d'un état
+    (négo en cours, transitions γ). L'entité decisions/ capture une
+    modification de code (bug fix, ajout fonction, refacto). La v2.6
+    réaffirme cette distinction.
+
+verification:
+  modifications_appliquees:
+    - SKILL.md ligne 67 (gotcha "Migration legacy → subject pool" reformulée en "Critère subject pool vs entité")
+    - SKILL.md lignes 263-290 (Phase L0 réécrite en critère positif A/B/C)
+    - SKILL.md ligne 19 (version 2.5 -> 2.6)
+  test_doctrine: |
+    Au prochain /documente sur un path d'un skill (ex: entreprise/skills/control-tower/),
+    le LLM doit choisir A par défaut sans proposer B, sauf si la décision concerne
+    explicitement un objet métier durable.
+
+risque_regression:
+  - Régression possible si un workflow s'appuyait sur la Phase L0 systématique pour migrer du legacy vers subject pool. À surveiller : si Benjamin ne voit plus apparaître la proposition pour des décisions qui auraient mérité un subject, ouvrir une discussion pour réviser le critère.
+  - Pas de breaking change API : `/documente <path>` continue de fonctionner exactement de la même façon — seul le comportement de la Phase L0 change.
+
+affects:
+  - skills/documente/SKILL.md (v2.6)
+
+closes_issue: rubee-labs/claude-forge#1

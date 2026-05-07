@@ -16,7 +16,7 @@ type_anthropic: 4
 visibilite: entreprise
 auteur: Benjamin
 date_creation: 2026-03-31
-version: 2.5
+version: 2.6
 tags: [documentation, decision, discussion, memory, subject-pool, forge, orchestrator, workflow]
 effort: low
 outils_requis: []
@@ -64,7 +64,7 @@ Le mot **« forge »** désigne le cycle de vie γ et le moteur Python sous-jace
 - **Idempotent** : 2 invocations consécutives sans nouvel input doivent produire un diff vide.
 - **Commit atomique** : committer discussion + decision + memory.md (subject + cascade) ensemble dans un seul commit.
 - **Propagation = proposition, pas imposition** : la Phase I (`scan-impacted` + jugement LLM) propose les modifications aux fichiers exécutants. L'utilisateur valide chaque modification.
-- **Migration legacy → subject pool (v2.3)** : à chaque invocation `/documente` sur un path non-subject-pool, **proposer systématiquement** la migration (Phase L0). Bénéfice : workflow Python plus rapide, cycle de vie γ, cascade. Ne pas proposer pour les dossiers figés (skills/tools sans cycle de vie). Ne pas re-proposer si Benjamin a refusé sur ce path précédemment (marqueur `migration_subject_pool: refused` dans une décision).
+- **Critère subject pool vs entité (v2.6)** : à chaque invocation `/documente` sur un path non-subject-pool, appliquer le critère positif de Phase L0 (voir détail dans la section Phase L0). Le **défaut est l'entité** (`<entité>/decisions/`), pas le subject pool. Subject pool est réservé aux **objets métier durables avec cycle de vie γ** (suppliers, commandes, campagnes, décisions architecturales long-terme). Une modification de code/comportement d'UNE entité (skill, MCP, tool) reste dans son `decisions/` — pas de proposition de migration. Ne pas re-proposer si Benjamin a refusé sur ce path précédemment (marqueur `migration_subject_pool: refused` dans une décision).
 - **Legacy aussi instrumenté Python (v2.3)** : depuis la bascule, les Phases L2/L3/L5/L6 du workflow legacy invoquent `documente_engine.py` (`write-capture`, `scan-impacted`, `commit-atomic`). Phase L4 (MAJ MEMORY.md format markdown) reste LLM only car le format n'est pas du frontmatter mais des sections markdown.
 - **Fichiers temp uniques par invocation (v2.4)** : utiliser `mktemp /tmp/documente-*-body.XXXXXX` pour les body files passés à `write-capture`. Sinon 2 `/documente` parallèles écrasent leurs body files mutuellement (race condition observée le 2026-05-04 entre `/documente skills/documente` et `/documente knowledge-coordinator`). **Attention syntaxe BSD/macOS** : les `XXXXXX` doivent être en SUFFIXE final, pas suivis d'une extension (`.md` literal écrirait XXXXXX littéralement). L'extension n'est pas requise — `write-capture` lit le contenu, pas le nom. Conserver la variable shell (`$DOC_BODY`) entre Phase C/L2 et Phase D/L3, puis `rm -f` après écriture.
 
@@ -261,33 +261,34 @@ Quand Phase A (`prepare`) détecte un contexte non-subject-pool (`is_subject_poo
 
 Depuis 2026-05-04, les phases déterministes (L2 discussion, L3 decision, L5 scan, L6 commit) sont instrumentées Python via `documente_engine.py` — mêmes commandes génériques que le workflow subject pool. Phase L4 (MAJ MEMORY.md format markdown) reste LLM only.
 
-### Phase L0 — Proposition de migration vers subject pool (systématique)
+### Phase L0 — Critère subject pool vs entité (v2.6)
 
-Avant de poursuivre en legacy, **proposer systématiquement** la migration vers subject pool :
+Avant de poursuivre en legacy, **classifier la décision** selon ce critère positif. Le défaut est **A (entité)** — ne proposer **B (subject pool)** que si les conditions sont clairement remplies.
 
-```
-Le path <X> n'est pas un subject pool. Avant de continuer en workflow legacy, veux-tu :
+**A. Stocker dans `<entité>/decisions/` (legacy, défaut) si** :
+- La décision **modifie le code ou le comportement d'UNE entité spécifique** (skill, MCP, tool)
+- La décision est **ponctuelle** : prise → code livré → fini (pas d'états successifs ni d'itérations)
+- Exemples : ajout d'un préfixe à `WRITE_PREFIXES`, fix bug HTTP timeout, refacto d'une fonction, ajout d'un paramètre optionnel, refonte d'un SKILL, création d'un nouveau skill
 
-  [A] Migrer ce dossier vers subject pool maintenant
-      → Création <parent>/subjects/<name>/ avec MEMORY.md formatté
-      → Migration des discussions/ et decisions/ existantes
-      → Bénéfice du workflow Python (cycle γ, cascade, ~70% tokens en moins)
-      → Commande : /subject-create-type (si type absent) puis /subject-create
+**B. Migrer vers subject pool si** :
+- La décision concerne un **OBJET MÉTIER DURABLE** qui vit dans le temps avec des états successifs
+- L'objet va connaître des **transitions γ** (seed → debating → tentative → stress_testing → doctrine → in_service → archived)
+- La décision sera **révisée, complétée, contestée** plus tard — ce n'est pas une décision finale unique
+- L'objet est **lié à plusieurs entités** ou n'est pas naturellement rattaché à un fichier de code
+- Exemples : commande d'achat (order-398), relation fournisseur (supplier-weifang), campagne marketing (google-ads-skylantern), décision architecturale long-terme (ce-admin-v2)
 
-  [B] Continuer en workflow legacy (cette fois)
+**C. Doute** : demander à l'utilisateur, lui présenter A et B avec les critères ci-dessus. **Le défaut est A**, pas B.
 
-  [C] Annuler /documente
-```
+Si choix **B** (migration explicitement justifiée par les critères ci-dessus) : invoquer `/subject-create-type <type>` (interactif) si nécessaire, puis `/subject-create <type> <name>`, puis `mv` les discussions/ et decisions/ existantes vers le nouveau path. Une fois la migration faite, repasser par Phase A pour relancer en mode subject pool.
 
-Si **A** : invoquer `/subject-create-type <type>` (interactif) si nécessaire, puis `/subject-create <type> <name>`, puis `mv` les discussions/ et decisions/ existantes vers le nouveau path. Une fois la migration faite, repasser par Phase A pour relancer en mode subject pool.
+Si choix **A** : continuer Phase L1 directement.
 
-Si **B** : continuer Phase L1.
-
-Si **C** : afficher confirmation, stopper.
-
-**Ne pas proposer la migration si** :
-- Le dossier est un skill ou tool figé (ex: `entreprise/skills/save/`, `entreprise/tools/...`) — pas de cycle de vie qui justifie un subject
+**Ne pas proposer B (migration) si** :
+- Les critères de B ne sont **clairement pas remplis** (cas le plus fréquent : modification de code d'un skill/MCP/tool)
 - Benjamin a déjà refusé la migration sur ce path dans une session précédente (vérifier les `decisions/` existantes pour un marqueur `migration_subject_pool: refused`)
+- L'utilisateur a déjà précisé son intention (« je veux documenter dans le skill ») — respecter ce choix sans rappeler le menu
+
+**Important — historique de cette doctrine** : la version v2.3 (2026-05-04) proposait la migration **systématiquement** avec un garde-fou négatif vague (« skills/tools figés »). En pratique cela biaisait toutes les décisions vers subject pool, vidant les `<entité>/decisions/` (cf. issue [rubee-labs/claude-forge#1](https://github.com/rubee-labs/claude-forge/issues/1)). La v2.6 inverse : critère **positif** sur la nature de l'objet, défaut entité.
 
 ### Phase L1 — Identifier le contexte
 
