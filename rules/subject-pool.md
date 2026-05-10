@@ -45,57 +45,62 @@ services/<X>/
 
 ---
 
-## Cycle de vie γ (la forge)
+## Cycle de vie (3 états)
 
-Porté par le frontmatter du `MEMORY.md` du subject :
+Refondu le 2026-05-10 (cf. `subjects/claude-forge/decisions/2026-05-10-cycle-gamma-refonte-3-etats.yaml`). Le cycle γ historique à 8 états + conviction numérique a été remplacé par un cycle à **3 états**, transitions 100 % manuelles, sans seuil automatique.
 
 ```
-seed ──► debating ──► tentative ──► stress_testing ──► doctrine ──► in_service
-                       │ (bump            │ (+10 si             │ (compile artefact :
-                       │  conviction      │  passé,             │  règle/skill/agent
-                       │  à 50)           │  -15 si raté)       │  SDK/monitor/...)
-                       │                  │                     │
-                       │                  ▼                     ▼
-                       └──── debating si stress raté        under_review
-                                                            (contre-signal)
-                                                                       │
-                                                                       ▼ ou
-                                                                  archived
+actif ──► mature ──► archived
+   ▲        │
+   └────────┘ (retour possible si contre-signal)
 ```
 
 ### États
 
 | État (`forging_state`) | Description |
 |---|---|
-| `seed` | Signal entrant, pas encore traité |
-| `debating` | En cours de raisonnement, hésitations |
-| `tentative` | Opinion formée mais pas testée |
-| `stress_testing` | En cours de confrontation (skill /stress-test) |
-| `doctrine` | Opinion solide, prête à être compilée en exécutable |
-| `in_service` | Doctrine en application, artefact compilé |
-| `under_review` | Contre-signal détecté, retour en débat |
-| `archived` | Subject clos, leçons remontées vers les subjects parents |
+| `actif` | Subject en accumulation / en cours de réflexion. Sources collectées, opinion encore en formation ou volontairement débattue. |
+| `mature` | Subject avec une opinion formée et stable. Peut avoir été confronté (cross-modal-review, stress-test) ou pas — la maturation est jugée par l'humain, pas par un seuil. |
+| `archived` | Subject clos. Leçons remontées vers les subjects parents le cas échéant. |
 
-### Conviction
+### Transitions
 
-`conviction` (0..100) :
-- **Bump à 50** lors de la transition `debating → tentative` (opinion formée a une base de confiance).
-- **+10** par stress test passé (`survived: true`).
-- **−15** par contre-signal qui force `under_review`.
-- **Seuils** : ≥ 60 pour passer en `doctrine`, ≥ 80 pour invoquer `/compile-doctrine`.
+Toutes manuelles, validées explicitement par Benjamin via `/documente` :
 
-### Skills
+- `actif → mature` : « cette opinion est suffisamment ferme pour être référence »
+- `mature → actif` : contre-signal détecté, on rouvre la réflexion
+- `actif|mature → archived` : subject clos
 
-| Commande | Effet |
+**Pas de transition automatique.** Le moteur (`forge_engine.py`) ne mute jamais `forging_state` tout seul. Il fournit des informations descriptives (events récents, décisions actives, stats agrégées) qui aident Benjamin à décider, mais la décision lui appartient.
+
+### Rétrocompatibilité avec l'ancien cycle γ
+
+Les subjects existants peuvent contenir un ancien `forging_state` (`seed`, `debating`, `tentative`, `stress_testing`, `doctrine`, `in_service`, `under_review`). Le moteur le mappe automatiquement :
+
+| Ancien | Nouveau |
 |---|---|
-| `/subject-create-type <name>` | Crée un nouveau TYPE (REFERENCE.md + TEMPLATE.md). Validation humaine obligatoire. **Invocable directement ou indirectement via `/documente`** (qui demande validation avant de l'invoquer). |
-| `/subject-create <type> <name>` | Instancie un subject à partir d'un type existant. **Invocable directement ou indirectement via `/documente`** (mode silencieux, 0 intervention). |
-| `/documente <subject-path> [--type <type>]` | **Orchestrateur unique du subject pool** (v2.1+). Combine 4 rôles : (1) création paresseuse du type via `/subject-create-type` si absent (avec validation Benjamin) ; (2) création paresseuse de l'instance via `/subject-create` si absente (silencieuse) ; (3) capture conversation (discussion + décision) ; (4) re-synthèse continue (Quick + Détails régénérés, cascade horizontale 1 niveau, transitions γ auto `seed→debating` et `debating→tentative`). Entry point unique côté utilisateur — invocable manuellement ou par `/control-tower`, `/optimisation-campagne-google`, etc. après chaque event/décision. L'argument optionnel `--type` est utilisé par les skills appelants pour éviter l'inférence. |
-| `/stress-test <subject-path>` | Confronte le subject (3 perspectives : contradicteur, steelman, yagni). |
-| `/subject-merge <A> <B>` | Soudure de 2 subjects (validation humaine obligatoire). |
-| `/compile-doctrine <subject-path>` | Génère l'artefact exécutable (règle/skill/agent SDK/monitor/injection/routing). |
+| `seed`, `debating`, `tentative` | `actif` |
+| `stress_testing`, `doctrine`, `in_service`, `under_review` | `mature` |
+| `archived` | `archived` |
 
-Le mot **« forge »** désigne le cycle de vie γ et le moteur Python sous-jacent (`forge_engine.py`, `forge_lib.py`, `forge_scanner.py`) — il n'existe plus de skill `/forge` séparé.
+Pas de migration forcée — les subjects gardent leur ancien `forging_state` jusqu'au prochain `/documente`, qui peut écrire la valeur normalisée.
+
+Les champs `conviction` (0..100), `stress_tests_passed`, `compiled_artifacts` du frontmatter sont **déprécié·e·s** : ignorés par le moteur, conservés en lecture pour ne pas casser l'existant. Les nouveaux subjects ne les écrivent pas.
+
+### Skills du subject pool
+
+| Commande | Statut | Effet |
+|---|---|---|
+| `/subject-create-type <name>` | actif | Crée un nouveau TYPE (REFERENCE.md + TEMPLATE.md). Validation Benjamin obligatoire. **Invocable directement ou indirectement via `/documente`**. |
+| `/subject-create <type> <name>` | actif | Instancie un subject à partir d'un type existant. **Invocable directement ou indirectement via `/documente`** (mode silencieux). |
+| `/documente <subject-path> [--type <type>]` | actif | **Orchestrateur unique du subject pool**. Création paresseuse type/instance si absents, capture conversation (discussion + décision), re-synthèse continue (Quick + Détails régénérés, cascade horizontale 1 niveau). **Plus de transitions auto** depuis 2026-05-10. |
+| `/subject-merge <A> <B>` | actif | Soudure de 2 subjects (validation Benjamin obligatoire). |
+| `/skillify` | actif (depuis 2026-05-10) | Compile un workflow ad hoc en skill réutilisable (SKILL.md + script + tests + fixtures). Compilation continue à l'usage, pattern Garry Tan. Voir `bin/skillify_engine.py`. |
+| `/cross-modal-review` | actif (depuis 2026-05-10) | Évalue la qualité d'un MEMORY.md re-synthétisé (4 axes : cohérence, complétude, spécificité, citations) via 2-3 modèles distincts (Opus + Sonnet + Haiku). Voir `bin/eval_engine.py`. |
+| `/stress-test <subject-path>` | optionnel, à la demande | Challenge un subject sous 3 perspectives (contradicteur, steelman, yagni). **Découplé du cycle** depuis 2026-05-10 — invocable à tout moment quand Benjamin doute, sans transition d'état ni mutation de conviction. |
+| `/compile-doctrine` | **abandonné** | Skill théorique jamais utilisé en pratique. Sa branche « procédurale → skill » est désormais portée par `/skillify`. Les autres branches (règle / agent SDK / injection / monitor / FK) seront instruites au cas par cas si le besoin émerge. |
+
+Le mot **« forge »** désigne le pattern subject pool et le moteur Python sous-jacent (`forge_engine.py`, `forge_lib.py`, `forge_scanner.py`, `autolink_engine.py`, `skillify_engine.py`, `eval_engine.py`).
 
 Le scanner `forge scanner` (binaire claude-forge) peut tourner en hook SessionStart pour régénérer un index global des subjects (par exemple `SUBJECTS-INDEX.md` à la racine du repo). Configuration spécifique au projet — voir le hook intégrateur côté repo consommateur.
 
@@ -123,8 +128,8 @@ Quand un subject est passé à `/documente`, la mise à jour se propage à ses `
 - `last_event` est mis à jour avec une référence vers l'event déclencheur
 - Stats agrégées recalculées (selon le type — cf. REFERENCE.md)
 - `## Quick` régénéré pour refléter la nouvelle activité
-- Transition γ auto appliquée si conditions remplies (`seed→debating`, `debating→tentative` uniquement)
 - `## Détails` n'est **PAS** modifié en cascade (réservé à l'invocation directe `/documente` sur ce subject — pour éviter qu'une cascade avec vue partielle écrase un détail riche)
+- **Pas de transition d'état automatique** (depuis 2026-05-10) — `forging_state` n'est jamais muté par le moteur, seulement par décision humaine via `/documente`
 
 Format des `linked_subjects` : `<type>:<name>` (ex: `supplier:weifang`). Le moteur résout via heuristique tolérante (slug exact → `<type>-<name>` → grep par `name`) — un link non résolu produit un warning, pas une erreur.
 
@@ -189,14 +194,14 @@ Le graph **n'est pas persisté** (ni dans le frontmatter, ni dans un sidecar) �
 
 | Squelette / taxonomie (anglais) | Contenu métier (français) |
 |---|---|
-| Champs frontmatter (`type`, `name`, `conviction`, `forging_state`, `linked_subjects`…) | Valeurs de `analysis_dimensions` (ex: `tresorerie`, `delai`) |
-| Valeurs de `forging_state` (`seed`, `debating`, `tentative`, `doctrine`…) | Valeurs de `expected_events` (ex: `alerte_stock`, `email_fournisseur_disponibilite`) |
+| Champs frontmatter (`type`, `name`, `forging_state`, `linked_subjects`…) | Valeurs de `analysis_dimensions` (ex: `tresorerie`, `delai`) |
+| Valeurs de `forging_state` (`actif`, `mature`, `archived`) | Valeurs de `expected_events` (ex: `alerte_stock`, `email_fournisseur_disponibilite`) |
 | Valeurs de `produced_by` (`external`, `claude`, `human_and_claude`, `human`) | Tags personnels |
 | Valeurs de `horizon` (`bounded`, `permanent`, `unbounded`, `cyclic`) | Contenu narratif (Quick, Détails) |
 | Noms de **types** (`supplier-order`, `incident`, `marketing-campaign`…) | Suffixes identifiants des subjects (ex: `simon`, `400`, `2026-q2-brumeaux`) |
 | Noms de dossiers structuraux (`subjects/`, `types/`, `events/`, `analyses/`…) | Slugs de discussions / décisions |
 
-**Pourquoi bilingue** : le squelette anglais permet à n'importe quel skill ou outil tiers de raisonner sur le pattern (un `forging_state: doctrine` est identifiable partout). Le contenu français permet à Benjamin et à l'équipe Rubee de lire et utiliser naturellement les dimensions métier sans traduction mentale.
+**Pourquoi bilingue** : le squelette anglais permet à n'importe quel skill ou outil tiers de raisonner sur le pattern (un `forging_state: mature` est identifiable partout). Le contenu français permet à Benjamin et à l'équipe Rubee de lire et utiliser naturellement les dimensions métier sans traduction mentale.
 
 **Convention dates** : `*_at` (verbe au passé), statuts au présent.
 
@@ -207,7 +212,7 @@ Le graph **n'est pas persisté** (ni dans le frontmatter, ni dans un sidecar) �
 | `name` | str | Nom du subject |
 | `type` | str | Référence au type parent |
 | `forging_state` | enum | État du cycle de vie γ |
-| `conviction` | int | Solidité 0..100 |
+| ~~`conviction`~~ | ~~int~~ | **déprécié** depuis 2026-05-10. Conservé en lecture sur les anciens subjects, ignoré. |
 | `horizon` | enum | `bounded`, `permanent`, `unbounded`, `cyclic` |
 | `created_at` | date | Date de création |
 | `archived_at` | date or null | Date d'archivage |
@@ -216,8 +221,10 @@ Le graph **n'est pas persisté** (ni dans le frontmatter, ni dans un sidecar) �
 | `active_decisions` | list[ref] | Décisions actives |
 | `open_discussions` | list[ref] | Discussions ouvertes |
 | `last_event` | obj | Dernier event `{date, type, ref}` |
-| `stress_tests_passed` | int | Compteur |
-| `compiled_artifacts` | list[ref] | Artefacts exécutables produits |
+| ~~`stress_tests_passed`~~ | ~~int~~ | **déprécié** depuis 2026-05-10. /stress-test découplé du cycle. |
+| ~~`compiled_artifacts`~~ | ~~list[ref]~~ | **déprécié** depuis 2026-05-10. Plus de cycle de compilation par seuil. |
+| `linked_skills` | list[str] | (optionnel) skills produits via `/skillify` à partir de ce subject |
+| `linked_evals` | list[ref] | (optionnel) cross-modal-reviews effectuées (`analyses/<date>-cross-modal-eval.md`) |
 
 ---
 
@@ -291,8 +298,7 @@ Squelette pré-rempli pour instancier un nouveau subject. Utilisé par `/subject
 ---
 name: order-400
 type: supplier-order
-forging_state: in_service
-conviction: 80
+forging_state: mature
 horizon: bounded
 created_at: 2026-04-12
 archived_at: null
@@ -306,13 +312,13 @@ last_event:
   date: 2026-06-18
   type: booking_container
   ref: events/2026-06-18-booking-container.md
-stress_tests_passed: 1
-compiled_artifacts: []
+linked_skills: []
+linked_evals: []
 ---
 
 ## Quick
 
-État : in_service, conviction 80
+État : mature
 Statut : prod terminée, container en route, ETA 2026-08-22
 Prochaines étapes : suivi douane, réception entrepôt
 Risques : -
@@ -380,16 +386,10 @@ status: active                    # active | archived
 
 1. **Création de type** : skill `/subject-create-type`, validation Benjamin obligatoire. Un type mal défini pollue toutes ses instances. Les `analysis_dimensions` et `expected_events` doivent être en français snake_case (contenu métier).
 2. **Création d'instance** : skill `/subject-create <type> <name>`. Pré-remplit `MEMORY.md` depuis le `TEMPLATE.md` du type. Met à jour les liens bidirectionnels avec les `linked_subjects` parents.
-3. **Cycle de vie γ** : la maturation est portée par le skill `/documente` (ex-`/forge`). Les transitions `seed → debating` et `debating → tentative` sont **automatiques** quand les conditions sont remplies (≥1 event ou discussion ouverte ; ≥1 décision active). La transition `debating → tentative` bump conviction à 50. Les transitions vers `stress_testing`, `doctrine`, `in_service`, `under_review`, `archived` restent manuelles et passent par `/stress-test`, `/compile-doctrine`, ou décision Benjamin. Le mot « forge » reste utilisé pour désigner le cycle γ et le moteur Python sous-jacent, mais il n'y a plus de skill `/forge` côté utilisateur.
-4. **Stress test** : skill `/stress-test` réutilise `/council` (multi-perspective contradicteur/steelman/yagni). Met à jour `conviction` (+10 si passé, −15 si raté). Décision finale humaine — le skill ne tranche jamais seul.
+3. **Cycle de vie (3 états)** : `actif` / `mature` / `archived`. Toutes les transitions sont **manuelles**, validées explicitement par Benjamin via `/documente`. Le moteur ne mute jamais `forging_state` automatiquement (depuis refonte 2026-05-10). Les anciens états (`seed`, `debating`, `tentative`, `stress_testing`, `doctrine`, `in_service`, `under_review`) sont mappés en lecture par le moteur — pas de migration forcée.
+4. **Stress test** : skill `/stress-test` est **optionnel et à la demande**. Confronte un subject sous 3 perspectives (contradicteur, steelman, yagni). **Pas de mutation de `forging_state`** ni de `conviction`. Sortie : analyse adversariale dans `<subject>/analyses/<date>-stress-test.md`. Décision finale humaine.
 5. **Soudure (fusion)** : skill `/subject-merge <A> <B>` après validation humaine obligatoire. Les sources sont archivées avec pointeur `merged_into` vers le nouveau subject consolidé. Les liens entrants sont redirigés.
-6. **Compilation en exécutable** : skill `/compile-doctrine` actif uniquement si `forging_state: doctrine && conviction ≥ 80`. Génère selon le type de doctrine :
-   - **Déclarative** ("X est vrai") → règle dans `MEMORY.md` du domaine
-   - **Procédurale** ("voici comment faire X") → skill auto-généré
-   - **Comportementale** ("surveiller X et agir si Y") → agent SDK (archi C)
-   - **Évitement** ("ne jamais Y") → injection skill ou negative keyword
-   - **Métrique/seuil** → monitor + alerte
-   - **Routing** → foreign key dans agent existant
+6. **Compilation en exécutable** (refonte 2026-05-10) : `/compile-doctrine` est **abandonné** (théorique, jamais utilisé). La compilation continue à l'usage est portée par `/skillify` pour le pattern « procédurale → skill ». Les autres patterns historiquement listés (déclarative → règle, comportementale → agent SDK, évitement → injection, métrique → monitor, routing → FK) restent à instruire au cas par cas si le besoin émerge concrètement — pas d'API générique pré-construite.
 7. **Pas de migration forcée** : les anciens `MEMORY.md` / `discussions/` / `decisions/` sans frontmatter étendu restent valides. Adoption opportuniste (lors de modification).
 8. **Producteur (`produced_by`)** : `external` (monde/MCP), `claude` (Claude seul), `human_and_claude` (échange), `human` (Benjamin valide).
 9. **Lecture en cascade** : niveau 1 = `entreprise/SUBJECTS-INDEX.md` toujours, niveau 2 = `MEMORY.md` du subject, niveau 3 = un fichier précis à la demande.

@@ -1,0 +1,122 @@
+---
+date: 2026-05-10
+type: decision
+produced_by: human
+decided_by: benjamin
+status: active
+title: "Refonte cycle γ : 8 états → 3 états (actif/mature/archived), abandon /compile-doctrine, /stress-test découplé"
+upstream_discussions:
+  - benjamin-perso/Forge-lab/analyses/2026-05-09-meta-meta-prompting-garry-tan.md
+  - benjamin-perso/Forge-lab/analyses/2026-05-10-schema-forge-skills-integration.html
+upstream_decisions:
+  - subjects/claude-forge/decisions/2026-05-10-p3-skillify-compilation-continue.yaml
+  - subjects/claude-forge/decisions/2026-05-10-p2-cross-modal-eval.yaml
+parameters:
+  declencheur: "Benjamin a relevé que /skillify recouvre la branche 'procédurale → skill auto-généré' de /compile-doctrine — quasi-doublon"
+  option_validee: "C — abandon /compile-doctrine + refonte complète cycle γ"
+  portee_validee: "Refonte complète"
+  mapping:
+    actif: [seed, debating, tentative]
+    mature: [stress_testing, doctrine, in_service, under_review]
+    archived: [archived]
+artefacts_modifies:
+  - claude-forge/rules/subject-pool.md (§ Cycle, § Conviction supprimée, § Skills, § Règles point 6)
+  - claude-forge/bin/forge_engine.py (LEGACY_STATE_MAP, normalize_forging_state, detect_transition retourne None, next_step_hint)
+  - claude-forge/bin/forge_scanner.py (alertes doctrine_uncompiled + stress_test_missing supprimées, 3 états dans la distribution)
+  - claude-enterprise/services/achats/types/supplier-order/REFERENCE.md (note refonte)
+  - claude-enterprise/services/achats/types/supplier/REFERENCE.md (note refonte + groupement par 3 états)
+  - claude-enterprise/services/achats/types/freight-forwarder/REFERENCE.md (idem)
+  - claude-enterprise/services/marketing/types/marketing-campaign/REFERENCE.md (note refonte)
+  - claude-enterprise/entreprise/architecture/types/ce-architecture-decision/REFERENCE.md (note refonte)
+nouveau_etats:
+  actif: "subject en accumulation / en cours de réflexion"
+  mature: "subject avec une opinion formée et stable"
+  archived: "subject clos, leçons remontées"
+champs_frontmatter_deprecated:
+  - conviction (0..100) — ignoré, conservé en lecture seule
+  - stress_tests_passed — ignoré
+  - compiled_artifacts — ignoré
+champs_frontmatter_nouveaux:
+  - linked_skills (optionnel) — skills produits via /skillify
+  - linked_evals (optionnel) — cross-modal-reviews effectuées
+skills_supprimes:
+  - /compile-doctrine (théorique, jamais utilisé en pratique — 0 artefact compilé)
+skills_decouples:
+  - /stress-test (devient optionnel à la demande, plus de transition d'état ni mutation conviction)
+transitions_automatiques: aucune (toutes manuelles, validation Benjamin via /documente)
+retrocompatibilite:
+  doctrine: "Les anciens forging_state sont mappés automatiquement par le moteur (LEGACY_STATE_MAP). Pas de migration forcée — les subjects existants peuvent garder leur ancien état jusqu'à la prochaine /documente."
+  champs: "conviction et autres champs deprecated restent lisibles, ignorés par le moteur."
+validation_test_reel:
+  - "forge_engine sur services/achats/subjects/order-398 : current_state='actif' (mappé depuis 'tentative'), transition_proposal=None, warning informatif émis ✓"
+  - "forge_scanner --status : '0 alerte(s) — 26 actifs (25 actif + 1 mature), 0 stagnants' ✓"
+  - "32 tests unittest (autolink + skillify + eval) passent toujours ✓"
+prochaines_etapes:
+  - Mise à jour HTML d'intégration pour refléter la nouvelle architecture
+  - Vague 3 (P4 métrique retrieval) — quand Benjamin sera prêt
+  - Optionnel : nettoyer les MEMORY.md des subjects existants pour passer aux nouveaux états (pas urgent grâce au mapping legacy)
+---
+
+# Refonte cycle γ — 8 états → 3 états
+
+## Contexte
+
+Lors de la livraison Vague 2 (P3 skillify + P2 cross-modal-eval), Benjamin a relevé que `/skillify` recouvre exactement la branche « procédurale → skill auto-généré » du `/compile-doctrine` théorique de la doctrine Forge. C'est un doublon partiel.
+
+Plus profondément : l'analyse FORGE-analyse 2026-05-09 (proposition 1) avait déjà identifié le **YAGNI du cycle γ à 8 états + conviction numérique** comme une fragilité. 0 doctrine compilée à ce jour, 0 transition `tentative → stress_testing → doctrine → in_service` observée, conviction `+10/-15` arbitraire — autant de mécaniques qui n'ont jamais produit de signal opérationnel.
+
+Décision : aller au bout de la logique. Si `/compile-doctrine` est abandonné parce que la compilation continue à l'usage (skillify) marche mieux, alors le cycle γ qui le portait perd son sens, et il faut le simplifier.
+
+## Décision (refonte complète)
+
+### 1. Cycle simplifié à 3 états
+
+```
+actif ──► mature ──► archived
+   ▲        │
+   └────────┘ (retour si contre-signal)
+```
+
+Mapping rétrocompatible :
+- `seed`, `debating`, `tentative` → **`actif`**
+- `stress_testing`, `doctrine`, `in_service`, `under_review` → **`mature`**
+- `archived` → **`archived`** (inchangé)
+
+### 2. Transitions 100% manuelles
+
+Le moteur (`forge_engine.py`) ne mute jamais `forging_state` automatiquement. Toutes les transitions passent par `/documente` avec validation explicite Benjamin. Suppression de `detect_transition` opérationnelle (la fonction retourne désormais toujours `None`).
+
+### 3. Conviction numérique abandonnée
+
+Champ `conviction` (0..100) déprécié. Ignoré par le moteur. Conservé en lecture seule pour ne pas casser l'existant. Mêmes mécaniques pour `stress_tests_passed` et `compiled_artifacts`.
+
+### 4. /compile-doctrine abandonné
+
+Skill théorique jamais utilisé en pratique. Sa branche « procédurale → skill » est portée par `/skillify` (compilation continue à l'usage). Les autres patterns historiques (déclarative → règle, comportementale → agent SDK, évitement → injection, métrique → monitor, routing → FK) seront instruits au cas par cas si le besoin émerge concrètement — pas d'API générique pré-construite.
+
+### 5. /stress-test découplé du cycle
+
+Reste un outil **optionnel à la demande**. Confronte un subject sous 3 perspectives (contradicteur, steelman, yagni). **Pas de mutation de `forging_state`** ni de `conviction`. Sortie : analyse adversariale dans `<subject>/analyses/<date>-stress-test.md`.
+
+### 6. Alertes scanner adaptées
+
+Suppression : `doctrine_uncompiled`, `stress_test_missing` (obsolètes). Conservation : `stagnation` (subject `actif` >30j sans event), `merger_candidate` (overlap linked_subjects).
+
+## Validation
+
+- `forge_engine` sur subject réel : mapping `tentative → actif` correct, `transition_proposal: null`, warning informatif ✓
+- `forge_scanner --status` : `0 alerte(s) — 26 actifs (25 actif + 1 mature), 0 stagnants` ✓
+- 32 tests unittest passent (autolink + skillify + eval) ✓
+- 5 REFERENCE.md des types annotés avec note de refonte (préserve les notes métier importantes, notamment la note sur `supplier-order` qui pointait déjà l'inadéquation du cycle γ standard)
+
+## Conséquences sur les vagues précédentes
+
+- **Vague 1 (P5 autolink)** : inchangée. Le typed graph fonctionne indépendamment du cycle de vie.
+- **Vague 2 (P3 skillify)** : porte maintenant officiellement la branche « procédurale → skill » de la compilation. Plus de doublon avec `/compile-doctrine`.
+- **Vague 2 (P2 cross-modal-review)** : invocable indépendamment. Le score d'eval n'entre dans aucune transition automatique (cohérent avec la suppression des transitions auto).
+
+## Suite
+
+- Mise à jour du HTML d'intégration pour refléter la nouvelle architecture
+- Vague 3 P4 (métrique retrieval) à instruire quand Benjamin sera prêt
+- Nettoyage progressif des MEMORY.md des subjects existants vers les nouveaux états (pas urgent — le mapping legacy garantit la rétrocompatibilité)

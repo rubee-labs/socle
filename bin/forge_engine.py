@@ -15,13 +15,20 @@ Usage CLI :
 
 Imprime le JSON sur stdout. Permet a Claude d'invoquer via Bash.
 
-Cycle de vie gamma — table de transitions auto (cf. subject-pool.md) :
-  seed       -> debating   : len(events) >= 1 OR len(open_discussions) >= 1
-  debating   -> tentative  : len(active_decisions) >= 1  (+ bump conviction a 50)
-  tentative  -> stress_testing : NON-AUTO (lance /stress-test)
-  stress_testing -> doctrine   : NON-AUTO (atteint via /stress-test)
-  doctrine   -> in_service     : NON-AUTO (lance /compile-doctrine)
-  in_service -> under_review   : NON-AUTO (signal humain)
+Cycle de vie (refonte 2026-05-10) — 3 etats, transitions 100% manuelles :
+  actif    : subject en accumulation / reflexion en cours
+  mature   : opinion formee, stable. /cross-modal-review ou /stress-test
+             invocables a la demande, pas comme transition d'etat.
+  archived : subject clos, lecons remontees vers les parents.
+
+Aucune transition n'est jamais appliquee automatiquement par le moteur.
+Toutes passent par /documente avec validation Benjamin. Cf. subject-pool.md.
+
+Retrocompatibilite : les anciens etats (seed, debating, tentative,
+stress_testing, doctrine, in_service, under_review) sont mappes en lecture
+vers actif/mature/archived via LEGACY_STATE_MAP. Les champs frontmatter
+conviction, stress_tests_passed, compiled_artifacts sont deprecated et
+ignores par le moteur.
 """
 
 import argparse
@@ -302,6 +309,37 @@ def resolve_link(link: str, current_subject_path: Path) -> Path | None:
 # ------------------------------------------------------- detection transition
 
 
+# Mapping ancien cycle gamma (8 etats) -> nouveau cycle (3 etats)
+# Refonte 2026-05-10. Cf. rules/subject-pool.md.
+LEGACY_STATE_MAP = {
+    "seed": "actif",
+    "debating": "actif",
+    "tentative": "actif",
+    "stress_testing": "mature",
+    "doctrine": "mature",
+    "in_service": "mature",
+    "under_review": "mature",
+    "archived": "archived",
+    # Nouveaux etats : passthrough
+    "actif": "actif",
+    "mature": "mature",
+}
+
+
+def normalize_forging_state(raw_state):
+    """Mappe un forging_state (ancien ou nouveau) vers actif / mature / archived.
+
+    Retourne tuple (normalized, was_legacy) :
+    - normalized : "actif" / "mature" / "archived" / "actif" si valeur inconnue
+    - was_legacy : True si la valeur d'entree etait un ancien etat (8-states)
+    """
+    if not raw_state:
+        return ("actif", False)
+    if raw_state in LEGACY_STATE_MAP:
+        return (LEGACY_STATE_MAP[raw_state], raw_state not in ("actif", "mature", "archived"))
+    return ("actif", False)
+
+
 def detect_transition(
     forging_state: str,
     events_count: int,
@@ -309,65 +347,31 @@ def detect_transition(
     active_decisions_count: int,
     current_conviction: int,
 ) -> dict | None:
-    """Retourne le dict transition_proposal selon la table Cycle de vie gamma.
+    """Retourne None : depuis la refonte 2026-05-10, le moteur ne propose plus
+    de transition automatique. Toutes les transitions sont manuelles via
+    /documente avec validation Benjamin.
 
-    Couche 1 ne propose QUE la transition immediate a partir de l'etat actuel.
-    La couche 2 (Claude) chaine seed->debating->tentative en re-invoquant
-    forge_engine.py apres application.
+    Signature conservee pour retrocompat (les appelants existants recoivent
+    transition_proposal: null dans le JSON, ce qui n'a aucun effet de bord).
+
+    Pour fournir un hint informatif sans muter l'etat, utiliser plutot la
+    fonction next_step_hint().
     """
-    if forging_state == "seed":
-        if events_count >= 1 or open_discussions_count >= 1:
-            return {
-                "from": "seed",
-                "to": "debating",
-                "auto": True,
-                "conviction_bump": None,
-                "hint": None,
-            }
+    return None
+
+
+def next_step_hint(forging_state_normalized: str) -> str | None:
+    """Hint informatif sur la prochaine action possible pour Benjamin (jamais
+    appliquee automatiquement)."""
+    if forging_state_normalized == "actif":
+        return ("subject en accumulation. Le passage a `mature` est manuel : "
+                "decide quand l'opinion est suffisamment ferme.")
+    if forging_state_normalized == "mature":
+        return ("subject mature. Si contre-signal, repasser en `actif`. "
+                "/cross-modal-review (qualite synthese) ou /stress-test "
+                "(challenge adversarial) sont invocables a la demande.")
+    if forging_state_normalized == "archived":
         return None
-    if forging_state == "debating":
-        if active_decisions_count >= 1:
-            bump = 50 if current_conviction < 50 else None
-            return {
-                "from": "debating",
-                "to": "tentative",
-                "auto": True,
-                "conviction_bump": bump,
-                "hint": None,
-            }
-        return None
-    if forging_state == "tentative":
-        return {
-            "from": "tentative",
-            "to": "stress_testing",
-            "auto": False,
-            "conviction_bump": None,
-            "hint": "lance /stress-test pour confronter cette opinion",
-        }
-    if forging_state == "stress_testing":
-        return {
-            "from": "stress_testing",
-            "to": "doctrine",
-            "auto": False,
-            "conviction_bump": None,
-            "hint": "atteint via /stress-test (conviction >= 60 + survived: true)",
-        }
-    if forging_state == "doctrine":
-        return {
-            "from": "doctrine",
-            "to": "in_service",
-            "auto": False,
-            "conviction_bump": None,
-            "hint": "lance /compile-doctrine pour produire l'artefact executable",
-        }
-    if forging_state == "in_service":
-        return {
-            "from": "in_service",
-            "to": "under_review",
-            "auto": False,
-            "conviction_bump": None,
-            "hint": "manuel : declencher si contre-signal detecte",
-        }
     return None
 
 
@@ -378,11 +382,14 @@ def _light_read_subject(memory_path: Path) -> dict:
     """Lecture minimale d'un MEMORY.md : frontmatter uniquement, pas de cascade,
     pas de scan des sous-dossiers. Pour supplier stats sans recursion."""
     fm = parse_frontmatter(memory_path) or {}
+    state_raw = fm.get("forging_state")
+    state_norm, _ = normalize_forging_state(state_raw)
     return {
         "name": fm.get("name"),
         "type": fm.get("type"),
-        "current_state": fm.get("forging_state"),
-        "current_conviction": fm.get("conviction"),
+        "current_state": state_norm,
+        "current_state_raw": state_raw,
+        "current_conviction": fm.get("conviction"),  # deprecated, lecture seule
         "horizon": fm.get("horizon"),
         "created_at": str(fm.get("created_at"))[:10] if fm.get("created_at") else None,
         "linked_records": _normalize_linked_records(fm.get("linked_records") or []),
@@ -554,28 +561,27 @@ def forge_subject(subject_path: Path, cascade: bool = True) -> dict:
     active_decisions_count = max(len(active_decisions), len(fm_active_decisions))
     open_discussions_count = max(len(open_discussions), len(fm_open_discussions))
 
-    forging_state = fm.get("forging_state") or "seed"
-    current_conviction = fm.get("conviction") or 0
-    if not isinstance(current_conviction, int):
-        try:
-            current_conviction = int(current_conviction)
-        except (TypeError, ValueError):
-            current_conviction = 0
-    transition = detect_transition(
-        forging_state=forging_state,
-        events_count=len(events),
-        open_discussions_count=open_discussions_count,
-        active_decisions_count=active_decisions_count,
-        current_conviction=current_conviction,
-    )
+    forging_state_raw = fm.get("forging_state") or "actif"
+    forging_state_normalized, was_legacy = normalize_forging_state(forging_state_raw)
+    if was_legacy:
+        warnings.append(
+            f"forging_state legacy `{forging_state_raw}` mappe automatiquement vers "
+            f"`{forging_state_normalized}` (refonte 2026-05-10, 3 etats)"
+        )
+
+    # current_conviction conserve en lecture brute pour retrocompat (deprecated 2026-05-10).
+    # Plus utilise pour aucune decision automatique.
+    current_conviction_raw = fm.get("conviction")
 
     return {
         "subject_path": str(subject_path.relative_to(PROJECT_DIR)) if subject_path.is_relative_to(PROJECT_DIR) else str(subject_path),
         "memory_path": str(memory_path.relative_to(PROJECT_DIR)) if memory_path.is_relative_to(PROJECT_DIR) else str(memory_path),
         "name": fm.get("name") or subject_path.name,
         "type": fm.get("type"),
-        "current_state": forging_state,
-        "current_conviction": current_conviction,
+        "current_state": forging_state_normalized,
+        "current_state_raw": forging_state_raw,
+        "current_state_was_legacy": was_legacy,
+        "current_conviction": current_conviction_raw,  # deprecated, ignore
         "horizon": fm.get("horizon"),
         "created_at": str(fm.get("created_at"))[:10] if fm.get("created_at") else None,
         "linked_records": _normalize_linked_records(fm.get("linked_records") or []),
@@ -584,7 +590,8 @@ def forge_subject(subject_path: Path, cascade: bool = True) -> dict:
         "frontmatter_linked_subjects": fm.get("linked_subjects") or [],
         "stats": stats,
         "last_event": last_event,
-        "transition_proposal": transition,
+        "transition_proposal": None,  # Plus de transition auto depuis 2026-05-10
+        "next_step_hint": next_step_hint(forging_state_normalized),
         "events_summary": events,
         "active_decisions_summary": active_decisions,
         "open_discussions_summary": open_discussions,

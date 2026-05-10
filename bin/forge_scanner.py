@@ -1,20 +1,19 @@
 #!/usr/bin/env python3
 """
-forge_scanner.py — Scanner du Subject Pool (forge γ)
+forge_scanner.py — Scanner du Subject Pool
 
 Scanne tous les MEMORY.md du repo qui portent un frontmatter de subject (avec
-forging_state), détecte les alertes du cycle de vie γ et régénère
+forging_state), détecte les alertes opérationnelles et régénère
 entreprise/SUBJECTS-INDEX.md.
 
-Alertes détectées :
-- stagnation : forging_state in {seed, debating, tentative} depuis >30j sans
-  nouveau last_event
-- doctrine non compilée : forging_state == doctrine && conviction >= 80 &&
-  compiled_artifacts vide
-- stress test manquant : forging_state == tentative && conviction >= 60 sans
-  stress_tests passé
-- merger candidat : 2 subjects avec >70% overlap des linked_subjects et types
-  compatibles
+Alertes détectées (refonte 2026-05-10, cycle 3 états) :
+- stagnation : forging_state == actif depuis >30j sans nouveau last_event
+- merger candidat : 2 subjects horizon=permanent avec >70% overlap des
+  linked_subjects et types compatibles
+
+Alertes supprimées (cycle γ historique abandonné) :
+- doctrine_uncompiled (compile-doctrine abandonné, plus de seuil de conviction)
+- stress_test_missing (/stress-test découplé du cycle, optionnel à la demande)
 
 Usage :
   python3 forge_scanner.py              # Scan + affiche alertes au format Health-check
@@ -48,9 +47,20 @@ METRICS_FILE = PROJECT_DIR / "entreprise" / "SUBJECT-POOL-METRICS.md"
 EXCLUDE_DIRS = {".git", "node_modules", "venv", "__pycache__", ".claude", "templates"}
 
 STAGNATION_DAYS = 30
-DOCTRINE_CONVICTION_THRESHOLD = 80
-TENTATIVE_CONVICTION_THRESHOLD = 60
 MERGER_OVERLAP_THRESHOLD = 0.70
+
+# Mapping ancien cycle (8 etats) -> nouveau (3 etats). Cf. forge_engine.py.
+LEGACY_STATE_MAP = {
+    "seed": "actif", "debating": "actif", "tentative": "actif",
+    "stress_testing": "mature", "doctrine": "mature",
+    "in_service": "mature", "under_review": "mature",
+    "archived": "archived",
+    "actif": "actif", "mature": "mature",
+}
+
+
+def normalize_state(raw):
+    return LEGACY_STATE_MAP.get(raw, "actif")
 
 
 def find_subject_memory_files():
@@ -84,13 +94,11 @@ def detect_alerts(subjects):
 
     for path, fm in subjects:
         rel_path = path.relative_to(PROJECT_DIR)
-        forging_state = fm.get("forging_state")
-        conviction = fm.get("conviction", 0) or 0
-        compiled_artifacts = fm.get("compiled_artifacts") or []
-        stress_tests_passed = fm.get("stress_tests_passed", 0) or 0
+        state_raw = fm.get("forging_state")
+        state = normalize_state(state_raw)
 
-        # Alerte stagnation
-        if forging_state in ("seed", "debating", "tentative"):
+        # Alerte stagnation : subject `actif` depuis >30j sans last_event
+        if state == "actif":
             last_event = fm.get("last_event")
             last_date = None
             if isinstance(last_event, dict):
@@ -102,25 +110,7 @@ def detect_alerts(subjects):
                 alerts.append({
                     "type": "stagnation",
                     "subject": str(rel_path),
-                    "detail": f"{forging_state} depuis {days}j",
-                })
-
-        # Alerte doctrine non compilée
-        if forging_state == "doctrine" and conviction >= DOCTRINE_CONVICTION_THRESHOLD:
-            if not compiled_artifacts:
-                alerts.append({
-                    "type": "doctrine_uncompiled",
-                    "subject": str(rel_path),
-                    "detail": f"conviction {conviction}, aucun artefact compilé",
-                })
-
-        # Alerte stress test manquant
-        if forging_state == "tentative" and conviction >= TENTATIVE_CONVICTION_THRESHOLD:
-            if stress_tests_passed == 0:
-                alerts.append({
-                    "type": "stress_test_missing",
-                    "subject": str(rel_path),
-                    "detail": f"conviction {conviction} sans stress test",
+                    "detail": f"actif depuis {days}j (raw={state_raw})" if state_raw and state_raw != "actif" else f"actif depuis {days}j",
                 })
 
     # Alerte merger candidate (overlap linked_subjects)
@@ -167,12 +157,10 @@ def compute_metrics(subjects):
 
     stagnant = 0
     stagnant_subjects = []
-    compiled_30d = 0
-    compiled_artifacts_recent = []
-    doctrines_uncompiled = 0
 
     for path, fm in subjects:
-        state = fm.get("forging_state", "unknown")
+        state_raw = fm.get("forging_state", "unknown")
+        state = normalize_state(state_raw)
         by_state[state] += 1
 
         stype = fm.get("type", "unknown")
@@ -190,8 +178,8 @@ def compute_metrics(subjects):
         except ValueError:
             pass
 
-        # Stagnation
-        if state in ("seed", "debating", "tentative"):
+        # Stagnation : subject `actif` sans event depuis >30j
+        if state == "actif":
             last_event = fm.get("last_event")
             last_date = None
             if isinstance(last_event, dict):
@@ -205,35 +193,12 @@ def compute_metrics(subjects):
                 stagnant_subjects.append({
                     "name": fm.get("name") or path.parent.name,
                     "state": state,
+                    "state_raw": state_raw,
                     "days": days,
                     "path": str(rel.parent),
                 })
 
-        # Artefacts compilés sur 30 jours
-        artifacts = fm.get("compiled_artifacts") or []
-        for a in artifacts:
-            if isinstance(a, dict):
-                compiled_at = a.get("compiled_at")
-                days = days_since(compiled_at)
-                if days is not None and days <= 30:
-                    compiled_30d += 1
-                    compiled_artifacts_recent.append({
-                        "subject": fm.get("name") or path.parent.name,
-                        "type": a.get("type", "?"),
-                        "compiled_at": compiled_at,
-                        "artifact": a.get("artifact", "?"),
-                    })
-
-        # Doctrines non compilées
-        conviction = fm.get("conviction", 0) or 0
-        if state == "doctrine" and conviction >= 80 and not artifacts:
-            doctrines_uncompiled += 1
-
     active = total - by_state.get("archived", 0)
-    in_service = by_state.get("in_service", 0)
-    doctrine_state = by_state.get("doctrine", 0)
-    denom_compilation = in_service + doctrine_state
-    compilation_rate = (in_service / denom_compilation * 100) if denom_compilation > 0 else None
 
     return {
         "total": total,
@@ -243,34 +208,22 @@ def compute_metrics(subjects):
         "by_domain": dict(by_domain),
         "stagnant": stagnant,
         "stagnant_subjects": stagnant_subjects,
-        "compiled_30d": compiled_30d,
-        "compiled_artifacts_recent": compiled_artifacts_recent,
-        "compilation_rate": compilation_rate,
-        "doctrines_uncompiled": doctrines_uncompiled,
     }
 
 
 def regenerate_metrics(m):
-    """Régénère entreprise/SUBJECT-POOL-METRICS.md (Tier 1)."""
-    state_order = [
-        "seed", "debating", "tentative", "stress_testing",
-        "doctrine", "in_service", "under_review", "archived",
-    ]
-
-    rate_str = f"{m['compilation_rate']:.0f}%" if m["compilation_rate"] is not None else "n/a"
+    """Régénère entreprise/SUBJECT-POOL-METRICS.md (refonte 2026-05-10, 3 états)."""
+    state_order = ["actif", "mature", "archived"]
 
     lines = [
         "# SUBJECT-POOL-METRICS",
         "",
         f"_Régénéré automatiquement par forge_scanner.py — {datetime.now().isoformat(timespec='seconds')}_",
         "",
-        "## Tier 1 — Santé de base",
+        "## Santé de base",
         "",
         f"- **Volume actif** : {m['active']} subjects (sur {m['total']} total, dont {m['by_state'].get('archived', 0)} archivés)",
-        f"- **Subjects en stagnation** : {m['stagnant']} (>{30}j sans event en seed/debating/tentative)",
-        f"- **Artefacts compilés (30j)** : {m['compiled_30d']}",
-        f"- **Taux de compilation** : {rate_str}  _(in_service / (in_service + doctrine non compilées))_",
-        f"- **Doctrines non compilées** : {m['doctrines_uncompiled']}",
+        f"- **Subjects en stagnation** : {m['stagnant']} (>{30}j sans event, état `actif`)",
         "",
         "## Distribution par état",
         "",
@@ -279,8 +232,7 @@ def regenerate_metrics(m):
     ]
     for state in state_order:
         count = m["by_state"].get(state, 0)
-        if count or state in ("seed", "debating", "tentative", "doctrine", "in_service"):
-            lines.append(f"| `{state}` | {count} |")
+        lines.append(f"| `{state}` | {count} |")
     lines.append("")
 
     if m["by_type"]:
@@ -308,13 +260,6 @@ def regenerate_metrics(m):
             lines.append(f"- **{s['name']}** ({s['state']}, {s['days']}j sans event) — `{s['path']}/`")
         lines.append("")
 
-    if m["compiled_artifacts_recent"]:
-        lines.append("## Artefacts compilés (30 derniers jours)")
-        lines.append("")
-        for a in sorted(m["compiled_artifacts_recent"], key=lambda x: x["compiled_at"] or "", reverse=True):
-            lines.append(f"- {a['compiled_at']} — **{a['subject']}** : {a['type']} → `{a['artifact']}`")
-        lines.append("")
-
     lines.append("---")
     lines.append("")
     lines.append("_Pour la doctrine complète : plugin `claude-forge` — `rules/subject-pool.md` (cache runtime : `~/.claude/plugins/cache/rubee-labs/claude-forge/<version>/rules/subject-pool.md`)._")
@@ -336,13 +281,11 @@ def regenerate_index(subjects):
 
     by_state = {}
     for path, fm in subjects:
-        state = fm.get("forging_state", "unknown")
+        state_raw = fm.get("forging_state", "unknown")
+        state = normalize_state(state_raw)
         by_state.setdefault(state, []).append((path, fm))
 
-    state_order = [
-        "seed", "debating", "tentative", "stress_testing",
-        "doctrine", "in_service", "under_review", "archived",
-    ]
+    state_order = ["actif", "mature", "archived"]
 
     for state in state_order:
         if state not in by_state:
@@ -353,13 +296,12 @@ def regenerate_index(subjects):
         for path, fm in sorted(items, key=lambda x: str(x[0])):
             name = fm.get("name") or path.parent.name
             stype = fm.get("type", "?")
-            conv = fm.get("conviction", 0) or 0
             rel = path.parent.relative_to(PROJECT_DIR)
             links = fm.get("linked_subjects") or []
             link_preview = ", ".join(str(l) for l in links[:3])
             if len(links) > 3:
                 link_preview += f" (+{len(links) - 3})"
-            lines.append(f"- **{name}** ({stype}, conv {conv}) — `{rel}/`")
+            lines.append(f"- **{name}** ({stype}) — `{rel}/`")
             if link_preview:
                 lines.append(f"  - liens : {link_preview}")
         lines.append("")
@@ -405,9 +347,13 @@ def main():
     regenerate_index(subjects)
     regenerate_metrics(metrics)
 
-    # Résumé KPIs Tier 1 pour la ligne Health-check
-    rate_str = f"{metrics['compilation_rate']:.0f}%" if metrics["compilation_rate"] is not None else "n/a"
-    summary = f"{metrics['active']} actifs, {metrics['stagnant']} stagnants, {metrics['compiled_30d']} compilés/30j, taux {rate_str}"
+    # Résumé KPIs pour la ligne Health-check (refonte 2026-05-10 : 3 états)
+    by_state = metrics["by_state"]
+    summary = (
+        f"{metrics['active']} actifs ({by_state.get('actif', 0)} actif "
+        f"+ {by_state.get('mature', 0)} mature), "
+        f"{metrics['stagnant']} stagnants"
+    )
 
     if args.status:
         print(f"Forge: {len(alerts)} alerte(s) — {summary}")
