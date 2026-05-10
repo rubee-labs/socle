@@ -30,6 +30,10 @@ case "$1" in
     shift
     exec python3 "$BIN_DIR/forge_scanner.py" "$@"
     ;;
+  autolink)
+    shift
+    exec python3 "$BIN_DIR/autolink_engine.py" "$@"
+    ;;
   --version|-v)
     cat "$ROOT_DIR/VERSION"
     ;;
@@ -41,6 +45,7 @@ Sous-commandes :
   documente <subcommand> [args]   Engine /documente (prepare, infer-type, write-capture, ...)
   engine <subject-path>           Cycle γ et re-synthèse Quick (forge_engine)
   scanner [args]                  Régénérateur des index globaux (SUBJECTS-INDEX, METRICS)
+  autolink <subcommand> [args]    Typed graph (extract, graph-query, reconcile)
 
 Options :
   --version, -v                   Affiche la version

@@ -135,7 +135,74 @@ def parse_inline_list(value):
 
 
 def parse_inline_dict(value):
-    return {"_inline": value}
+    """Parse `{key: v, key: v}` → dict réel. Pas de nesting, valeurs scalaires uniquement."""
+    s = value.strip()
+    if not (s.startswith("{") and s.endswith("}")):
+        return {"_inline": value}
+    inner = s[1:-1].strip()
+    if not inner:
+        return {}
+    result = {}
+    for pair in inner.split(","):
+        if ":" not in pair:
+            continue
+        k, v = pair.split(":", 1)
+        result[k.strip()] = parse_value(v.strip())
+    return result
+
+
+def parse_typed_linked_types(raw):
+    """Décode `typical_linked_types` en liste normalisée de {name, type}.
+
+    Supporte deux formats (rétrocompatibilité) :
+    - Ancien : liste plate de types (`[supplier, product-line]`) → name == type
+    - Nouveau : liste de paires inline (`[{name: ordered_from, type: supplier}]`)
+
+    Retourne toujours `[{"name": str, "type": str}, ...]`. Items invalides
+    silencieusement ignorés.
+    """
+    result = []
+    if not raw or not isinstance(raw, list):
+        return result
+    for item in raw:
+        if isinstance(item, str):
+            stripped = item.strip()
+            if stripped.startswith("{"):
+                parsed = parse_inline_dict(stripped)
+                if parsed and "name" in parsed and "type" in parsed:
+                    result.append({"name": str(parsed["name"]), "type": str(parsed["type"])})
+            elif stripped:
+                result.append({"name": stripped, "type": stripped})
+        elif isinstance(item, dict):
+            if "_inline" in item:
+                parsed = parse_inline_dict(item["_inline"])
+                if parsed and "name" in parsed and "type" in parsed:
+                    result.append({"name": str(parsed["name"]), "type": str(parsed["type"])})
+            elif "name" in item and "type" in item:
+                result.append({"name": str(item["name"]), "type": str(item["type"])})
+    return result
+
+
+def parse_subject_slug(slug, known_types=None):
+    """Décode un slug `<type>:<name>` ou fallback `<type>-<name>`.
+
+    Format canonique : `supplier:weifang` (séparateur `:`).
+    Fallback historique : `supplier-weifang` (séparateur `-`, ambigu) — résolu
+    seulement si `known_types` est fourni et qu'un préfixe correspond.
+
+    Retourne `{"type": str|None, "name": str, "raw": str}`.
+    """
+    if not slug:
+        return {"type": None, "name": "", "raw": slug or ""}
+    if ":" in slug:
+        t, n = slug.split(":", 1)
+        return {"type": t.strip(), "name": n.strip(), "raw": slug}
+    if known_types:
+        for t in sorted(known_types, key=len, reverse=True):
+            prefix = f"{t}-"
+            if slug.startswith(prefix):
+                return {"type": t, "name": slug[len(prefix):], "raw": slug}
+    return {"type": None, "name": slug, "raw": slug}
 
 
 def days_since(date_str):
