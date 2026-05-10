@@ -34,6 +34,10 @@ case "$1" in
     shift
     exec python3 "$BIN_DIR/autolink_engine.py" "$@"
     ;;
+  skillify)
+    shift
+    exec python3 "$BIN_DIR/skillify_engine.py" "$@"
+    ;;
   --version|-v)
     cat "$ROOT_DIR/VERSION"
     ;;
@@ -46,6 +50,7 @@ Sous-commandes :
   engine <subject-path>           Cycle γ et re-synthèse Quick (forge_engine)
   scanner [args]                  Régénérateur des index globaux (SUBJECTS-INDEX, METRICS)
   autolink <subcommand> [args]    Typed graph (extract, graph-query, reconcile)
+  skillify <subcommand> [args]    Compilation continue (scaffold, check, audit)
 
 Options :
   --version, -v                   Affiche la version

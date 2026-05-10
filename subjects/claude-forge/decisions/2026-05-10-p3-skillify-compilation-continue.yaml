@@ -1,0 +1,89 @@
+---
+date: 2026-05-10
+type: decision
+produced_by: human
+decided_by: benjamin
+status: active
+title: "P3 — Skillify (compilation continue de workflows ad hoc en skills)"
+upstream_discussions:
+  - benjamin-perso/Forge-lab/analyses/2026-05-09-meta-meta-prompting-garry-tan.md
+parameters:
+  pattern_origine: gbrain_skillify_garry_tan
+  verbes_cli: [scaffold, check, audit]
+  verbes_non_repris: [routing-eval]
+  format_sortie: json_stdout
+  sentinel: SKILLIFY_STUB
+  hygiene_vs_critical: distingués (8 critiques + 2 hygiène non bloquants)
+artefacts_livres:
+  - claude-forge/bin/skillify_engine.py (~430 LoC)
+  - claude-forge/bin/forge (dispatcher: forge skillify ...)
+  - claude-forge/skills/skillify/SKILL.md (orchestrateur LLM, 6 phases)
+  - claude-forge/tests/test_skillify.py (9 tests)
+checks_critiques:
+  - skill_md_exists
+  - frontmatter_valid (name + description ≥30 chars)
+  - section_when_to_use
+  - section_instructions (Instructions / Workflow / Phases)
+  - section_gotchas
+  - section_evals
+  - no_residual_stubs (sentinelles SKILLIFY_STUB)
+  - description_long_enough
+checks_hygiene:
+  - scripts_dir
+  - tests_dir
+adaptations_vs_garry:
+  - "Pas de routing-eval (Forge n'a pas de fixtures de triggers à scorer ; Claude Code dispatche par description du frontmatter, pas par resolver explicite)"
+  - "Distinction critical/hygiene : claude-forge a ses engines dans bin/ partagé, pas dans skills/<name>/scripts/. scripts_dir/tests_dir absents = warning, pas fail."
+  - "Sentinelle SKILLIFY_STUB : check exclut le contenu backtické markdown pour permettre à la doc du skill skillify de mentionner le sentinel sans faux positif."
+validation_test_reel:
+  - "forge skillify audit --target skills/ → 4 skills existants en warn (scripts_dir/tests_dir hygiène), 0 fail critique"
+  - "forge skillify check skills/skillify → ok=true (dogfooding réussi)"
+  - "forge skillify scaffold verify-webhooks → 5 stubs créés correctement"
+  - "9 tests unittest verts (TestScaffold, TestCheck, TestAudit)"
+regressions_pre_existantes_non_corrigees:
+  - "tests/test_documente_engine.py — 28 failures (le test pointe documente_engine.py à la racine, le fichier vit dans bin/). Régression antérieure à mes changements (vérifié via git stash + checkout HEAD~3). Hors scope P3."
+prochaines_etapes:
+  - P2 cross-modal eval (Vague 2, suite immédiate)
+  - P4 métrique retrieval (Vague 3)
+---
+
+# P3 — Skillify (compilation continue)
+
+## Contexte
+
+L'analyse `/FORGE-analyse` du 9 mai sur le manifeste « Meta-Meta-Prompting » de Garry Tan a identifié `skillify` comme une primitive structurelle manquante : la possibilité de transformer un workflow ad hoc qu'on vient d'exécuter manuellement en skill testé et réutilisable. Garry l'utilise comme moteur de compilation continue (« You hit a new failure. You fix it once. You say "skillify it!". Now the fix is permanent. »).
+
+Forge avait théoriquement `/compile-doctrine` (artefact compilé après seuil de conviction ≥80) mais 0 artefact n'a été produit à ce jour — le pattern Garry est plus simple et déjà éprouvé : compiler dès qu'un workflow marche manuellement, pas après un seuil arbitraire.
+
+## Décision
+
+Implémentation Vague 2 (P3) avec 3 sous-commandes CLI au lieu des 4 de Garry :
+
+1. **`forge skillify scaffold <name>`** — crée 5 stubs : `SKILL.md` + `scripts/<name>.py` + `tests/test_<name>.py` + `fixtures/<name>.routing.jsonl` + `EVAL.md`. Cible `entreprise/skills/` si présent, sinon `skills/`.
+2. **`forge skillify check <skill-path>`** — audit 10-points (8 critiques + 2 hygiène) sur un skill existant.
+3. **`forge skillify audit [--target <dir>] [--strict]`** — audit global d'un répertoire de skills.
+
+Pas de **`routing-eval`** dans cette vague — Forge n'a pas de fixtures de triggers à scorer (Claude Code dispatche les skills via la `description` du frontmatter, pas via un resolver explicite). Pourra être ajouté plus tard si Forge se dote d'un resolver à la GBrain.
+
+### Distinction critique/hygiène
+
+Adaptation au pattern claude-forge où les engines (`forge_engine.py`, `documente_engine.py`, etc.) vivent dans `bin/` partagé, pas dans `skills/<name>/scripts/`. Donc l'absence de `scripts/` ou `tests/` au niveau du skill n'est pas une faute critique mais un signal d'hygiène. Le check renvoie `ok=true` sur les 8 critiques, et signale en `failed_hygiene` les 2 manquants.
+
+### Sentinelle SKILLIFY_STUB et faux positif
+
+Le sentinel `SKILLIFY_STUB` est inséré dans tous les stubs générés, et doit être remplacé pour qu'un skill passe le check. Mais la doc du skill `/skillify` lui-même DOIT mentionner ce sentinel pour expliquer le concept. Solution : `_count_residual_stubs` exclut les occurrences à l'intérieur de blocs backtickés (` ```...``` ` et `` `...` ``) dans les fichiers `.md`. Dogfooding validé : `forge skillify check skills/skillify` retourne `ok: true`.
+
+## Validation
+
+- 9 tests unittest passent (TestScaffold ×3, TestCheck ×5, TestAudit ×1)
+- `forge skillify audit --target skills/` sur les 4 skills existants de claude-forge retourne 0 critique + warnings d'hygiène attendus
+- `forge skillify check` sur skillify lui-même retourne `ok: true`
+- Le skill `/skillify` (orchestrateur LLM) est livré avec 6 phases : capturer → scaffold → compléter → check → tester réel → commit
+
+## Régression pré-existante non corrigée
+
+`tests/test_documente_engine.py` a 28 failures — vérifié via `git stash` + `git checkout HEAD~3` que ces failures existaient déjà avant mes changements. Le test pointe `documente_engine.py` à la racine, alors que le fichier vit dans `bin/`. Hors scope P3 — à traiter dans un ticket séparé.
+
+## Suite
+
+Vague 2 continue avec **P2 — Cross-modal eval** : module Python qui prépare un prompt d'évaluation pour qu'un skill markdown dispatche 2-3 modèles (Opus 4.7 + Sonnet 4.6 + Haiku 4.5 via Task tool ou SDK Claude Agent imbriqué — pas de clé API directe).
