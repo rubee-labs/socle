@@ -279,12 +279,21 @@ forge documente commit-atomic \
   --message "docs: <type> — <sujet court>
 
 - subject racine : <subject-path>
-- cascade : <linked_subjects affectés>
-- transitions γ auto : <liste>" \
+- cascade : <linked_subjects affectés>" \
   --push
 ```
 
 Si la commande retourne `noop: true` (idempotent — 2ᵉ invocation sans nouvel input) → afficher « rien à re-synthétiser », pas de commit vide.
+
+### Hints post-commit (suggestions humaines, non-bloquantes)
+
+À la fin de Phase J, après le commit réussi, **suggérer à Benjamin** ces deux pistes si elles s'appliquent — sans rien exécuter automatiquement :
+
+1. **`/skillify`** — Si la session a fait émerger un **workflow ad hoc répété** que Benjamin a exécuté à la main (suite de commandes, raisonnement reproductible, séquence de validation) qui mérite d'être réifié en skill. Détecter ce pattern revient à se poser la question : *« si je devais refaire la même chose la semaine prochaine, est-ce qu'un skill me ferait gagner du temps ? »*. Si oui, suggérer : *« Considère `/skillify <pattern>` avant la prochaine session pour éviter de refaire ce raisonnement à la main »*. Pas de déclenchement auto — Benjamin décide.
+
+2. **`/cross-modal-review`** — Si Benjamin envisage de passer le subject de `actif` à `mature` (transition manuelle), suggérer d'invoquer d'abord `/cross-modal-review` pour vérifier que la synthèse Quick + Détails tient la route avant de la considérer comme stable. Pas de déclenchement auto — pure suggestion.
+
+Ces hints sont des signaux pédagogiques — la décision reste humaine. Le pattern Garry Tan repose volontairement sur l'humain qui dit « skillify it » plutôt que sur une détection automatique (qui produirait du bruit sur des workflows non répétés ou trop vagues).
 
 ## Workflow — Classique (legacy, hors subject pool)
 

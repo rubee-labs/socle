@@ -95,12 +95,27 @@ Les champs `conviction` (0..100), `stress_tests_passed`, `compiled_artifacts` du
 | `/subject-create <type> <name>` | actif | Instancie un subject à partir d'un type existant. **Invocable directement ou indirectement via `/documente`** (mode silencieux). |
 | `/documente <subject-path> [--type <type>]` | actif | **Orchestrateur unique du subject pool**. Création paresseuse type/instance si absents, capture conversation (discussion + décision), re-synthèse continue (Quick + Détails régénérés, cascade horizontale 1 niveau). **Plus de transitions auto** depuis 2026-05-10. |
 | `/subject-merge <A> <B>` | actif | Soudure de 2 subjects (validation Benjamin obligatoire). |
-| `/skillify` | actif (depuis 2026-05-10) | Compile un workflow ad hoc en skill réutilisable (SKILL.md + script + tests + fixtures). Compilation continue à l'usage, pattern Garry Tan. Voir `bin/skillify_engine.py`. |
-| `/cross-modal-review` | actif (depuis 2026-05-10) | Évalue la qualité d'un MEMORY.md re-synthétisé (4 axes : cohérence, complétude, spécificité, citations) via 2-3 modèles distincts (Opus + Sonnet + Haiku). Voir `bin/eval_engine.py`. |
+| `/skillify` | actif (depuis 2026-05-10) | Compile un workflow ad hoc en skill réutilisable (SKILL.md + script + tests + fixtures). Compilation continue à l'usage, pattern Garry Tan. **Trigger humain explicite** (« skillify it ») — pas de déclenchement automatique. Hint post-commit suggéré par `/documente` Phase J si workflow ad hoc répété détecté. Voir `bin/skillify_engine.py`. |
+| `/cross-modal-review` | actif (depuis 2026-05-10) | Évalue la qualité d'un MEMORY.md re-synthétisé (4 axes : cohérence, complétude, spécificité, citations) via 2-3 modèles distincts (Opus + Sonnet + Haiku). **À invoquer typiquement avant transition `actif → mature`** — pour vérifier que la synthèse tient la route avant de considérer le subject comme stable. Voir `bin/eval_engine.py`. |
 | `/stress-test <subject-path>` | optionnel, à la demande | Challenge un subject sous 3 perspectives (contradicteur, steelman, yagni). **Découplé du cycle** depuis 2026-05-10 — invocable à tout moment quand Benjamin doute, sans transition d'état ni mutation de conviction. |
 | `/compile-doctrine` | **abandonné** | Skill théorique jamais utilisé en pratique. Sa branche « procédurale → skill » est désormais portée par `/skillify`. Les autres branches (règle / agent SDK / injection / monitor / FK) seront instruites au cas par cas si le besoin émerge. |
 
 Le mot **« forge »** désigne le pattern subject pool et le moteur Python sous-jacent (`forge_engine.py`, `forge_lib.py`, `forge_scanner.py`, `autolink_engine.py`, `skillify_engine.py`, `eval_engine.py`).
+
+### Quand invoquer ces skills (triggers humains attendus)
+
+Aucun de ces skills n'a de déclencheur automatique — la décision reste humaine. Voici les **triggers naturels** où Benjamin doit y penser :
+
+| Trigger | Skill suggéré |
+|---|---|
+| Tu viens de faire à la main un workflow que tu sais que tu vas refaire (≥ 2 occurrences déjà observées) | `/skillify` |
+| Tu envisages de passer un subject de `actif` à `mature` | `/cross-modal-review` (vérifier la qualité de la synthèse) |
+| Tu doutes d'un subject `mature` (la conclusion tient-elle sous adversité ?) | `/stress-test` |
+| Un contre-signal apparaît sur un subject `mature` (data nouvelle qui contredit) | repasser le subject à `actif` via `/documente` (transition manuelle) |
+| Un workflow révèle que 2 subjects sont en réalité la même entité | `/subject-merge` |
+| Un nouveau pattern de subject émerge qui n'a pas de type | `/subject-create-type` (souvent invoqué via `/documente` lazy) |
+
+`/documente` Phase J post-commit affiche des **hints** sur `/skillify` et `/cross-modal-review` quand les conditions sont remplies — pas d'exécution auto, juste un rappel pédagogique.
 
 Le scanner `forge scanner` (binaire claude-forge) peut tourner en hook SessionStart pour régénérer un index global des subjects (par exemple `SUBJECTS-INDEX.md` à la racine du repo). Configuration spécifique au projet — voir le hook intégrateur côté repo consommateur.
 
