@@ -59,7 +59,11 @@ Poser les questions une par une (AskUserQuestion ou directement, selon contexte)
 4. **Typical duration** (si bounded) : durée typique en jours/semaines (ex: `90d`).
 5. **Analysis dimensions** (4 à 8 dimensions) : **EN FRANÇAIS snake_case** car contenu métier. Pour chaque dimension : la formuler comme une **question** que l'analyste se pose en notant 0..10. Ex: `tresorerie` → "La commande charge-t-elle la trésorerie au bon moment ?". Refuser les valeurs anglaises (`cash_flow` → recommander `tresorerie`).
 6. **Expected events** : liste typique des events (ordre chronologique préféré), **EN FRANÇAIS snake_case**. Ex pour une commande : `alerte_stock`, `email_fournisseur_disponibilite`, `paiement`, `email_bl_pret`. Refuser les valeurs anglaises.
-7. **Typical linked types** : autres types vers lesquels une instance pointera typiquement (ex: `supplier`, `product-line`). **Anglais imposé** car ce sont des noms de types (taxonomie).
+7. **Typical linked types — paires {nom_de_relation, type_cible}** : autres types vers lesquels une instance pointera typiquement, **avec le nom de la relation** pour chaque cible. **Anglais snake_case imposé** car ce sont des taxonomies. Pour chaque type cible, demander à l'utilisateur la sémantique de la relation :
+   - Ex pour un type `supplier-order` : `{name: ordered_from, type: supplier}`, `{name: contains, type: product-line}`, `{name: shipped_via, type: freight-forwarder}`.
+   - Ex pour un type `marketing-campaign` : `{name: promotes, type: product-line}`, `{name: depends_on_supplier, type: supplier}`.
+   - Le nom de la relation doit décrire **ce que fait l'instance source vis-à-vis de la cible**. Préférer des verbes au passé ou présent (`ordered_from`, `produces`, `shipped_via`, `handled_by`, `promotes`) plutôt que des génériques (`linked`, `related`).
+   - Si l'utilisateur hésite ou propose juste une liste plate de types, le format ancien `[supplier, product-line]` reste accepté en rétrocompatibilité (le moteur autolink fera fallback `name == type`), mais on perd la sémantique métier — toujours pousser pour le format enrichi.
 8. **Skills associés** : au minimum `analyze` (équivalent /CE-analyse) et `archive` (clôture du subject avec remontée des leçons). Noms slash-command en français OK.
 9. **Localisation** : où vit ce type ?
    - `services/<X>/types/<nom>/` si rattaché à un service
@@ -71,6 +75,14 @@ Poser les questions une par une (AskUserQuestion ou directement, selon contexte)
 Composer le fichier en suivant la structure validée du type d'exemple `services/achats/types/supplier-order/REFERENCE.md`. Sections obligatoires :
 
 - **Frontmatter YAML** : `type, parent_type, horizon, typical_duration, analysis_dimensions, expected_events, typical_linked_types, skills`
+- **Format de `typical_linked_types`** : liste YAML de paires inline `{name, type}`, une entrée par ligne. Exemple :
+  ```yaml
+  typical_linked_types:
+    - {name: ordered_from, type: supplier}
+    - {name: contains, type: product-line}
+    - {name: shipped_via, type: freight-forwarder}
+  ```
+  Ne pas utiliser le format ancien (liste plate de strings) sauf si l'utilisateur a refusé de nommer les relations en Phase 2.
 - **Définition** (1 paragraphe : ce que ce type représente)
 - **Quand utiliser** + **Quand NE PAS utiliser**
 - **Dimensions d'analyse** (table : dimension, échelle, question)
@@ -140,6 +152,7 @@ Suite : /subject-create customs-incident incident-2026-08-rotterdam
 - **EVAL 1** : Le type créé n'existe-t-il pas déjà sous un autre nom proche ? (Pass si Phase 1 exécutée et type-doublon confirmé absent / Fail si doublon détecté en post-creation)
 - **EVAL 2** : Toutes les `analysis_dimensions` ont-elles une question binaire associée dans REFERENCE.md ET sont-elles dans la langue de l'utilisateur (français pour Rubee) ? (Pass si chaque dimension a sa question + en français / Fail sinon, notamment si valeurs anglaises type `cash_flow`)
 - **EVAL 2bis** : Les `expected_events` sont-ils en français snake_case ? (Pass si en français / Fail si valeurs anglaises type `stock_alert`)
+- **EVAL 2ter** : Les `typical_linked_types` utilisent-ils le format enrichi `[{name, type}]` avec un nom de relation explicite par cible ? (Pass si chaque entrée est une paire `{name: <verbe>, type: <type-cible>}` / Warn si liste plate de strings — accepté pour rétrocompatibilité mais à pousser au format enrichi)
 - **EVAL 3** : Le `TEMPLATE.md` est-il bien un squelette générique (sans valeurs spécifiques d'une instance) ? (Pass si tous les champs de valeur sont en `<placeholder>` ou `null` ou listes vides / Fail si valeurs en dur)
 - **EVAL 4** : La localisation choisie respecte-t-elle la règle "au plus près du domaine principal" ? (Pass si type dans le service principal d'usage / Fail si dans `entreprise/` alors qu'un seul service l'utilise)
 - **EVAL 5** : Validation Benjamin a-t-elle été obtenue avant écriture ? (Pass si confirmation explicite reçue / Fail si fichiers créés sans validation)

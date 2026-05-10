@@ -189,9 +189,25 @@ Le JSON contient : `current_state`, `current_conviction`, `last_event`, `stats`,
 
 ### Phase F — Régénérer Quick + Détails (LLM)
 
-À partir de `forge_result.current_state`, `events_summary`, `active_decisions_summary`, etc., rédiger :
+**F.1 — Extraire les typed edges (Python autolink)**
 
-- `## Quick` (<100 mots, ton synthétique factuel)
+Avant de rédiger le Quick, invoquer l'engine autolink pour récupérer les relations typées sortantes du subject (extraction déterministe, zéro LLM, basée sur les `linked_subjects` du frontmatter croisés avec `typical_linked_types` du type) :
+
+```bash
+forge autolink extract <subject-path>
+```
+
+Sortie JSON `{ok, subject_name, subject_type, edges: [{name, target_slug, target_type, target_name}, ...], warnings}`. Stocker pour Phase F.2 et Phase H.5.
+
+**F.2 — Rédiger Quick + Détails**
+
+À partir de `forge_result.current_state`, `events_summary`, `active_decisions_summary`, et des `edges` extraits en F.1, rédiger :
+
+- `## Quick` (<100 mots, ton synthétique factuel). Inclure une ligne **`Liens forts`** listant les typed edges, format `<relation> <target_slug>` séparés par ` ; `. Exemple :
+  ```
+  Liens forts : ordered_from supplier:weifang ; contains product-line:guirlande-guinguette ; shipped_via freight-forwarder:dhl
+  ```
+  Si aucun edge typé n'existe (subject sans `linked_subjects`), omettre la ligne. Si seulement des edges génériques (`name: linked` faute de `typical_linked_types` enrichi), les lister quand même mais Benjamin saura que la doctrine du type mérite d'être enrichie.
 - `## Détails` (synthèse narrative, **préserver les sous-sections custom** comme `### Notes libres`, `### Stress tests à prévoir`)
 
 Écrire ces sections dans le `MEMORY.md` via Edit (le frontmatter sera patché en Phase G séparément).
@@ -231,6 +247,21 @@ forge documente cascade-last-event \
 ```
 
 Puis le LLM régénère le `## Quick` du linked subject (Edit), **PAS** le `## Détails` (réservé à l'invocation directe sur ce subject).
+
+### Phase H.5 — Validation typed graph (Python autolink, non bloquante)
+
+Après cascade, ré-invoquer autolink sur le subject racine pour valider la cohérence du typed graph **après** les éventuelles modifications de `linked_subjects` :
+
+```bash
+forge autolink extract <subject-path>
+```
+
+Inspecter le champ `warnings` du JSON :
+
+- `slug "<X>" non résolu (préfixe de type inconnu)` → un `linked_subjects` pointe vers un slug dont le type ne se déduit pas. À mentionner à Benjamin (probable typo ou type futur non encore créé).
+- `type cible "<X>" absent de typical_linked_types pour type "<Y>"` → un linked_subject est valide mais sa relation n'est pas déclarée dans `typical_linked_types` du type courant. Suggérer à Benjamin d'enrichir le type.
+
+**Affichage** : si warnings, les lister dans la conversation avec un bullet `⚠️`. **Ne pas bloquer Phase J** — c'est un signal pédagogique, pas une erreur. Si zéro warning, ne rien afficher (silence positif).
 
 ### Phase I — Scanner les exécutants impactés (Python pour scan, LLM pour jugement)
 

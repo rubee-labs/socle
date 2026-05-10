@@ -132,6 +132,57 @@ La cascade 1-niveau est un choix de doctrine pour préserver la rapidité (<30s/
 
 ---
 
+## Typed graph (auto-link déterministe)
+
+Depuis 2026-05-10, les `linked_subjects` d'une instance peuvent être **typés** par la sémantique métier de la relation (ex: `ordered_from`, `contains`, `shipped_via`). Le moteur `bin/autolink_engine.py` est l'extracteur déterministe (zéro LLM, regex + frontmatter) qui croise :
+
+- les `linked_subjects` de l'instance (frontmatter du `MEMORY.md`)
+- avec les `typical_linked_types` du type parent (frontmatter du `REFERENCE.md`)
+
+Pour produire un graph typé : pour chaque `linked_subject`, retrouver le type cible et lui attribuer le nom de relation déclaré dans le type parent.
+
+### Format `typical_linked_types`
+
+Deux formats acceptés (le second en rétrocompatibilité) :
+
+**Format enrichi (recommandé, depuis 2026-05-10)** — paires `{name, type}` :
+
+```yaml
+typical_linked_types:
+  - {name: ordered_from, type: supplier}
+  - {name: contains, type: product-line}
+  - {name: shipped_via, type: freight-forwarder}
+```
+
+`name` = nom de la relation (verbe au passé/présent, snake_case anglais). `type` = type cible (kebab-case anglais).
+
+**Format ancien (rétrocompatibilité)** — liste plate de strings :
+
+```yaml
+typical_linked_types: [supplier, product-line, freight-forwarder]
+```
+
+Le parser fait un fallback `name == type` (relation = nom du type), ce qui permet aux types historiques de continuer à fonctionner sans migration. Mais on perd la sémantique métier.
+
+### Commandes `forge autolink`
+
+| Commande | Effet |
+|---|---|
+| `forge autolink extract <subject-path>` | Extrait les typed edges sortants d'un subject. JSON : `edges: [{name, target_slug, target_type, target_name}, ...]` + `warnings`. |
+| `forge autolink graph-query <slug> [--type X] [--direction in/out/both] [--depth N]` | Parcourt le graph depuis un slug. Filtre optionnel sur le nom de la relation. BFS limité par `--depth`. |
+| `forge autolink reconcile <subject-path>` | Équivalent à `extract` (idempotent par construction — pas de stockage du graph, recalcul à la volée). |
+
+### Intégration au flow `/documente`
+
+`/documente` invoque `forge autolink extract` automatiquement :
+
+- **Phase F** : pour enrichir le `## Quick` du subject avec une ligne `Liens forts` listant les typed edges (ex: `Liens forts : ordered_from supplier:weifang ; contains product-line:guirlande-guinguette`).
+- **Phase H.5 (validation pré-commit, non bloquante)** : pour signaler les `linked_subjects` orphelins ou les types cibles absents de `typical_linked_types` (suggestion d'enrichir le type).
+
+Le graph **n'est pas persisté** (ni dans le frontmatter, ni dans un sidecar) — il est recalculé à la volée à chaque invocation. Doctrine de simplicité : une seule source de vérité (les `MEMORY.md` + `REFERENCE.md`), pas de cache à invalider.
+
+---
+
 ## Nomenclature bilingue
 
 **Règle stricte** : la **taxonomie/squelette** est en **anglais** (universel, partagée par toute l'équipe), mais le **contenu métier** reste en **langue de l'utilisateur** (français pour Rubee). Tous les identifiants utilisent snake_case.
@@ -211,8 +262,13 @@ expected_events:
   - email_bl_pret
   - booking_container
   - reception_entrepot
-# Liens vers autres types : anglais (taxonomie)
-typical_linked_types: [supplier, product-line, freight-forwarder]
+# Liens vers autres types : anglais (taxonomie). Format enrichi recommandé (paires {name, type})
+# qui permet à `forge autolink` d'inférer un graph typé. Format ancien (liste plate) accepté
+# en rétrocompatibilité (fallback : name == type).
+typical_linked_types:
+  - {name: ordered_from, type: supplier}
+  - {name: contains, type: product-line}
+  - {name: shipped_via, type: freight-forwarder}
 skills:
   analyze: /supplier-order-analyze
   archive: /supplier-order-archive
