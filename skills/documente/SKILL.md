@@ -16,7 +16,7 @@ type_anthropic: 4
 visibilite: entreprise
 auteur: Benjamin
 date_creation: 2026-03-31
-version: 2.6
+version: 2.7
 tags: [documentation, decision, discussion, memory, subject-pool, forge, orchestrator, workflow]
 effort: low
 outils_requis: []
@@ -38,10 +38,17 @@ Le mot **« forge »** désigne le cycle de vie γ et le moteur Python sous-jace
 
 ## Argument
 
-`/documente <subject-path> [--type <type>]`
+`/documente [<subject-path>] [--type <type>]`
 
-- `<subject-path>` : chemin vers le dossier du subject (peut être inexistant — sera créé). Ex: `services/marketing/subjects/google-ads-brumeaux/`.
+- `<subject-path>` (optionnel depuis v2.7) : chemin vers le dossier du subject (peut être inexistant — sera créé). Ex: `services/marketing/subjects/google-ads-brumeaux/`.
 - `--type <type>` (optionnel) : type du subject. Utilisé par les skills appelants pour éviter l'inférence. Ex: `--type marketing-campaign`. Si omis, `/documente` infère ou demande.
+
+**Inférence du path quand omis (v2.7)** : si l'utilisateur invoque `/documente` sans argument, le LLM doit inférer un path depuis le contexte de session **avant** d'appeler `forge documente prepare`. Heuristique en cascade :
+1. Si la conversation porte sur un fichier identifiable (skill, MCP, tool, brief) → remonter au service propriétaire (`services/<x>/`).
+2. Si la conversation porte sur un objet métier durable (commande, fournisseur, campagne) → proposer le path subject pool correspondant (`services/<x>/subjects/<name>/`).
+3. Si rien d'identifiable → demander à Benjamin avec deux propositions concrètes (pas de menu vide).
+
+Une fois le path inféré, `forge documente prepare` retourne `service_root` + `service_structure_exists` + `proposed_default_path`. La Phase L0.0 ci-dessous traite le cas où la structure legacy est absente au niveau service.
 
 ## Quand utiliser
 
@@ -65,6 +72,7 @@ Le mot **« forge »** désigne le cycle de vie γ et le moteur Python sous-jace
 - **Commit atomique** : committer discussion + decision + memory.md (subject + cascade) ensemble dans un seul commit.
 - **Propagation = proposition, pas imposition** : la Phase I (`scan-impacted` + jugement LLM) propose les modifications aux fichiers exécutants. L'utilisateur valide chaque modification.
 - **Critère subject pool vs entité (v2.6)** : à chaque invocation `/documente` sur un path non-subject-pool, appliquer le critère positif de Phase L0 (voir détail dans la section Phase L0). Le **défaut est l'entité** (`<entité>/decisions/`), pas le subject pool. Subject pool est réservé aux **objets métier durables avec cycle de vie γ** (suppliers, commandes, campagnes, décisions architecturales long-terme). Une modification de code/comportement d'UNE entité (skill, MCP, tool) reste dans son `decisions/` — pas de proposition de migration. Ne pas re-proposer si Benjamin a refusé sur ce path précédemment (marqueur `migration_subject_pool: refused` dans une décision).
+- **Structure service absente (v2.7)** : si `forge documente prepare` retourne `service_structure_exists: false` avec un `service_root` identifié (ex: `services/marketing/` existe mais `services/marketing/discussions/` et `services/marketing/decisions/` n'existent pas), la Phase L0.0 propose la création de la structure au niveau service par défaut (cohérent avec `services/achats/decisions/`, `services/tech/decisions/`). Subject pool reste une alternative explicite, mais n'est PAS proposé pour les modifications de code d'entité — seulement pour objets métier durables (cf. critère Phase L0). Une seule `AskUserQuestion` suffit (pas deux comme l'incident 2026-05-11 sur marketing).
 - **Legacy aussi instrumenté Python (v2.3)** : depuis la bascule, les Phases L2/L3/L5/L6 du workflow legacy invoquent `documente_engine.py` (`write-capture`, `scan-impacted`, `commit-atomic`). Phase L4 (MAJ MEMORY.md format markdown) reste LLM only car le format n'est pas du frontmatter mais des sections markdown.
 - **Fichiers temp uniques par invocation (v2.4)** : utiliser `mktemp /tmp/documente-*-body.XXXXXX` pour les body files passés à `write-capture`. Sinon 2 `/documente` parallèles écrasent leurs body files mutuellement (race condition observée le 2026-05-04 entre `/documente skills/documente` et `/documente knowledge-coordinator`). **Attention syntaxe BSD/macOS** : les `XXXXXX` doivent être en SUFFIXE final, pas suivis d'une extension (`.md` literal écrirait XXXXXX littéralement). L'extension n'est pas requise — `write-capture` lit le contenu, pas le nom. Conserver la variable shell (`$DOC_BODY`) entre Phase C/L2 et Phase D/L3, puis `rm -f` après écriture.
 
@@ -297,9 +305,31 @@ Ces hints sont des signaux pédagogiques — la décision reste humaine. Le patt
 
 ## Workflow — Classique (legacy, hors subject pool)
 
-Quand Phase A (`prepare`) détecte un contexte non-subject-pool (`is_subject_pool: false`), exécuter Phase L0 (proposition migration) puis suivre Phases L1-L6.
+Quand Phase A (`prepare`) détecte un contexte non-subject-pool (`is_subject_pool: false`), exécuter Phase L0.0 (création structure si absente) puis Phase L0 (proposition migration) puis suivre Phases L1-L6.
 
 Depuis 2026-05-04, les phases déterministes (L2 discussion, L3 decision, L5 scan, L6 commit) sont instrumentées Python via `documente_engine.py` — mêmes commandes génériques que le workflow subject pool. Phase L4 (MAJ MEMORY.md format markdown) reste LLM only.
+
+### Phase L0.0 — Création de structure service si absente (v2.7)
+
+Avant tout : lire les champs `service_root`, `service_structure_exists`, `proposed_default_path` de la sortie `prepare`. Trois cas :
+
+**Cas 1 — Pas de `service_root` identifié** (path hors `services/<x>/`, ex: `entreprise/architecture/...`) → passer directement à Phase L0.
+
+**Cas 2 — `service_structure_exists: true`** (le service a déjà `discussions/` ET `decisions/`) → passer directement à Phase L0.
+
+**Cas 3 — `service_structure_exists: false`** (le service `<service_root>` existe mais n'a pas la structure legacy) → présenter UN choix unique à Benjamin via `AskUserQuestion` :
+
+```
+Le service <service_root> n'a pas encore de structure discussions/+decisions/.
+[A] Créer <service_root>/discussions/ + <service_root>/decisions/ et y stocker (recommandé — cohérent avec services/achats/, services/tech/)
+[B] Créer un subject pool (objet métier durable seulement, cf. critère L0)
+```
+
+Si **A** (défaut) : `mkdir -p <service_root>/discussions <service_root>/decisions`, puis utiliser `<service_root>` comme dossier cible pour Phases L2-L6. Sauter Phase L0 (la décision est déjà prise : on stocke en entité).
+
+Si **B** : enchaîner sur Phase L0 standard (qui reproposera le critère et invoquera `/subject-create-type` + `/subject-create` si validé).
+
+**Anti-pattern à éviter** : poser deux questions successives (« où stocker ? » puis « créer la structure ? »). Incident 2026-05-11 sur `services/marketing/` → 2 `AskUserQuestion` au lieu d'une. La Phase L0.0 doit aboutir en **une seule** interaction utilisateur.
 
 ### Phase L0 — Critère subject pool vs entité (v2.6)
 
@@ -522,3 +552,8 @@ EVAL 12 : Création paresseuse instance (v2.1)
 Question: Si le subject path n'existe pas mais le type oui, /subject-create a-t-il été invoqué silencieusement (0 intervention utilisateur) ?
 Pass: Subject créé sans prompt sur linked_subjects, valeurs par défaut appliquées
 Fail: Prompt utilisateur affiché alors que c'est un appel automatique depuis /documente
+
+EVAL 13 : Création de structure service (v2.7)
+Question: Si le service cible existe sans discussions/+decisions/, Phase L0.0 a-t-elle posé UNE seule question (A créer structure / B subject pool) avant d'agir ?
+Pass: 1 AskUserQuestion, choix A → mkdir des deux dossiers + stockage au niveau service ; choix B → enchaînement Phase L0 normale
+Fail: Aucun prompt (création silencieuse), OU 2 prompts successifs (incident 2026-05-11), OU bascule subject pool par défaut alors que la décision concerne du code d'entité

@@ -85,8 +85,26 @@ def cmd_list_subjects(args):
     return _ok(subjects=sorted(subjects, key=lambda s: s["path"]))
 
 
+def _detect_service_root(p: Path, project_dir: Path):
+    """Si p est sous services/<x>/ (à toute profondeur), retourne le path absolu de services/<x>/.
+    Sinon None. Le service root inclut p lui-même si p == services/<x>/."""
+    try:
+        rel = p.relative_to(project_dir)
+    except ValueError:
+        return None
+    parts = rel.parts
+    if len(parts) >= 2 and parts[0] == "services":
+        return project_dir / "services" / parts[1]
+    return None
+
+
 def cmd_prepare(args):
-    """Phase 0a + 0b + 1 : détecte contexte, vérifie existence, retourne état."""
+    """Phase 0a + 0b + 1 : détecte contexte, vérifie existence, retourne état.
+
+    v2.7 : retourne aussi service_root, service_structure_exists, proposed_default_path
+    pour permettre à la Phase L0.0 du skill de décider s'il faut créer la structure
+    discussions/+decisions/ au niveau service.
+    """
     project_dir = get_project_dir()
     raw = args.path
     p = Path(raw)
@@ -98,13 +116,34 @@ def cmd_prepare(args):
 
     rel_path = str(p.relative_to(project_dir)) if p.is_relative_to(project_dir) else str(p)
 
+    # Détection service root + statut structure (utile en legacy comme en subject pool)
+    service_root_abs = _detect_service_root(p, project_dir)
+    if service_root_abs is not None:
+        service_root_rel = str(service_root_abs.relative_to(project_dir))
+        has_discussions = (service_root_abs / "discussions").is_dir()
+        has_decisions = (service_root_abs / "decisions").is_dir()
+        service_structure_exists = has_discussions and has_decisions
+    else:
+        service_root_rel = None
+        service_structure_exists = None
+
     if not is_subject_pool:
+        # En legacy : si le service existe mais pas la structure, proposer le service root
+        # comme path par défaut (Phase L0.0 du skill).
+        proposed_default_path = (
+            service_root_rel
+            if (service_root_abs is not None and service_structure_exists is False)
+            else None
+        )
         return _ok(
             is_subject_pool=False,
             subject_exists=False,
             needs_creation=False,
             recommended_workflow="legacy",
             path=rel_path,
+            service_root=service_root_rel,
+            service_structure_exists=service_structure_exists,
+            proposed_default_path=proposed_default_path,
         )
 
     memory_md = p / "MEMORY.md"
@@ -120,6 +159,9 @@ def cmd_prepare(args):
         current_frontmatter=fm,
         needs_creation=not subject_exists,
         recommended_workflow="subject_pool",
+        service_root=service_root_rel,
+        service_structure_exists=service_structure_exists,
+        proposed_default_path=None,
     )
 
 
