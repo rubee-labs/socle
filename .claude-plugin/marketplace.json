@@ -9,7 +9,7 @@
       "name": "claude-forge",
       "source": "./",
       "description": "Structured memory layer for Claude Code — subjects with γ lifecycle, typed decisions/discussions, cross-subject cascade. The 4th memory layer.",
-      "version": "0.1.1",
+      "version": "0.1.2",
       "author": {
         "name": "Benjamin Hamon"
       }
