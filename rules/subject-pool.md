@@ -240,6 +240,7 @@ Le graph **n'est pas persisté** (ni dans le frontmatter, ni dans un sidecar) �
 | ~~`compiled_artifacts`~~ | ~~list[ref]~~ | **déprécié** depuis 2026-05-10. Plus de cycle de compilation par seuil. |
 | `linked_skills` | list[str] | (optionnel) skills produits via `/skillify` à partir de ce subject |
 | `linked_evals` | list[ref] | (optionnel) cross-modal-reviews effectuées (`analyses/<date>-cross-modal-eval.md`) |
+| `quick_produced_from` | obj | (optionnel) provenance backward du `## Quick` régénéré par `/documente` Phase F. Liste les sources qui ont produit la synthèse courante : `{events: [...], analyses: [...], decisions: [...], generated_at: <iso8601>}`. Permet de remonter du Quick aux fichiers sources sans deviner. Ajouté 2026-05-21 (analyse Forge-Lab cognee). |
 
 ---
 
@@ -329,6 +330,11 @@ last_event:
   ref: events/2026-06-18-booking-container.md
 linked_skills: []
 linked_evals: []
+quick_produced_from:
+  events: [2026-04-15-eta-update.md, 2026-06-18-booking-container.md]
+  analyses: [2026-04-13-restock-analysis.md]
+  decisions: [2026-04-16-order-300m-guinguette.yaml, 2026-04-17-acompte-30.yaml]
+  generated_at: 2026-06-19T08:30:00Z
 ---
 
 ## Quick
@@ -349,7 +355,11 @@ Liens forts : supplier-simon, product-line-guirlande-guinguette
 ```yaml
 # events/<date>-<slug>.md
 ---
-date: 2026-04-15
+date: 2026-04-15                  # recorded_at : quand on a appris / écrit l'event
+valid_at: 2026-08-22              # (optionnel) quand le fait est valide dans le monde
+                                   # ex: ETA annoncée, date d'effet d'une décision, deadline
+                                   # Distinct de `date` (recorded_at). Si absent : valid_at = date.
+                                   # Ajouté 2026-05-21 (analyse Forge-Lab cognee, Q3 bi-temporal).
 type: email                       # email | mcp_event | external_capture | ...
 produced_by: external
 source: imap
