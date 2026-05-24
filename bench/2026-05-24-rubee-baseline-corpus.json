@@ -1,0 +1,993 @@
+{
+  "version": 1,
+  "generated_at": "2026-05-24T09:39:43",
+  "project_dir": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise",
+  "subject_count": 33,
+  "question_count": 123,
+  "questions": [
+    {
+      "id": "q001",
+      "subject_name": "backlog-publish-mcp-archive-prefix-write",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/tech/subjects/backlog-publish-mcp-archive-prefix-write/MEMORY.md",
+      "field": "forging_state",
+      "query": "Quel est l'état (forging_state) du subject backlog-publish-mcp-archive-prefix-write ?",
+      "gold": "archived"
+    },
+    {
+      "id": "q002",
+      "subject_name": "backlog-publish-mcp-archive-prefix-write",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/tech/subjects/backlog-publish-mcp-archive-prefix-write/MEMORY.md",
+      "field": "type",
+      "query": "Quel est le type du subject backlog-publish-mcp-archive-prefix-write ?",
+      "gold": "backlog-tech"
+    },
+    {
+      "id": "q003",
+      "subject_name": "backlog-publish-mcp-archive-prefix-write",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/tech/subjects/backlog-publish-mcp-archive-prefix-write/MEMORY.md",
+      "field": "horizon",
+      "query": "Quel est l'horizon du subject backlog-publish-mcp-archive-prefix-write ?",
+      "gold": "bounded"
+    },
+    {
+      "id": "q004",
+      "subject_name": "backlog-mcp-gateway-graphql-error-body-exposure",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/tech/subjects/backlog-mcp-gateway-graphql-error-body-exposure/MEMORY.md",
+      "field": "forging_state",
+      "query": "Quel est l'état (forging_state) du subject backlog-mcp-gateway-graphql-error-body-exposure ?",
+      "gold": "archived"
+    },
+    {
+      "id": "q005",
+      "subject_name": "backlog-mcp-gateway-graphql-error-body-exposure",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/tech/subjects/backlog-mcp-gateway-graphql-error-body-exposure/MEMORY.md",
+      "field": "type",
+      "query": "Quel est le type du subject backlog-mcp-gateway-graphql-error-body-exposure ?",
+      "gold": "backlog-tech"
+    },
+    {
+      "id": "q006",
+      "subject_name": "backlog-mcp-gateway-graphql-error-body-exposure",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/tech/subjects/backlog-mcp-gateway-graphql-error-body-exposure/MEMORY.md",
+      "field": "horizon",
+      "query": "Quel est l'horizon du subject backlog-mcp-gateway-graphql-error-body-exposure ?",
+      "gold": "bounded"
+    },
+    {
+      "id": "q007",
+      "subject_name": "backlog-mcp-gateway-graphql-error-body-exposure",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/tech/subjects/backlog-mcp-gateway-graphql-error-body-exposure/MEMORY.md",
+      "field": "linked_subjects",
+      "query": "À quels subjects backlog-mcp-gateway-graphql-error-body-exposure est-il lié ?",
+      "gold": "supplier:ilamp"
+    },
+    {
+      "id": "q008",
+      "subject_name": "backlog-publish-mcp-slug-canonical",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/tech/subjects/backlog-publish-mcp-slug-canonical/MEMORY.md",
+      "field": "forging_state",
+      "query": "Quel est l'état (forging_state) du subject backlog-publish-mcp-slug-canonical ?",
+      "gold": "archived"
+    },
+    {
+      "id": "q009",
+      "subject_name": "backlog-publish-mcp-slug-canonical",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/tech/subjects/backlog-publish-mcp-slug-canonical/MEMORY.md",
+      "field": "type",
+      "query": "Quel est le type du subject backlog-publish-mcp-slug-canonical ?",
+      "gold": "backlog-tech"
+    },
+    {
+      "id": "q010",
+      "subject_name": "backlog-publish-mcp-slug-canonical",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/tech/subjects/backlog-publish-mcp-slug-canonical/MEMORY.md",
+      "field": "horizon",
+      "query": "Quel est l'horizon du subject backlog-publish-mcp-slug-canonical ?",
+      "gold": "bounded"
+    },
+    {
+      "id": "q011",
+      "subject_name": "backlog-mcp-archive-email-double-verify",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/tech/subjects/backlog-mcp-archive-email-double-verify/MEMORY.md",
+      "field": "forging_state",
+      "query": "Quel est l'état (forging_state) du subject backlog-mcp-archive-email-double-verify ?",
+      "gold": "mature"
+    },
+    {
+      "id": "q012",
+      "subject_name": "backlog-mcp-archive-email-double-verify",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/tech/subjects/backlog-mcp-archive-email-double-verify/MEMORY.md",
+      "field": "type",
+      "query": "Quel est le type du subject backlog-mcp-archive-email-double-verify ?",
+      "gold": "backlog-tech"
+    },
+    {
+      "id": "q013",
+      "subject_name": "backlog-mcp-archive-email-double-verify",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/tech/subjects/backlog-mcp-archive-email-double-verify/MEMORY.md",
+      "field": "horizon",
+      "query": "Quel est l'horizon du subject backlog-mcp-archive-email-double-verify ?",
+      "gold": "bounded"
+    },
+    {
+      "id": "q014",
+      "subject_name": "google-ads-pokeo",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/marketing/subjects/google-ads-pokeo/MEMORY.md",
+      "field": "forging_state",
+      "query": "Quel est l'état (forging_state) du subject google-ads-pokeo ?",
+      "gold": "actif"
+    },
+    {
+      "id": "q015",
+      "subject_name": "google-ads-pokeo",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/marketing/subjects/google-ads-pokeo/MEMORY.md",
+      "field": "type",
+      "query": "Quel est le type du subject google-ads-pokeo ?",
+      "gold": "marketing-campaign"
+    },
+    {
+      "id": "q016",
+      "subject_name": "google-ads-pokeo",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/marketing/subjects/google-ads-pokeo/MEMORY.md",
+      "field": "horizon",
+      "query": "Quel est l'horizon du subject google-ads-pokeo ?",
+      "gold": "permanent"
+    },
+    {
+      "id": "q017",
+      "subject_name": "amazon-ads-IT",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/marketing/subjects/amazon-ads-IT/MEMORY.md",
+      "field": "forging_state",
+      "query": "Quel est l'état (forging_state) du subject amazon-ads-IT ?",
+      "gold": "actif"
+    },
+    {
+      "id": "q018",
+      "subject_name": "amazon-ads-IT",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/marketing/subjects/amazon-ads-IT/MEMORY.md",
+      "field": "type",
+      "query": "Quel est le type du subject amazon-ads-IT ?",
+      "gold": "marketing-campaign"
+    },
+    {
+      "id": "q019",
+      "subject_name": "amazon-ads-IT",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/marketing/subjects/amazon-ads-IT/MEMORY.md",
+      "field": "horizon",
+      "query": "Quel est l'horizon du subject amazon-ads-IT ?",
+      "gold": "permanent"
+    },
+    {
+      "id": "q020",
+      "subject_name": "amazon-ads-IT",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/marketing/subjects/amazon-ads-IT/MEMORY.md",
+      "field": "linked_subjects",
+      "query": "À quels subjects amazon-ads-IT est-il lié ?",
+      "gold": "amazon-ads-DE"
+    },
+    {
+      "id": "q021",
+      "subject_name": "amazon-ads-BE",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/marketing/subjects/amazon-ads-BE/MEMORY.md",
+      "field": "forging_state",
+      "query": "Quel est l'état (forging_state) du subject amazon-ads-BE ?",
+      "gold": "actif"
+    },
+    {
+      "id": "q022",
+      "subject_name": "amazon-ads-BE",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/marketing/subjects/amazon-ads-BE/MEMORY.md",
+      "field": "type",
+      "query": "Quel est le type du subject amazon-ads-BE ?",
+      "gold": "marketing-campaign"
+    },
+    {
+      "id": "q023",
+      "subject_name": "amazon-ads-BE",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/marketing/subjects/amazon-ads-BE/MEMORY.md",
+      "field": "horizon",
+      "query": "Quel est l'horizon du subject amazon-ads-BE ?",
+      "gold": "permanent"
+    },
+    {
+      "id": "q024",
+      "subject_name": "amazon-ads-BE",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/marketing/subjects/amazon-ads-BE/MEMORY.md",
+      "field": "linked_subjects",
+      "query": "À quels subjects amazon-ads-BE est-il lié ?",
+      "gold": "amazon-ads-DE"
+    },
+    {
+      "id": "q025",
+      "subject_name": "google-ads-brumeaux",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/marketing/subjects/google-ads-brumeaux/MEMORY.md",
+      "field": "forging_state",
+      "query": "Quel est l'état (forging_state) du subject google-ads-brumeaux ?",
+      "gold": "actif"
+    },
+    {
+      "id": "q026",
+      "subject_name": "google-ads-brumeaux",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/marketing/subjects/google-ads-brumeaux/MEMORY.md",
+      "field": "type",
+      "query": "Quel est le type du subject google-ads-brumeaux ?",
+      "gold": "marketing-campaign"
+    },
+    {
+      "id": "q027",
+      "subject_name": "google-ads-brumeaux",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/marketing/subjects/google-ads-brumeaux/MEMORY.md",
+      "field": "horizon",
+      "query": "Quel est l'horizon du subject google-ads-brumeaux ?",
+      "gold": "permanent"
+    },
+    {
+      "id": "q028",
+      "subject_name": "amazon-ads-ES",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/marketing/subjects/amazon-ads-ES/MEMORY.md",
+      "field": "forging_state",
+      "query": "Quel est l'état (forging_state) du subject amazon-ads-ES ?",
+      "gold": "actif"
+    },
+    {
+      "id": "q029",
+      "subject_name": "amazon-ads-ES",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/marketing/subjects/amazon-ads-ES/MEMORY.md",
+      "field": "type",
+      "query": "Quel est le type du subject amazon-ads-ES ?",
+      "gold": "marketing-campaign"
+    },
+    {
+      "id": "q030",
+      "subject_name": "amazon-ads-ES",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/marketing/subjects/amazon-ads-ES/MEMORY.md",
+      "field": "horizon",
+      "query": "Quel est l'horizon du subject amazon-ads-ES ?",
+      "gold": "permanent"
+    },
+    {
+      "id": "q031",
+      "subject_name": "amazon-ads-ES",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/marketing/subjects/amazon-ads-ES/MEMORY.md",
+      "field": "linked_subjects",
+      "query": "À quels subjects amazon-ads-ES est-il lié ?",
+      "gold": "amazon-ads-DE"
+    },
+    {
+      "id": "q032",
+      "subject_name": "amazon-ads-NL",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/marketing/subjects/amazon-ads-NL/MEMORY.md",
+      "field": "forging_state",
+      "query": "Quel est l'état (forging_state) du subject amazon-ads-NL ?",
+      "gold": "actif"
+    },
+    {
+      "id": "q033",
+      "subject_name": "amazon-ads-NL",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/marketing/subjects/amazon-ads-NL/MEMORY.md",
+      "field": "type",
+      "query": "Quel est le type du subject amazon-ads-NL ?",
+      "gold": "marketing-campaign"
+    },
+    {
+      "id": "q034",
+      "subject_name": "amazon-ads-NL",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/marketing/subjects/amazon-ads-NL/MEMORY.md",
+      "field": "horizon",
+      "query": "Quel est l'horizon du subject amazon-ads-NL ?",
+      "gold": "permanent"
+    },
+    {
+      "id": "q035",
+      "subject_name": "amazon-ads-NL",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/marketing/subjects/amazon-ads-NL/MEMORY.md",
+      "field": "linked_subjects",
+      "query": "À quels subjects amazon-ads-NL est-il lié ?",
+      "gold": "amazon-ads-DE"
+    },
+    {
+      "id": "q036",
+      "subject_name": "amazon-ads-DE",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/marketing/subjects/amazon-ads-DE/MEMORY.md",
+      "field": "forging_state",
+      "query": "Quel est l'état (forging_state) du subject amazon-ads-DE ?",
+      "gold": "actif"
+    },
+    {
+      "id": "q037",
+      "subject_name": "amazon-ads-DE",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/marketing/subjects/amazon-ads-DE/MEMORY.md",
+      "field": "type",
+      "query": "Quel est le type du subject amazon-ads-DE ?",
+      "gold": "marketing-campaign"
+    },
+    {
+      "id": "q038",
+      "subject_name": "amazon-ads-DE",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/marketing/subjects/amazon-ads-DE/MEMORY.md",
+      "field": "horizon",
+      "query": "Quel est l'horizon du subject amazon-ads-DE ?",
+      "gold": "permanent"
+    },
+    {
+      "id": "q039",
+      "subject_name": "amazon-ads-DE",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/marketing/subjects/amazon-ads-DE/MEMORY.md",
+      "field": "linked_subjects",
+      "query": "À quels subjects amazon-ads-DE est-il lié ?",
+      "gold": "amazon-ads-IT"
+    },
+    {
+      "id": "q040",
+      "subject_name": "supplier-leadlux",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/achats/subjects/supplier-leadlux/MEMORY.md",
+      "field": "forging_state",
+      "query": "Quel est l'état (forging_state) du subject supplier-leadlux ?",
+      "gold": "actif"
+    },
+    {
+      "id": "q041",
+      "subject_name": "supplier-leadlux",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/achats/subjects/supplier-leadlux/MEMORY.md",
+      "field": "type",
+      "query": "Quel est le type du subject supplier-leadlux ?",
+      "gold": "supplier"
+    },
+    {
+      "id": "q042",
+      "subject_name": "supplier-leadlux",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/achats/subjects/supplier-leadlux/MEMORY.md",
+      "field": "horizon",
+      "query": "Quel est l'horizon du subject supplier-leadlux ?",
+      "gold": "unbounded"
+    },
+    {
+      "id": "q043",
+      "subject_name": "supplier-leadlux",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/achats/subjects/supplier-leadlux/MEMORY.md",
+      "field": "linked_subjects",
+      "query": "À quels subjects supplier-leadlux est-il lié ?",
+      "gold": "supplier-order:order-387"
+    },
+    {
+      "id": "q044",
+      "subject_name": "order-395",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/achats/subjects/order-395/MEMORY.md",
+      "field": "forging_state",
+      "query": "Quel est l'état (forging_state) du subject order-395 ?",
+      "gold": "actif"
+    },
+    {
+      "id": "q045",
+      "subject_name": "order-395",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/achats/subjects/order-395/MEMORY.md",
+      "field": "type",
+      "query": "Quel est le type du subject order-395 ?",
+      "gold": "supplier-order"
+    },
+    {
+      "id": "q046",
+      "subject_name": "order-395",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/achats/subjects/order-395/MEMORY.md",
+      "field": "horizon",
+      "query": "Quel est l'horizon du subject order-395 ?",
+      "gold": "bounded"
+    },
+    {
+      "id": "q047",
+      "subject_name": "order-395",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/achats/subjects/order-395/MEMORY.md",
+      "field": "linked_subjects",
+      "query": "À quels subjects order-395 est-il lié ?",
+      "gold": "supplier:wenda"
+    },
+    {
+      "id": "q048",
+      "subject_name": "order-393",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/achats/subjects/order-393/MEMORY.md",
+      "field": "forging_state",
+      "query": "Quel est l'état (forging_state) du subject order-393 ?",
+      "gold": "actif"
+    },
+    {
+      "id": "q049",
+      "subject_name": "order-393",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/achats/subjects/order-393/MEMORY.md",
+      "field": "type",
+      "query": "Quel est le type du subject order-393 ?",
+      "gold": "supplier-order"
+    },
+    {
+      "id": "q050",
+      "subject_name": "order-393",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/achats/subjects/order-393/MEMORY.md",
+      "field": "horizon",
+      "query": "Quel est l'horizon du subject order-393 ?",
+      "gold": "bounded"
+    },
+    {
+      "id": "q051",
+      "subject_name": "order-393",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/achats/subjects/order-393/MEMORY.md",
+      "field": "linked_subjects",
+      "query": "À quels subjects order-393 est-il lié ?",
+      "gold": "supplier:ilamp"
+    },
+    {
+      "id": "q052",
+      "subject_name": "order-387",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/achats/subjects/order-387/MEMORY.md",
+      "field": "forging_state",
+      "query": "Quel est l'état (forging_state) du subject order-387 ?",
+      "gold": "actif"
+    },
+    {
+      "id": "q053",
+      "subject_name": "order-387",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/achats/subjects/order-387/MEMORY.md",
+      "field": "type",
+      "query": "Quel est le type du subject order-387 ?",
+      "gold": "supplier-order"
+    },
+    {
+      "id": "q054",
+      "subject_name": "order-387",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/achats/subjects/order-387/MEMORY.md",
+      "field": "horizon",
+      "query": "Quel est l'horizon du subject order-387 ?",
+      "gold": "bounded"
+    },
+    {
+      "id": "q055",
+      "subject_name": "order-387",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/achats/subjects/order-387/MEMORY.md",
+      "field": "linked_subjects",
+      "query": "À quels subjects order-387 est-il lié ?",
+      "gold": "supplier:leadlux"
+    },
+    {
+      "id": "q056",
+      "subject_name": "supplier-cosmicpond",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/achats/subjects/supplier-cosmicpond/MEMORY.md",
+      "field": "forging_state",
+      "query": "Quel est l'état (forging_state) du subject supplier-cosmicpond ?",
+      "gold": "actif"
+    },
+    {
+      "id": "q057",
+      "subject_name": "supplier-cosmicpond",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/achats/subjects/supplier-cosmicpond/MEMORY.md",
+      "field": "type",
+      "query": "Quel est le type du subject supplier-cosmicpond ?",
+      "gold": "supplier"
+    },
+    {
+      "id": "q058",
+      "subject_name": "supplier-cosmicpond",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/achats/subjects/supplier-cosmicpond/MEMORY.md",
+      "field": "horizon",
+      "query": "Quel est l'horizon du subject supplier-cosmicpond ?",
+      "gold": "unbounded"
+    },
+    {
+      "id": "q059",
+      "subject_name": "supplier-cosmicpond",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/achats/subjects/supplier-cosmicpond/MEMORY.md",
+      "field": "linked_subjects",
+      "query": "À quels subjects supplier-cosmicpond est-il lié ?",
+      "gold": "supplier-dongsu"
+    },
+    {
+      "id": "q060",
+      "subject_name": "order-402",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/achats/subjects/order-402/MEMORY.md",
+      "field": "forging_state",
+      "query": "Quel est l'état (forging_state) du subject order-402 ?",
+      "gold": "actif"
+    },
+    {
+      "id": "q061",
+      "subject_name": "order-402",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/achats/subjects/order-402/MEMORY.md",
+      "field": "type",
+      "query": "Quel est le type du subject order-402 ?",
+      "gold": "supplier-order"
+    },
+    {
+      "id": "q062",
+      "subject_name": "order-402",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/achats/subjects/order-402/MEMORY.md",
+      "field": "horizon",
+      "query": "Quel est l'horizon du subject order-402 ?",
+      "gold": "bounded"
+    },
+    {
+      "id": "q063",
+      "subject_name": "order-402",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/achats/subjects/order-402/MEMORY.md",
+      "field": "linked_subjects",
+      "query": "À quels subjects order-402 est-il lié ?",
+      "gold": "supplier:ilamp"
+    },
+    {
+      "id": "q064",
+      "subject_name": "supplier-homful",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/achats/subjects/supplier-homful/MEMORY.md",
+      "field": "forging_state",
+      "query": "Quel est l'état (forging_state) du subject supplier-homful ?",
+      "gold": "actif"
+    },
+    {
+      "id": "q065",
+      "subject_name": "supplier-homful",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/achats/subjects/supplier-homful/MEMORY.md",
+      "field": "type",
+      "query": "Quel est le type du subject supplier-homful ?",
+      "gold": "supplier"
+    },
+    {
+      "id": "q066",
+      "subject_name": "supplier-homful",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/achats/subjects/supplier-homful/MEMORY.md",
+      "field": "horizon",
+      "query": "Quel est l'horizon du subject supplier-homful ?",
+      "gold": "unbounded"
+    },
+    {
+      "id": "q067",
+      "subject_name": "supplier-homful",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/achats/subjects/supplier-homful/MEMORY.md",
+      "field": "linked_subjects",
+      "query": "À quels subjects supplier-homful est-il lié ?",
+      "gold": "supplier-order:order-383"
+    },
+    {
+      "id": "q068",
+      "subject_name": "order-398",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/achats/subjects/order-398/MEMORY.md",
+      "field": "forging_state",
+      "query": "Quel est l'état (forging_state) du subject order-398 ?",
+      "gold": "actif"
+    },
+    {
+      "id": "q069",
+      "subject_name": "order-398",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/achats/subjects/order-398/MEMORY.md",
+      "field": "type",
+      "query": "Quel est le type du subject order-398 ?",
+      "gold": "supplier-order"
+    },
+    {
+      "id": "q070",
+      "subject_name": "order-398",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/achats/subjects/order-398/MEMORY.md",
+      "field": "horizon",
+      "query": "Quel est l'horizon du subject order-398 ?",
+      "gold": "bounded"
+    },
+    {
+      "id": "q071",
+      "subject_name": "order-398",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/achats/subjects/order-398/MEMORY.md",
+      "field": "linked_subjects",
+      "query": "À quels subjects order-398 est-il lié ?",
+      "gold": "supplier:weifang"
+    },
+    {
+      "id": "q072",
+      "subject_name": "order-399",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/achats/subjects/order-399/MEMORY.md",
+      "field": "forging_state",
+      "query": "Quel est l'état (forging_state) du subject order-399 ?",
+      "gold": "actif"
+    },
+    {
+      "id": "q073",
+      "subject_name": "order-399",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/achats/subjects/order-399/MEMORY.md",
+      "field": "type",
+      "query": "Quel est le type du subject order-399 ?",
+      "gold": "supplier-order"
+    },
+    {
+      "id": "q074",
+      "subject_name": "order-399",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/achats/subjects/order-399/MEMORY.md",
+      "field": "horizon",
+      "query": "Quel est l'horizon du subject order-399 ?",
+      "gold": "bounded"
+    },
+    {
+      "id": "q075",
+      "subject_name": "order-399",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/achats/subjects/order-399/MEMORY.md",
+      "field": "linked_subjects",
+      "query": "À quels subjects order-399 est-il lié ?",
+      "gold": "supplier:ilamp"
+    },
+    {
+      "id": "q076",
+      "subject_name": "supplier-dongsu",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/achats/subjects/supplier-dongsu/MEMORY.md",
+      "field": "forging_state",
+      "query": "Quel est l'état (forging_state) du subject supplier-dongsu ?",
+      "gold": "actif"
+    },
+    {
+      "id": "q077",
+      "subject_name": "supplier-dongsu",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/achats/subjects/supplier-dongsu/MEMORY.md",
+      "field": "type",
+      "query": "Quel est le type du subject supplier-dongsu ?",
+      "gold": "supplier"
+    },
+    {
+      "id": "q078",
+      "subject_name": "supplier-dongsu",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/achats/subjects/supplier-dongsu/MEMORY.md",
+      "field": "horizon",
+      "query": "Quel est l'horizon du subject supplier-dongsu ?",
+      "gold": "unbounded"
+    },
+    {
+      "id": "q079",
+      "subject_name": "supplier-dongsu",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/achats/subjects/supplier-dongsu/MEMORY.md",
+      "field": "linked_subjects",
+      "query": "À quels subjects supplier-dongsu est-il lié ?",
+      "gold": "supplier-cosmicpond  # créé 2026-05-08 lors de la cascade pi_accepted_finalize order-401"
+    },
+    {
+      "id": "q080",
+      "subject_name": "supplier-weifang",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/achats/subjects/supplier-weifang/MEMORY.md",
+      "field": "forging_state",
+      "query": "Quel est l'état (forging_state) du subject supplier-weifang ?",
+      "gold": "actif"
+    },
+    {
+      "id": "q081",
+      "subject_name": "supplier-weifang",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/achats/subjects/supplier-weifang/MEMORY.md",
+      "field": "type",
+      "query": "Quel est le type du subject supplier-weifang ?",
+      "gold": "supplier"
+    },
+    {
+      "id": "q082",
+      "subject_name": "supplier-weifang",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/achats/subjects/supplier-weifang/MEMORY.md",
+      "field": "horizon",
+      "query": "Quel est l'horizon du subject supplier-weifang ?",
+      "gold": "unbounded"
+    },
+    {
+      "id": "q083",
+      "subject_name": "supplier-weifang",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/achats/subjects/supplier-weifang/MEMORY.md",
+      "field": "linked_subjects",
+      "query": "À quels subjects supplier-weifang est-il lié ?",
+      "gold": "supplier-order:order-398"
+    },
+    {
+      "id": "q084",
+      "subject_name": "order-383",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/achats/subjects/order-383/MEMORY.md",
+      "field": "forging_state",
+      "query": "Quel est l'état (forging_state) du subject order-383 ?",
+      "gold": "actif"
+    },
+    {
+      "id": "q085",
+      "subject_name": "order-383",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/achats/subjects/order-383/MEMORY.md",
+      "field": "type",
+      "query": "Quel est le type du subject order-383 ?",
+      "gold": "supplier-order"
+    },
+    {
+      "id": "q086",
+      "subject_name": "order-383",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/achats/subjects/order-383/MEMORY.md",
+      "field": "horizon",
+      "query": "Quel est l'horizon du subject order-383 ?",
+      "gold": "bounded"
+    },
+    {
+      "id": "q087",
+      "subject_name": "order-383",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/achats/subjects/order-383/MEMORY.md",
+      "field": "linked_subjects",
+      "query": "À quels subjects order-383 est-il lié ?",
+      "gold": "supplier:homful"
+    },
+    {
+      "id": "q088",
+      "subject_name": "supplier-wenda",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/achats/subjects/supplier-wenda/MEMORY.md",
+      "field": "forging_state",
+      "query": "Quel est l'état (forging_state) du subject supplier-wenda ?",
+      "gold": "actif"
+    },
+    {
+      "id": "q089",
+      "subject_name": "supplier-wenda",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/achats/subjects/supplier-wenda/MEMORY.md",
+      "field": "type",
+      "query": "Quel est le type du subject supplier-wenda ?",
+      "gold": "supplier"
+    },
+    {
+      "id": "q090",
+      "subject_name": "supplier-wenda",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/achats/subjects/supplier-wenda/MEMORY.md",
+      "field": "horizon",
+      "query": "Quel est l'horizon du subject supplier-wenda ?",
+      "gold": "unbounded"
+    },
+    {
+      "id": "q091",
+      "subject_name": "supplier-wenda",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/achats/subjects/supplier-wenda/MEMORY.md",
+      "field": "linked_subjects",
+      "query": "À quels subjects supplier-wenda est-il lié ?",
+      "gold": "supplier-order:order-395"
+    },
+    {
+      "id": "q092",
+      "subject_name": "order-401",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/achats/subjects/order-401/MEMORY.md",
+      "field": "forging_state",
+      "query": "Quel est l'état (forging_state) du subject order-401 ?",
+      "gold": "actif"
+    },
+    {
+      "id": "q093",
+      "subject_name": "order-401",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/achats/subjects/order-401/MEMORY.md",
+      "field": "type",
+      "query": "Quel est le type du subject order-401 ?",
+      "gold": "supplier-order"
+    },
+    {
+      "id": "q094",
+      "subject_name": "order-401",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/achats/subjects/order-401/MEMORY.md",
+      "field": "horizon",
+      "query": "Quel est l'horizon du subject order-401 ?",
+      "gold": "bounded"
+    },
+    {
+      "id": "q095",
+      "subject_name": "order-401",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/achats/subjects/order-401/MEMORY.md",
+      "field": "linked_subjects",
+      "query": "À quels subjects order-401 est-il lié ?",
+      "gold": "supplier-cosmicpond"
+    },
+    {
+      "id": "q096",
+      "subject_name": "sparx",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/achats/subjects/sparx/MEMORY.md",
+      "field": "forging_state",
+      "query": "Quel est l'état (forging_state) du subject sparx ?",
+      "gold": "actif"
+    },
+    {
+      "id": "q097",
+      "subject_name": "sparx",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/achats/subjects/sparx/MEMORY.md",
+      "field": "type",
+      "query": "Quel est le type du subject sparx ?",
+      "gold": "freight-forwarder"
+    },
+    {
+      "id": "q098",
+      "subject_name": "sparx",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/achats/subjects/sparx/MEMORY.md",
+      "field": "horizon",
+      "query": "Quel est l'horizon du subject sparx ?",
+      "gold": "unbounded"
+    },
+    {
+      "id": "q099",
+      "subject_name": "sparx",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/achats/subjects/sparx/MEMORY.md",
+      "field": "linked_subjects",
+      "query": "À quels subjects sparx est-il lié ?",
+      "gold": "supplier:leadlux                    # via expedition #300 (PO #388)"
+    },
+    {
+      "id": "q100",
+      "subject_name": "supplier-ilamp",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/achats/subjects/supplier-ilamp/MEMORY.md",
+      "field": "forging_state",
+      "query": "Quel est l'état (forging_state) du subject supplier-ilamp ?",
+      "gold": "actif"
+    },
+    {
+      "id": "q101",
+      "subject_name": "supplier-ilamp",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/achats/subjects/supplier-ilamp/MEMORY.md",
+      "field": "type",
+      "query": "Quel est le type du subject supplier-ilamp ?",
+      "gold": "supplier"
+    },
+    {
+      "id": "q102",
+      "subject_name": "supplier-ilamp",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/achats/subjects/supplier-ilamp/MEMORY.md",
+      "field": "horizon",
+      "query": "Quel est l'horizon du subject supplier-ilamp ?",
+      "gold": "unbounded"
+    },
+    {
+      "id": "q103",
+      "subject_name": "supplier-ilamp",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/achats/subjects/supplier-ilamp/MEMORY.md",
+      "field": "linked_subjects",
+      "query": "À quels subjects supplier-ilamp est-il lié ?",
+      "gold": "supplier-order:order-393"
+    },
+    {
+      "id": "q104",
+      "subject_name": "order-400",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/achats/subjects/order-400/MEMORY.md",
+      "field": "forging_state",
+      "query": "Quel est l'état (forging_state) du subject order-400 ?",
+      "gold": "actif"
+    },
+    {
+      "id": "q105",
+      "subject_name": "order-400",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/achats/subjects/order-400/MEMORY.md",
+      "field": "type",
+      "query": "Quel est le type du subject order-400 ?",
+      "gold": "supplier-order"
+    },
+    {
+      "id": "q106",
+      "subject_name": "order-400",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/achats/subjects/order-400/MEMORY.md",
+      "field": "horizon",
+      "query": "Quel est l'horizon du subject order-400 ?",
+      "gold": "bounded"
+    },
+    {
+      "id": "q107",
+      "subject_name": "order-400",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/services/achats/subjects/order-400/MEMORY.md",
+      "field": "linked_subjects",
+      "query": "À quels subjects order-400 est-il lié ?",
+      "gold": "supplier:leadlux"
+    },
+    {
+      "id": "q108",
+      "subject_name": "mcp-design-doctrine",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/entreprise/architecture/subjects/mcp-design-doctrine/MEMORY.md",
+      "field": "forging_state",
+      "query": "Quel est l'état (forging_state) du subject mcp-design-doctrine ?",
+      "gold": "actif"
+    },
+    {
+      "id": "q109",
+      "subject_name": "mcp-design-doctrine",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/entreprise/architecture/subjects/mcp-design-doctrine/MEMORY.md",
+      "field": "type",
+      "query": "Quel est le type du subject mcp-design-doctrine ?",
+      "gold": "ce-architecture-decision"
+    },
+    {
+      "id": "q110",
+      "subject_name": "mcp-design-doctrine",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/entreprise/architecture/subjects/mcp-design-doctrine/MEMORY.md",
+      "field": "horizon",
+      "query": "Quel est l'horizon du subject mcp-design-doctrine ?",
+      "gold": "permanent"
+    },
+    {
+      "id": "q111",
+      "subject_name": "schema-operationnel",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/entreprise/architecture/subjects/schema-operationnel/MEMORY.md",
+      "field": "forging_state",
+      "query": "Quel est l'état (forging_state) du subject schema-operationnel ?",
+      "gold": "actif"
+    },
+    {
+      "id": "q112",
+      "subject_name": "schema-operationnel",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/entreprise/architecture/subjects/schema-operationnel/MEMORY.md",
+      "field": "type",
+      "query": "Quel est le type du subject schema-operationnel ?",
+      "gold": "ce-architecture-decision"
+    },
+    {
+      "id": "q113",
+      "subject_name": "schema-operationnel",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/entreprise/architecture/subjects/schema-operationnel/MEMORY.md",
+      "field": "horizon",
+      "query": "Quel est l'horizon du subject schema-operationnel ?",
+      "gold": "permanent"
+    },
+    {
+      "id": "q114",
+      "subject_name": "observabilite-langfuse",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/entreprise/architecture/subjects/observabilite-langfuse/MEMORY.md",
+      "field": "forging_state",
+      "query": "Quel est l'état (forging_state) du subject observabilite-langfuse ?",
+      "gold": "actif"
+    },
+    {
+      "id": "q115",
+      "subject_name": "observabilite-langfuse",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/entreprise/architecture/subjects/observabilite-langfuse/MEMORY.md",
+      "field": "type",
+      "query": "Quel est le type du subject observabilite-langfuse ?",
+      "gold": "ce-architecture-decision"
+    },
+    {
+      "id": "q116",
+      "subject_name": "observabilite-langfuse",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/entreprise/architecture/subjects/observabilite-langfuse/MEMORY.md",
+      "field": "horizon",
+      "query": "Quel est l'horizon du subject observabilite-langfuse ?",
+      "gold": "permanent"
+    },
+    {
+      "id": "q117",
+      "subject_name": "scheduler-2-stacks",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/entreprise/architecture/subjects/scheduler-2-stacks/MEMORY.md",
+      "field": "forging_state",
+      "query": "Quel est l'état (forging_state) du subject scheduler-2-stacks ?",
+      "gold": "actif"
+    },
+    {
+      "id": "q118",
+      "subject_name": "scheduler-2-stacks",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/entreprise/architecture/subjects/scheduler-2-stacks/MEMORY.md",
+      "field": "type",
+      "query": "Quel est le type du subject scheduler-2-stacks ?",
+      "gold": "ce-architecture-decision"
+    },
+    {
+      "id": "q119",
+      "subject_name": "scheduler-2-stacks",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/entreprise/architecture/subjects/scheduler-2-stacks/MEMORY.md",
+      "field": "horizon",
+      "query": "Quel est l'horizon du subject scheduler-2-stacks ?",
+      "gold": "permanent"
+    },
+    {
+      "id": "q120",
+      "subject_name": "scheduler-2-stacks",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/entreprise/architecture/subjects/scheduler-2-stacks/MEMORY.md",
+      "field": "linked_subjects",
+      "query": "À quels subjects scheduler-2-stacks est-il lié ?",
+      "gold": "mcp-design-doctrine               # même type, complémentaire (couche MCP vs couche scheduler)"
+    },
+    {
+      "id": "q121",
+      "subject_name": "ratchet-doctrine",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/entreprise/architecture/subjects/ratchet-doctrine/MEMORY.md",
+      "field": "forging_state",
+      "query": "Quel est l'état (forging_state) du subject ratchet-doctrine ?",
+      "gold": "actif"
+    },
+    {
+      "id": "q122",
+      "subject_name": "ratchet-doctrine",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/entreprise/architecture/subjects/ratchet-doctrine/MEMORY.md",
+      "field": "type",
+      "query": "Quel est le type du subject ratchet-doctrine ?",
+      "gold": "ce-architecture-decision"
+    },
+    {
+      "id": "q123",
+      "subject_name": "ratchet-doctrine",
+      "subject_path": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise/entreprise/architecture/subjects/ratchet-doctrine/MEMORY.md",
+      "field": "horizon",
+      "query": "Quel est l'horizon du subject ratchet-doctrine ?",
+      "gold": "permanent"
+    }
+  ]
+}

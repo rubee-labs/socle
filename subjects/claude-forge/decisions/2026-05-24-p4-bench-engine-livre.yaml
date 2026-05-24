@@ -1,0 +1,98 @@
+---
+date: 2026-05-24
+type: decision
+produced_by: human
+decided_by: benjamin
+status: active
+upstream_analyses:
+  - benjamin-perso/Forge-lab/analyses/2026-05-19-retriever-bench-grep-wins.md
+  - benjamin-perso/Forge-lab/analyses/2026-05-24-samourai-souverainete-memoire-agents.md
+upstream_discussions: []
+parameters:
+  primitive: bench_engine
+  cli_subcommands: [prepare, run, report]
+  retrievers_v1: [R1-cascade, R2-grep-aggregated, R3-filesystem-grep]
+  mode: deterministe-stdlib
+  cost_per_run: $0
+  baseline_results_path: bench/2026-05-24-rubee-baseline-results.json
+---
+
+# Décision — Livraison Vague 3 P4 : bench_engine
+
+## Contexte
+
+L'analyse Forge-Lab #6 (SamourAI, 2026-05-24) a recadré la priorisation post-publication
+en faveur du bench métric retriever, identifié depuis l'analyse #3 Voltaire (2026-05-19)
+comme la principale dette doctrinaire de Forge (« 0 mesure au-delà de 558 claims, c'est
+le vrai faux confort »).
+
+Benjamin a tranché : on ne touche pas à l'archi Forge, on **mesure d'abord**, on décide après.
+
+## Décision
+
+Livraison de la primitive `bench_engine.py` en mode déterministe (sans LLM call),
+intégrée au binaire `forge` via 3 sous-commandes :
+
+- `forge bench prepare` : génère un corpus de questions auto-vérifiables à partir
+  des frontmatters des subjects existants (4 patterns : forging_state, type, horizon,
+  linked_subjects).
+- `forge bench run` : exécute 3 retrievers déterministes sur le corpus.
+- `forge bench report` : agrège exact-match, substring, latence p50/p95.
+
+3 retrievers v1 :
+
+- **R1 cascade** : SUBJECTS-INDEX.md → MEMORY.md → frontmatter parse (canonique Forge).
+- **R2 grep-aggregated** : blob concaténé de tous les MEMORY.md → grep paragraphe.
+- **R3 filesystem-grep** : `grep -l -r "name: X"` puis parse frontmatter.
+
+## Baseline 2026-05-24 (33 subjects Rubee, 123 questions)
+
+| Retriever | Exact | Substring | Latence p50 | Latence p95 |
+|---|---|---|---|---|
+| R1 cascade | 100% | 100% | 0 ms | 0 ms |
+| R2 grep-aggregated | 97% | 97% | 0 ms | 0 ms |
+| R3 filesystem-grep | 100% | 100% | 450 ms | 520 ms |
+
+**Verdict** : la cascade Forge tient à 100% sur le scope actuel (~30 subjects).
+R3 grep est aussi précis mais 450× plus lent (subprocess fork overhead).
+R2 perd 3% à cause de cas-bord du parseur YAML maison.
+
+## Limites assumées de la v1
+
+- **Questions trop faciles** : extraites directement du frontmatter, le bench ne
+  discrimine pas les retrievers sur la précision sur ce volume. Voir évolution v2.
+- **Pas de simulation Claude réel** : mode déterministe seul. Mesure la qualité
+  de la structure de données, pas le parcours réel d'un agent. Évolution future
+  possible : `--with-llm` qui invoque Claude Agent SDK (doctrine SDK obligatoire,
+  pas d'ANTHROPIC_API_KEY).
+- **Latence R1 = 0 ms p50 artificielle** : pas de cold-start, pas de vraie
+  navigation Claude. Réaliste sur petit corpus, ne reflète pas l'opération réelle.
+
+## Évolutions v2 candidates (non livrées)
+
+- Questions sémantiques extraites du `## Quick` rédigé (pas du frontmatter).
+- Génération synthétique de subjects fictifs pour mesurer à 100 / 300 / 1000
+  subjects (où la cascade pourrait casser).
+- Mode `--with-llm` via Claude Agent SDK pour benchmark réaliste.
+- Mesure R@5 / MRR (agentmemory) si jeu de questions à réponses multiples.
+
+## Lien avec les décisions actives
+
+- 2026-04-29 — Adoption pattern subject pool (γ pragmatique) : non affecté.
+- 2026-05-04 — `/documente` 2.0 entry point unique : non affecté.
+- 2026-05-10 — Refonte γ 3 états + abandon /compile-doctrine : non affecté.
+- 2026-05-21 — D2 quick_produced_from + D3 valid_at : non affecté (le bench
+  pourrait à terme exploiter `quick_produced_from` pour mesurer la qualité de
+  la régénération Quick).
+
+Strictement additif. Aucune mutation de l'archi Forge (rules/, autres engines,
+skills, schémas frontmatter). Le bench est outil de surveillance, pas de
+transformation.
+
+## Suite immédiate
+
+- Re-run du bench dans 3-6 mois pour mesurer la dégradation (ou pas) en fonction
+  du volume.
+- Pas d'évolution v2 tant qu'un signal concret de saturation Forge n'apparaît pas.
+- `/documente claude-forge/subjects/claude-forge` à invoquer pour re-synthétiser
+  le MEMORY.md (cette décision active doit y apparaître).

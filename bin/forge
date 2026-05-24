@@ -42,6 +42,10 @@ case "$1" in
     shift
     exec python3 "$BIN_DIR/eval_engine.py" "$@"
     ;;
+  bench)
+    shift
+    exec python3 "$BIN_DIR/bench_engine.py" "$@"
+    ;;
   --version|-v)
     cat "$ROOT_DIR/VERSION"
     ;;
@@ -56,6 +60,7 @@ Sous-commandes :
   autolink <subcommand> [args]    Typed graph (extract, graph-query, reconcile)
   skillify <subcommand> [args]    Compilation continue (scaffold, check, audit)
   eval <subcommand> [args]        Cross-modal eval (prepare, aggregate, write-analysis)
+  bench <subcommand> [args]       Retriever bench (prepare, run, report)
 
 Options :
   --version, -v                   Affiche la version
