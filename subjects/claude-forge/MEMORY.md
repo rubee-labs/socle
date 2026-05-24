@@ -1,7 +1,7 @@
 ---
 projet: claude-forge
-statut: phase-3-refonte-process-gamma-3-etats
-derniere_maj: 2026-05-11
+statut: phase-3-refonte-process-gamma-3-etats + vague-3-p4-livree
+derniere_maj: 2026-05-24
 auteur: benjamin
 ---
 
@@ -10,10 +10,10 @@ auteur: benjamin
 ## Quick
 
 État : actif (subject auto-référentiel du projet, pas une instance de type métier)
-Statut : Phase 3 livrée — refonte process γ + 3 nouvelles primitives (P5 autolink, P3 skillify, P2 cross-modal-eval)
+Statut : Phase 3 livrée + **Vague 3 P4 livrée** (bench_engine 2026-05-24). 4 primitives livrées (P5 autolink, P3 skillify, P2 cross-modal-eval, P4 bench).
 Liens forts : aucun (subject racine du projet)
-Prochaines étapes : Vague 3 P4 (métrique retrieval BM25), migration progressive des 26 subjects existants vers les 3 nouveaux états (non urgent grâce au mapping legacy)
-Risques : hint /skillify trop discret → primitive sous-utilisée (à surveiller sur 4 semaines)
+Prochaines étapes : surveillance bench Forge (re-run dans 3-6 mois pour mesurer dérive cascade), arbitrage backlog Forge-Lab (Obsidian comme lecteur ? couche d'entreprise ? — flaggés 2026-05-24 post-SamourAI), migration progressive des 33 subjects vers les 3 nouveaux états (non urgent grâce au mapping legacy)
+Risques : hint /skillify toujours discret (0 skillify livré à ce jour), bench v1 limité aux questions frontmatter (questions sémantiques sur Quick non couvertes — évolution v2 à instruire si signal de saturation)
 
 ## Doctrine en vigueur (2026-05-11)
 
@@ -40,7 +40,7 @@ Cycle simplifié à **3 états** (`actif` / `mature` / `archived`), transitions 
 - Transitions automatiques → **aucune** (moteur ne mute jamais `forging_state`)
 - Alertes scanner `doctrine_uncompiled` + `stress_test_missing` → **supprimées**
 
-### Skills opérationnels (8 + 1 abandonné)
+### Skills opérationnels (8 + 1 outil bench + 1 abandonné)
 
 | Skill | Statut | Rôle |
 |---|---|---|
@@ -51,6 +51,7 @@ Cycle simplifié à **3 états** (`actif` / `mature` / `archived`), transitions 
 | `/skillify` | actif (depuis 2026-05-10) | Compile un workflow ad hoc en skill réutilisable (5 stubs). Pattern Garry Tan. Trigger humain explicite, hint dans /documente Phase J. |
 | `/cross-modal-review` | actif (depuis 2026-05-10) | Évalue la qualité d'un MEMORY.md (4 axes, 2-3 modèles). À invoquer avant `actif → mature`. |
 | `/stress-test` | optionnel à la demande | Challenge un subject (contradicteur, steelman, yagni). Pas de mutation d'état. Pas encore implémenté. |
+| `forge bench` | actif (depuis 2026-05-24) | Outil de surveillance retriever (prepare / run / report). 3 retrievers déterministes (R1 cascade / R2 grep-agrégé / R3 fs-grep). Mode stdlib, $0, reproductible. Pas un skill (pas de slash command) — invocable directement via le binaire. |
 | `/compile-doctrine` | **abandonné** (2026-05-10) | Théorique, 0 artefact compilé. Branche « procédurale → skill » reprise par `/skillify`. |
 
 ## Décisions actives
@@ -66,6 +67,7 @@ Cycle simplifié à **3 états** (`actif` / `mature` / `archived`), transitions 
 - **2026-05-10 — P2 Cross-modal eval** : 3 sous-commandes (prepare/aggregate/write-analysis), 4 axes, 2-3 modèles Anthropic via Task tool. Skill `/cross-modal-review`. Voir `decisions/2026-05-10-p2-cross-modal-eval.yaml`.
 - **2026-05-10 — Refonte process γ 8→3 états** : `actif` / `mature` / `archived`, conviction supprimée, `/compile-doctrine` abandonné, `/stress-test` découplé, transitions 100% manuelles. Voir `decisions/2026-05-10-cycle-gamma-refonte-3-etats.yaml`.
 - **2026-05-11 — Hints textuels orphelinat** : `/documente` Phase J suggère `/skillify` et `/cross-modal-review` sans déclenchement auto. Tableau « Quand invoquer ces skills » dans la doctrine. Pattern Garry = trigger humain explicite, pas de détection auto qui produirait du bruit.
+- **2026-05-24 — Vague 3 P4 livrée : `bench_engine`** : outil de surveillance retriever (`forge bench prepare / run / report`), 3 retrievers déterministes (R1 cascade Forge, R2 grep agrégé, R3 grep filesystem), mode stdlib zéro coût zéro LLM. Baseline Rubee 2026-05-24 : R1 100%, R3 100% mais 450× plus lent, R2 97%. **La cascade Forge tient à 100% au scope actuel (33 subjects)** — pas de panique structurelle. Strictement read-only, aucune mutation archi. Décision déclenchée par recadrage Benjamin post-analyse Forge-Lab #6 SamourAI (2026-05-24) : « on mesure avant de présumer ». Voir `decisions/2026-05-24-p4-bench-engine-livre.yaml`.
 
 ## Décisions annulées
 
@@ -81,6 +83,7 @@ Cycle simplifié à **3 états** (`actif` / `mature` / `archived`), transitions 
 | Phase 1 | 2026-05-04 | Refonte moteur : `forge_engine.py` (Python) + `/documente` 2.0 entry point unique, cascade horizontale, transitions γ auto, validation order-398 |
 | Phase 2 | 2026-05-05 | Extraction plugin Claude Code (`rubee-labs/claude-forge`), 17 refs vivantes patchées, marketplace.json, binaire `forge` |
 | Phase 3 | 2026-05-10/11 | P5 autolink + P3 skillify + P2 cross-modal-eval + refonte process γ + hints textuels d'orphelinat |
+| Vague 3 P4 | 2026-05-24 | `bench_engine.py` + intégration `forge bench {prepare,run,report}` + 6 tests verts + baseline Rubee 2026-05-24 (R1 100%, R2 97%, R3 100% / 450 ms p50) |
 
 ### Vague 1 P5 — Auto-link déterministe
 
@@ -119,11 +122,38 @@ Pour chaque nouvelle primitive (engine + skill), avant de la considérer livrée
 
 Cette leçon est intégrée dans la doctrine via la section « Quand invoquer ces skills » qui force l'expression explicite des triggers humains attendus à la création de tout nouveau skill subject pool.
 
-## En attente
+### Vague 3 P4 — bench_engine (2026-05-24)
 
-- **Vague 3 P4 — métrique retrieval** : `bin/bench_engine.py` (BM25 stdlib + corpus de test, P@k / R@k / MRR / nDCG@k). Pas urgent.
+Livré : `bin/bench_engine.py` (~430 LoC stdlib) avec 3 sous-commandes (`prepare`, `run`, `report`) intégrées au binaire `forge` via `forge bench`. 3 retrievers déterministes :
+
+- **R1 cascade** : SUBJECTS-INDEX.md → MEMORY.md du subject ciblé → frontmatter parse. Pattern canonique Forge.
+- **R2 grep-aggregated** : blob concaténé de tous les MEMORY.md → grep paragraphe.
+- **R3 filesystem-grep** : `grep -l -r "name: X"` puis parse frontmatter.
+
+Mode déterministe ($0, ~secondes, reproductible) — pas d'appel LLM. La gold answer est extraite directement du frontmatter, donc trivialement vérifiable par substring match.
+
+**Baseline Rubee 2026-05-24** (33 subjects, 123 questions auto-vérifiables, 369 calls, 57 s wall-clock) :
+
+| Retriever | Exact | Substring | Latence p50 | Latence p95 |
+|---|---|---|---|---|
+| R1 cascade | 100% | 100% | 0 ms | 0 ms |
+| R2 grep-agrégé | 97% | 97% | 0 ms | 0 ms |
+| R3 fs-grep | 100% | 100% | 450 ms | 520 ms |
+
+Verdict : la cascade Forge tient à 100% sur le scope actuel. R3 grep est aussi précis mais 450× plus lent (subprocess fork overhead). R2 perd 3% sur des cas-bord du parseur YAML maison. Pas de raison structurelle de paniquer.
+
+Limites assumées de la v1 :
+- Questions extraites du frontmatter = trop faciles pour discriminer sur la précision.
+- Pas de simulation Claude réel (mode déterministe seul).
+- Latence R1 p50 = 0 ms artificielle (pas de cold-start, pas de navigation réelle).
+
+6 tests verts (`tests/test_bench.py`). Strictement read-only — aucune mutation de l'archi Forge.
+
+Sauvegardé : `bench/2026-05-24-rubee-baseline-{corpus,results,report}.{json,md}` comme point de référence à comparer dans 3-6 mois.
+
+## En attente
 - **MCP server natif OAuth 2.1** (5e primitive de l'analyse FORGE-analyse 2026-05-09) : hors scope vagues 1-3. À instruire via `/idea` si pertinence émerge.
-- **Migration progressive des 26 subjects existants** vers les nouveaux états (actif/mature/archived) — pas urgent, le mapping legacy garantit la rétrocompat. Nettoyage au fil des `/documente` successifs.
+- **Migration progressive des 33 subjects existants** vers les nouveaux états (actif/mature/archived) — pas urgent, le mapping legacy garantit la rétrocompat. Nettoyage au fil des `/documente` successifs.
 - **Phase 1.5** : enrichir `forge_engine.py` avec détection de patterns émergents inter-subjects (ex: 3 retards consécutifs Simon → analysis auto). Reporté.
 - **Test end-to-end `/control-tower → /documente`** sur un email réel (premier vrai cycle email automatique).
 - **Backlog Phase 0.5** : enrichir scanner forge pour détecter les liens orphelins (gotcha #4).
@@ -131,6 +161,8 @@ Cette leçon est intégrée dans la doctrine via la section « Quand invoquer ce
 
 ## Veille (signaux faibles à surveiller)
 
+- **Re-run bench Forge dans 3-6 mois** : comparer baseline 2026-05-24 (R1 cascade 100%, 33 subjects) à un nouveau run. Si dérive significative (R1 < 90% par exemple), instruire évolution v2 du bench (questions sémantiques sur Quick, génération synthétique 100/300 subjects).
+- **2 sujets flaggés post-SamourAI (2026-05-24)** à rediscuter — voir `benjamin-perso/Forge-lab/MEMORY.md` § Discussions ouvertes : (1) Obsidian comme lecteur (plugin frontmatter → wikilinks), (2) Forge n'est pas une couche d'entreprise (réouvrir D1 si scale Rubee).
 - **Adoption /skillify** : hint discret dans /documente Phase J — vérifier sur 4 semaines que des workflows ad hoc sont effectivement skillifiés. Si 0 skillify livré → hint trop faible, revoir.
 - **Adoption /cross-modal-review** : pareil. Si aucun subject n'est passé en `mature` avec eval préalable, le hint n'est pas opérant.
 - **Migration legacy** : combien de subjects ont encore un ancien `forging_state` (seed/debating/tentative/...) après 30 jours ? Si > 50%, signaler que la migration ne se fait pas naturellement.
