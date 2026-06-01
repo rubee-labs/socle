@@ -1,0 +1,22 @@
+{
+  "name": "obsidian-forge-bridge",
+  "version": "0.1.0",
+  "description": "Obsidian plugin that bridges a Claude-Forge subject pool by exposing linked_subjects as native wikilinks.",
+  "main": "main.js",
+  "scripts": {
+    "dev": "node esbuild.config.mjs",
+    "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
+    "check": "tsc -noEmit -skipLibCheck"
+  },
+  "keywords": ["obsidian-plugin", "claude-forge", "subject-pool", "wikilinks"],
+  "author": "Rubee Labs",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^16.11.6",
+    "builtin-modules": "^3.3.0",
+    "esbuild": "0.17.3",
+    "obsidian": "latest",
+    "tslib": "2.4.0",
+    "typescript": "4.7.4"
+  }
+}

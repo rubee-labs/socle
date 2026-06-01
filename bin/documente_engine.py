@@ -19,6 +19,7 @@ Exit code 0 toujours (sauf crash Python). Le skill teste `ok` du JSON.
 
 import argparse
 import datetime as _dt
+import hashlib
 import json
 import os
 import subprocess
@@ -261,11 +262,46 @@ def cmd_patch_frontmatter(args):
     if not isinstance(patch, dict):
         return _err("patch must be a JSON object", code="invalid_patch")
     try:
-        result = patch_frontmatter_file(memory_md, patch, dry_run=args.dry_run)
+        result = patch_frontmatter_file(
+            memory_md, patch,
+            dry_run=args.dry_run,
+            expected_hash=args.expected_hash,
+        )
     except (ValueError, OSError) as e:
         return _err(str(e), code="patch_failed")
     rel_path = str(memory_md.relative_to(project_dir)) if memory_md.is_relative_to(project_dir) else str(memory_md)
+    if result.get("stale_hash"):
+        return _err(
+            f"stale hash: expected {result['expected_hash']}, got {result['before_hash']}",
+            code="stale_hash",
+            path=rel_path,
+            **result,
+        )
     return _ok(path=rel_path, **result)
+
+
+def cmd_compute_hash(args):
+    """Calcule le sha256[:12] d'un MEMORY.md. À utiliser avant un patch concurrent.
+
+    Workflow type :
+      1. h=$(forge documente compute-hash path/to/subject)
+      2. ... autres opérations ...
+      3. forge documente patch-frontmatter path/to/subject '{"k":"v"}' --expected-hash $h
+
+    Si quelqu'un (autre session, hook scanner, /documente concurrent) a touché
+    le fichier entre 1 et 3, l'étape 3 fail avec `stale_hash` plutôt que d'écraser.
+    """
+    project_dir = get_project_dir()
+    p = Path(args.path)
+    if not p.is_absolute():
+        p = project_dir / args.path
+    memory_md = p / "MEMORY.md" if p.is_dir() else p
+    if not memory_md.is_file():
+        return _err(f"MEMORY.md not found at {memory_md}", code="missing_file")
+    content = memory_md.read_text(encoding="utf-8")
+    h = hashlib.sha256(content.encode()).hexdigest()[:12]
+    rel_path = str(memory_md.relative_to(project_dir)) if memory_md.is_relative_to(project_dir) else str(memory_md)
+    return _ok(path=rel_path, hash=h)
 
 
 def cmd_commit_atomic(args):
@@ -529,6 +565,20 @@ def main():
     p_patch.add_argument("path")
     p_patch.add_argument("--patch", required=True, help="JSON patch object")
     p_patch.add_argument("--dry-run", action="store_true")
+    p_patch.add_argument(
+        "--expected-hash",
+        default=None,
+        help="Expected sha256[:12] of the current file content. If provided "
+             "and the actual hash differs, the patch is refused (stale_hash). "
+             "Pattern adopté depuis Optimike Obsidian MCP `expectedHash` "
+             "(analyse Forge-Lab #7 2026-05-26). À utiliser pour éviter les "
+             "overwrites stale en présence de sessions concurrentes.",
+    )
+
+    p_hash = sub.add_parser("compute-hash",
+                            help="Calcule le sha256[:12] d'un MEMORY.md pour un "
+                                 "workflow patch ultérieur avec --expected-hash")
+    p_hash.add_argument("path")
 
     p_commit = sub.add_parser("commit-atomic")
     p_commit.add_argument("--paths", required=True, help="comma-separated paths")
@@ -561,6 +611,7 @@ def main():
         "prepare": cmd_prepare,
         "infer-type": cmd_infer_type,
         "patch-frontmatter": cmd_patch_frontmatter,
+        "compute-hash": cmd_compute_hash,
         "commit-atomic": cmd_commit_atomic,
         "scan-impacted": cmd_scan_impacted,
         "check-coherence": cmd_check_coherence,

@@ -1,0 +1,11 @@
+{
+  "id": "obsidian-forge-bridge",
+  "name": "Forge Bridge",
+  "version": "0.1.0",
+  "minAppVersion": "1.4.0",
+  "description": "Bridge a Claude-Forge subject pool into Obsidian: parses `linked_subjects` from MEMORY.md frontmatter and exposes them as native Obsidian wikilinks so the graph view discovers Forge relationships.",
+  "author": "Rubee Labs",
+  "authorUrl": "https://github.com/rubee-labs/claude-forge",
+  "fundingUrl": "",
+  "isDesktopOnly": false
+}

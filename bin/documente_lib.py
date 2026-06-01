@@ -210,15 +210,37 @@ def _parse_scalar(value):
     return value
 
 
-def patch_frontmatter_file(path, patch, dry_run=False):
-    """Applique le patch au MEMORY.md. Retourne dict {changed, before_hash, after_hash, dry_run}."""
+def patch_frontmatter_file(path, patch, dry_run=False, expected_hash=None):
+    """Applique le patch au MEMORY.md. Retourne dict {changed, before_hash, after_hash, dry_run}.
+
+    Si `expected_hash` est fourni (12 hex chars du sha256 attendu sur le contenu
+    actuel), refuse l'écriture quand le hash réel diverge — fail explicite plutôt
+    qu'overwrite stale, pattern Optimike Obsidian MCP `expectedHash` (analyse
+    Forge-Lab #7 2026-05-26). Le mismatch est signalé via la clé `stale_hash`
+    dans le retour : le caller (CLI ou autre agent) décide quoi faire.
+
+    Cible : éviter le scénario incident 2026-05-26 (2 sessions Claude qui
+    committent le même repo en parallèle, commits tronqués) — feedback critique
+    `feedback_pas_de_sessions_git_concurrentes.md` côté CE.
+    """
     content = path.read_text(encoding="utf-8")
+    before_hash = hashlib.sha256(content.encode()).hexdigest()[:12]
+
+    if expected_hash is not None and expected_hash != before_hash:
+        return {
+            "changed": False,
+            "before_hash": before_hash,
+            "after_hash": None,
+            "dry_run": dry_run,
+            "stale_hash": True,
+            "expected_hash": expected_hash,
+        }
+
     fm_lines, body = split_frontmatter(content)
     if fm_lines is None:
         raise ValueError(f"no frontmatter found in {path}")
     new_fm_lines = apply_patch(fm_lines, patch)
     new_content = join_frontmatter(new_fm_lines, body)
-    before_hash = hashlib.sha256(content.encode()).hexdigest()[:12]
     after_hash = hashlib.sha256(new_content.encode()).hexdigest()[:12]
     changed = (before_hash != after_hash)
     if changed and not dry_run:
@@ -228,4 +250,5 @@ def patch_frontmatter_file(path, patch, dry_run=False):
         "before_hash": before_hash,
         "after_hash": after_hash,
         "dry_run": dry_run,
+        "stale_hash": False,
     }
