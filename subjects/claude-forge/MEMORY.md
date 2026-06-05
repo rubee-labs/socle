@@ -1,7 +1,7 @@
 ---
 projet: claude-forge
-statut: phase-3-refonte-process-gamma-3-etats + vague-3-p4-livree
-derniere_maj: 2026-05-24
+statut: phase-3-refonte-process-gamma-3-etats + vague-3-p4-livree + decouplage-CE-0.2.0
+derniere_maj: 2026-06-05
 auteur: benjamin
 ---
 
@@ -10,7 +10,7 @@ auteur: benjamin
 ## Quick
 
 État : actif (subject auto-référentiel du projet, pas une instance de type métier)
-Statut : Phase 3 livrée + **Vague 3 P4 livrée** (bench_engine 2026-05-24). 4 primitives livrées (P5 autolink, P3 skillify, P2 cross-modal-eval, P4 bench).
+Statut : Phase 3 livrée + Vague 3 P4 livrée (bench_engine 2026-05-24) + **Découplage CE livré (0.2.0, 2026-06-05)**. Le plugin est désormais distribuable : config par-repo `.forge.yaml` (loader `load_forge_config`), `forge init`, skill `/forge-init`, hook SessionStart nudge. 1er pool non-CE bootstrapé : `benjamin-perso/jean-claude-code` (subject `titan-connect`). CE strictement inchangé (zéro config).
 Liens forts : aucun (subject racine du projet)
 Prochaines étapes : surveillance bench Forge (re-run dans 3-6 mois pour mesurer dérive cascade), arbitrage backlog Forge-Lab (Obsidian comme lecteur ? couche d'entreprise ? — flaggés 2026-05-24 post-SamourAI), migration progressive des 33 subjects vers les 3 nouveaux états (non urgent grâce au mapping legacy)
 Risques : hint /skillify toujours discret (0 skillify livré à ce jour), bench v1 limité aux questions frontmatter (questions sémantiques sur Quick non couvertes — évolution v2 à instruire si signal de saturation)
