@@ -5,7 +5,7 @@ produced_by: human
 decided_by: benjamin
 status: active
 upstream_discussions:
-  - benjamin-perso/jean-claude-code (bootstrap 1er pool non-CE : titan-connect)
+  - benjamin-perso/jean-claude-code (bootstrap 1er pool non-CE : kite-connect)
 parameters:
   version: 0.2.0
   config_file: .forge.yaml
@@ -30,8 +30,8 @@ l'arborescence de CE : écriture de l'index dans `entreprise/`, découverte des
 subjects via le trio `("services","entreprise","humains")`. Conséquence : donné
 à un client (ou à un repo perso), le plugin créait un dossier `entreprise/`
 fantôme et cherchait les subjects au mauvais endroit. Révélé en bootstrapant le
-**premier pool non-CE** : `jean-claude-code/subjects/titan-connect/` (réseau
-Titan Connect, inbound Hublack) — le scanner du cache a créé un
+**premier pool non-CE** : `jean-claude-code/subjects/kite-connect/` (réseau
+Kite & Connect, inbound Hublack) — le scanner du cache a créé un
 `jean-claude-code/entreprise/` parasite.
 
 Benjamin (15 ans) : « Comment un plugin peut-il écrire dans un dossier précis ?
