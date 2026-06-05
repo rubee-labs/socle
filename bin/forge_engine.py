@@ -41,11 +41,13 @@ from pathlib import Path
 from forge_lib import (
     days_since,
     get_project_dir,
+    load_forge_config,
     parse_frontmatter,
     parse_value,
 )
 
 PROJECT_DIR = get_project_dir()
+_CONFIG = load_forge_config(PROJECT_DIR)
 
 
 # -------------------------------------------------------------------- helpers
@@ -222,10 +224,10 @@ def _normalize_linked_records(linked_records):
 
 
 def _candidate_subject_roots() -> list[Path]:
-    """Liste les racines ou chercher des subjects/."""
+    """Liste les racines ou chercher des subjects/ (pilotées par .forge.yaml)."""
     roots = []
-    for top in ("services", "entreprise", "humains"):
-        top_path = PROJECT_DIR / top
+    for top in _CONFIG["pool_roots"]:
+        top_path = PROJECT_DIR if top == "." else PROJECT_DIR / top
         if not top_path.is_dir():
             continue
         # services/<X>/subjects/, entreprise/subjects/, humains/<nom>/subjects/
@@ -237,7 +239,8 @@ def _candidate_subject_roots() -> list[Path]:
             sub = child / "subjects"
             if sub.is_dir():
                 roots.append(sub)
-    return roots
+    # Dédoublonnage (le root "." peut re-balayer des roots nommés), ordre préservé.
+    return list(dict.fromkeys(roots))
 
 
 def resolve_link(link: str, current_subject_path: Path) -> Path | None:

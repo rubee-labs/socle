@@ -34,6 +34,8 @@ services/<X>/
 
 `entreprise/types/` et `entreprise/subjects/` pour transverses. `humains/<nom>/subjects/` pour perso.
 
+> Note (v0.2.0) : ces emplacements sont les **défauts de claude-enterprise**, pas une contrainte du plugin. Chaque repo définit ses `pool_roots`/`types_roots`/`output_dir` via `.forge.yaml` (cf. README § Configuration par-repo). Sans config, l'index s'écrit dans `entreprise/` si ce dossier existe, sinon à la racine du repo.
+
 ### 4 sous-dossiers — distingués par producteur
 
 | Dossier | `produced_by` | Exemple |
@@ -248,7 +250,7 @@ Le graph **n'est pas persisté** (ni dans le frontmatter, ni dans un sidecar) �
 
 | Niveau | Fichier | Quand |
 |---|---|---|
-| 1 | `entreprise/SUBJECTS-INDEX.md` | Toujours, au démarrage de session (carte des subjects actifs) |
+| 1 | `<output_dir>/SUBJECTS-INDEX.md` (défaut `entreprise/` si présent, sinon racine du pool) | Toujours, au démarrage de session (carte des subjects actifs) |
 | 2 | `<chemin>/<subject>/MEMORY.md` | Si subject concerné par la tâche |
 | 3 | `events/`, `analyses/`, `discussions/`, `decisions/` | Rare, à la demande sur un fichier précis |
 
@@ -417,7 +419,7 @@ status: active                    # active | archived
 6. **Compilation en exécutable** (refonte 2026-05-10) : `/compile-doctrine` est **abandonné** (théorique, jamais utilisé). La compilation continue à l'usage est portée par `/skillify` pour le pattern « procédurale → skill ». Les autres patterns historiquement listés (déclarative → règle, comportementale → agent SDK, évitement → injection, métrique → monitor, routing → FK) restent à instruire au cas par cas si le besoin émerge concrètement — pas d'API générique pré-construite.
 7. **Pas de migration forcée** : les anciens `MEMORY.md` / `discussions/` / `decisions/` sans frontmatter étendu restent valides. Adoption opportuniste (lors de modification).
 8. **Producteur (`produced_by`)** : `external` (monde/MCP), `claude` (Claude seul), `human_and_claude` (échange), `human` (Benjamin valide).
-9. **Lecture en cascade** : niveau 1 = `entreprise/SUBJECTS-INDEX.md` toujours, niveau 2 = `MEMORY.md` du subject, niveau 3 = un fichier précis à la demande.
+9. **Lecture en cascade** : niveau 1 = `<output_dir>/SUBJECTS-INDEX.md` (défaut `entreprise/`, cf. `.forge.yaml`) toujours, niveau 2 = `MEMORY.md` du subject, niveau 3 = un fichier précis à la demande.
 
 ---
 

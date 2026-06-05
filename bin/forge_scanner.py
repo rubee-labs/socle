@@ -34,6 +34,7 @@ from pathlib import Path
 from forge_lib import (
     days_since,
     get_project_dir,
+    load_forge_config,
     parse_frontmatter,
     parse_inline_dict,
     parse_inline_list,
@@ -42,8 +43,15 @@ from forge_lib import (
 )
 
 PROJECT_DIR = get_project_dir()
-INDEX_FILE = PROJECT_DIR / "entreprise" / "SUBJECTS-INDEX.md"
-METRICS_FILE = PROJECT_DIR / "entreprise" / "SUBJECT-POOL-METRICS.md"
+# Emplacement de sortie + groupage de domaine pilotés par la config par-repo
+# (.forge.yaml à la racine du pool), avec défauts auto-détectés. CE sans config
+# retombe sur `entreprise/` ; un pool plat écrit à sa racine — jamais de dossier
+# `entreprise/` fantôme. Cf. load_forge_config() dans forge_lib.py.
+_CONFIG = load_forge_config(PROJECT_DIR)
+_OUTPUT_DIR = _CONFIG["output_dir"]
+_DOMAIN_ROOTS = set(_CONFIG["domain_roots"])
+INDEX_FILE = _OUTPUT_DIR / "SUBJECTS-INDEX.md"
+METRICS_FILE = _OUTPUT_DIR / "SUBJECT-POOL-METRICS.md"
 EXCLUDE_DIRS = {".git", "node_modules", "venv", "__pycache__", ".claude", "templates"}
 
 STAGNATION_DAYS = 30
@@ -172,7 +180,7 @@ def compute_metrics(subjects):
             parts = rel.parts
             if len(parts) > 0:
                 domain = parts[0]
-                if len(parts) > 1 and parts[0] in ("services", "humains", "entreprise"):
+                if len(parts) > 1 and parts[0] in _DOMAIN_ROOTS:
                     domain = "/".join(parts[:2])
                 by_domain[domain] += 1
         except ValueError:

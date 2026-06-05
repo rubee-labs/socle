@@ -43,6 +43,91 @@ def get_project_dir() -> Path:
     return cwd
 
 
+_CONFIG_CACHE = {}
+
+# Défauts historiques (arborescence claude-enterprise). Servent UNIQUEMENT de
+# valeurs par défaut quand `.forge.yaml` est absent — jamais codés en dur dans la
+# logique des engines.
+_DEFAULT_POOL_ROOTS = ["services", "entreprise", "humains", "."]
+_DEFAULT_DOMAIN_ROOTS = ["services", "humains", "entreprise"]
+_DEFAULT_SKILL_VISIBILITY = "entreprise"
+
+
+def load_forge_config(project_dir=None) -> dict:
+    """Charge la config par-repo `.forge.yaml` (racine du pool) + défauts auto-détectés.
+
+    Rend un dict aux clés garanties :
+      output_dir       : Path absolu (où écrire SUBJECTS-INDEX.md + SUBJECT-POOL-METRICS.md)
+      pool_roots       : list[str]  (dossiers sous lesquels vivent <root>/subjects/ ; "." = racine)
+      types_roots      : list[str]  (idem pour <root>/types/ ; défaut = pool_roots)
+      domain_roots     : list[str]  (préfixes regroupés sur 2 segments dans les metrics)
+      skill_visibility : str
+
+    Ne lève JAMAIS : fichier absent ou malformé → auto-détection complète. Ce
+    contrat est critique car le scanner appelle cette fonction à l'import (un
+    throw casserait le hook SessionStart).
+
+    Auto-détection (clé absente) :
+      - output_dir : <root>/entreprise si ce dossier existe, sinon <root>
+        (jamais de création forcée d'un `entreprise/` fantôme).
+      - pool_roots / types_roots / domain_roots / skill_visibility : défauts CE.
+        Le "." dans pool_roots rend un pool plat (<root>/subjects/) découvrable
+        sans config, et est inerte pour CE (pas de subjects/ à sa racine).
+    """
+    project_dir = Path(project_dir).resolve() if project_dir else get_project_dir()
+    cache_key = str(project_dir)
+    if cache_key in _CONFIG_CACHE:
+        return _CONFIG_CACHE[cache_key]
+
+    raw = {}
+    cfg_path = project_dir / ".forge.yaml"
+    try:
+        if cfg_path.is_file():
+            text = cfg_path.read_text(encoding="utf-8")
+            # parse_simple_yaml ne gère pas les commentaires en fin de ligne ;
+            # on retire les ` # ...` (hash précédé d'un espace, hors guillemets simples)
+            # pour tolérer un .forge.yaml écrit à la main avec commentaires inline.
+            cleaned = "\n".join(re.sub(r"\s+#.*$", "", ln) for ln in text.split("\n"))
+            raw = parse_simple_yaml(cleaned) or {}
+    except Exception:
+        raw = {}
+
+    def _resolve_dir(value):
+        value = str(value).strip()
+        if value in (".", ""):
+            return project_dir
+        return project_dir / value
+
+    # output_dir
+    if raw.get("output_dir") is not None:
+        output_dir = _resolve_dir(raw["output_dir"])
+    else:
+        ent = project_dir / "entreprise"
+        output_dir = ent if ent.is_dir() else project_dir
+
+    def _as_list(value, default):
+        if value is None:
+            return list(default)
+        if isinstance(value, list):
+            return [str(v) for v in value]
+        return [str(value)]
+
+    pool_roots = _as_list(raw.get("pool_roots"), _DEFAULT_POOL_ROOTS)
+    types_roots = _as_list(raw.get("types_roots"), pool_roots)
+    domain_roots = _as_list(raw.get("domain_roots"), _DEFAULT_DOMAIN_ROOTS)
+    skill_visibility = raw.get("skill_visibility") or _DEFAULT_SKILL_VISIBILITY
+
+    config = {
+        "output_dir": output_dir,
+        "pool_roots": pool_roots,
+        "types_roots": types_roots,
+        "domain_roots": domain_roots,
+        "skill_visibility": str(skill_visibility),
+    }
+    _CONFIG_CACHE[cache_key] = config
+    return config
+
+
 def parse_frontmatter(path):
     """Parse le frontmatter YAML d'un fichier markdown. Retourne None si absent."""
     try:

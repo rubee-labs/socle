@@ -18,6 +18,10 @@ BIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$BIN_DIR/.." && pwd)"
 
 case "$1" in
+  init)
+    shift
+    exec python3 "$BIN_DIR/init_engine.py" "$@"
+    ;;
   documente)
     shift
     exec python3 "$BIN_DIR/documente_engine.py" "$@"
@@ -58,6 +62,7 @@ case "$1" in
 forge — claude-forge CLI
 
 Sous-commandes :
+  init [--output-dir X] [...]     Initialise le pool dans ce repo (.forge.yaml + subjects/ + types/)
   documente <subcommand> [args]   Engine /documente (prepare, infer-type, write-capture, ...)
   engine <subject-path>           Cycle γ et re-synthèse Quick (forge_engine)
   scanner [args]                  Régénérateur des index globaux (SUBJECTS-INDEX, METRICS)

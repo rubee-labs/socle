@@ -37,7 +37,7 @@ import time
 from datetime import datetime
 from pathlib import Path
 
-from forge_lib import get_project_dir, parse_frontmatter
+from forge_lib import get_project_dir, load_forge_config, parse_frontmatter
 
 # ----------------------------------------------------------------------------
 # Constantes
@@ -209,7 +209,7 @@ def retriever_r1_cascade(question, project_dir):
     name = question["subject_name"]
     field = question["field"]
 
-    index_path = project_dir / "entreprise" / "SUBJECTS-INDEX.md"
+    index_path = load_forge_config(project_dir)["output_dir"] / "SUBJECTS-INDEX.md"
     if not index_path.exists():
         return {"found": False, "error": "SUBJECTS-INDEX.md absent"}
 

@@ -28,7 +28,7 @@ import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from forge_lib import get_project_dir, parse_frontmatter
+from forge_lib import get_project_dir, load_forge_config, parse_frontmatter
 from documente_lib import patch_frontmatter_file, parse_nested_dict_block
 
 VERSION = 1
@@ -66,11 +66,23 @@ def cmd_list_subjects(args):
     """Liste tous les subjects du repo (avec MEMORY.md ayant forging_state)."""
     project_dir = get_project_dir()
     subjects = []
-    for root in ("services", "entreprise", "humains"):
-        root_dir = project_dir / root
+    seen = set()
+    for root in load_forge_config(project_dir)["pool_roots"]:
+        if root == ".":
+            # Pool plat : subjects/ directement à la racine — glob NON récursif
+            # pour éviter de re-balayer (et dédoublonner) les roots nommés.
+            root_dir = project_dir
+            matches = root_dir.glob("subjects/*/MEMORY.md")
+        else:
+            root_dir = project_dir / root
+            matches = root_dir.rglob("subjects/*/MEMORY.md")
         if not root_dir.is_dir():
             continue
-        for memory_md in root_dir.rglob("subjects/*/MEMORY.md"):
+        for memory_md in matches:
+            rp = memory_md.resolve()
+            if rp in seen:
+                continue
+            seen.add(rp)
             fm = parse_frontmatter(memory_md)
             if not fm or "forging_state" not in fm:
                 continue

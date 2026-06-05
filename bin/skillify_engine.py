@@ -28,7 +28,7 @@ import sys
 from datetime import date
 from pathlib import Path
 
-from forge_lib import get_project_dir
+from forge_lib import get_project_dir, load_forge_config
 
 STUB_SENTINEL = "SKILLIFY_STUB"
 
@@ -75,7 +75,7 @@ def _resolve_skills_root(project_dir: Path) -> Path:
     return project_dir / "skills"
 
 
-def _make_skill_md(name, description, triggers):
+def _make_skill_md(name, description, triggers, visibility="entreprise"):
     triggers_block = ""
     if triggers:
         triggers_block = "\n  ".join(f"- {t.strip()}" for t in triggers if t.strip())
@@ -85,7 +85,7 @@ def _make_skill_md(name, description, triggers):
 name: {name}
 description: >-
   {desc}
-visibilité: entreprise
+visibilité: {visibility}
 auteur: {STUB_SENTINEL}
 date_creation: {today}
 version: 0.1
@@ -266,8 +266,10 @@ def cmd_scaffold(name, description=None, triggers=None, target_root=None):
     (skill_dir / "fixtures").mkdir()
 
     triggers_list = triggers or []
+    visibility = load_forge_config(project_dir)["skill_visibility"]
     (skill_dir / "SKILL.md").write_text(
-        _make_skill_md(name, description, triggers_list), encoding="utf-8"
+        _make_skill_md(name, description, triggers_list, visibility=visibility),
+        encoding="utf-8",
     )
     (skill_dir / "scripts" / f"{name}.py").write_text(
         _make_main_script(name), encoding="utf-8"

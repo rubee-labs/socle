@@ -22,6 +22,36 @@ Les deux sont complémentaires.
 
 À documenter — `npx claude-forge install` ou équivalent.
 
+## Configuration par-repo (`.forge.yaml`)
+
+claude-forge ne suppose **aucune** arborescence imposée : chaque repo décide où il stocke sa mémoire, via un fichier `.forge.yaml` (optionnel) à la racine du pool. Le plugin est ainsi distribuable à n'importe quel repo sans hériter de la structure d'un autre.
+
+### Mise en route
+
+Dans un nouveau repo, lance une fois :
+
+```bash
+forge init                      # auto-détection (écrit .forge.yaml + crée subjects/ + types/)
+forge init --output-dir memoire --pool-root memoire   # emplacement explicite
+```
+
+Ou utilise le skill guidé `/forge-init`. Un hook SessionStart *nudge* te le rappelle si un pool `subjects/` existe sans config.
+
+### Schéma `.forge.yaml`
+
+```yaml
+output_dir: .                 # où écrire SUBJECTS-INDEX.md + SUBJECT-POOL-METRICS.md ("." = racine)
+pool_roots: ["."]             # dossiers sous lesquels vivent <root>/subjects/
+types_roots: ["."]            # idem pour <root>/types/ (défaut = pool_roots)
+domain_roots: []              # préfixes regroupés sur 2 segments dans les metrics (cosmétique)
+skill_visibility: mon-projet  # valeur injectée dans le frontmatter des SKILL.md générés
+```
+
+Toutes les clés sont **optionnelles**. Sans `.forge.yaml`, l'auto-détection s'applique : `output_dir` = `entreprise/` **si ce dossier existe** (compat claude-enterprise), sinon la racine du repo — jamais un `entreprise/` fantôme. La découverte des subjects se fait par `os.walk`, indépendante de la structure.
+
+Exemple — repo plat (un projet dédié) : `output_dir: .`, `pool_roots: ["."]`.
+Exemple — claude-enterprise : aucun `.forge.yaml` requis (zéro config, comportement historique).
+
 ## Architecture
 
 ```
