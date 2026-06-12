@@ -1,6 +1,6 @@
 # Bench Forge — 2026-05-24T09:42:40
 
-- Project : `/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise`
+- Project : `/Users/bhamon/git/claude-enterprise`
 - Corpus : `/tmp/forge-bench-corpus.json`
 - Retrievers : R1, R2, R3
 - Questions : 123

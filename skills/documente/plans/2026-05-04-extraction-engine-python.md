@@ -228,10 +228,10 @@ Expected: chaque commande affiche `{"ok": false, "version": 1, "error": "not imp
 - [ ] **Step 4: Commit**
 
 ```bash
-git -C "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise" add \
+git -C "/Users/bhamon/git/claude-enterprise" add \
   entreprise/config/feedback-loop/documente_engine.py \
   entreprise/skills/documente/plans/2026-05-04-extraction-engine-python.md
-git -C "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise" commit -m "feat(documente): squelette documente_engine.py + plan d'extraction
+git -C "/Users/bhamon/git/claude-enterprise" commit -m "feat(documente): squelette documente_engine.py + plan d'extraction
 
 - Dispatcher CLI avec 9 commandes stub (list-subjects, prepare, infer-type,
   patch-frontmatter, commit-atomic, scan-impacted, check-coherence,
@@ -407,9 +407,9 @@ Expected: 2 tests OK.
 - [ ] **Step 7: Commit**
 
 ```bash
-git -C "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise" add \
+git -C "/Users/bhamon/git/claude-enterprise" add \
   entreprise/config/feedback-loop/tests/
-git -C "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise" commit -m "test(documente): harness unittest + smoke + fixture order-398
+git -C "/Users/bhamon/git/claude-enterprise" commit -m "test(documente): harness unittest + smoke + fixture order-398
 
 Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ```
@@ -508,10 +508,10 @@ Expected: liste JSON propre avec les ~5 subjects achats + autres.
 - [ ] **Step 6: Commit**
 
 ```bash
-git -C "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise" add \
+git -C "/Users/bhamon/git/claude-enterprise" add \
   entreprise/config/feedback-loop/documente_engine.py \
   entreprise/config/feedback-loop/tests/test_documente_engine.py
-git -C "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise" commit -m "feat(documente): list-subjects scanne les MEMORY.md avec forging_state
+git -C "/Users/bhamon/git/claude-enterprise" commit -m "feat(documente): list-subjects scanne les MEMORY.md avec forging_state
 
 Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ```
@@ -628,10 +628,10 @@ Expected: JSON avec `is_subject_pool: true`, `subject_exists: true`, frontmatter
 - [ ] **Step 6: Commit**
 
 ```bash
-git -C "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise" add \
+git -C "/Users/bhamon/git/claude-enterprise" add \
   entreprise/config/feedback-loop/documente_engine.py \
   entreprise/config/feedback-loop/tests/test_documente_engine.py
-git -C "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise" commit -m "feat(documente): prepare détecte subject pool + frontmatter courant
+git -C "/Users/bhamon/git/claude-enterprise" commit -m "feat(documente): prepare détecte subject pool + frontmatter courant
 
 Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ```
@@ -791,10 +791,10 @@ Expected:
 - [ ] **Step 6: Commit**
 
 ```bash
-git -C "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise" add \
+git -C "/Users/bhamon/git/claude-enterprise" add \
   entreprise/config/feedback-loop/documente_engine.py \
   entreprise/config/feedback-loop/tests/test_documente_engine.py
-git -C "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise" commit -m "feat(documente): infer-type avec 4 stratégies (frontmatter, single, naming, ambiguous)
+git -C "/Users/bhamon/git/claude-enterprise" commit -m "feat(documente): infer-type avec 4 stratégies (frontmatter, single, naming, ambiguous)
 
 Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ```
@@ -1167,7 +1167,7 @@ python3 entreprise/config/feedback-loop/documente_engine.py patch-frontmatter \
 Expected: `"changed": true`, `"dry_run": true`, hash before ≠ hash after. Le fichier réel n'a pas changé (vérifier avec `git diff`).
 
 ```bash
-git -C "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise" diff services/achats/subjects/order-398/MEMORY.md
+git -C "/Users/bhamon/git/claude-enterprise" diff services/achats/subjects/order-398/MEMORY.md
 ```
 
 Expected: vide (dry-run n'a rien écrit).
@@ -1175,11 +1175,11 @@ Expected: vide (dry-run n'a rien écrit).
 - [ ] **Step 7: Commit**
 
 ```bash
-git -C "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise" add \
+git -C "/Users/bhamon/git/claude-enterprise" add \
   entreprise/config/feedback-loop/documente_engine.py \
   entreprise/config/feedback-loop/documente_lib.py \
   entreprise/config/feedback-loop/tests/test_documente_engine.py
-git -C "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise" commit -m "feat(documente): patch-frontmatter avec édition surgicale (préserve formatage)
+git -C "/Users/bhamon/git/claude-enterprise" commit -m "feat(documente): patch-frontmatter avec édition surgicale (préserve formatage)
 
 - documente_lib.py : split/join frontmatter + apply_patch
 - Support scalaire, dict, liste, opérations +/-
@@ -1345,10 +1345,10 @@ Expected: 3 tests OK.
 - [ ] **Step 5: Commit**
 
 ```bash
-git -C "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise" add \
+git -C "/Users/bhamon/git/claude-enterprise" add \
   entreprise/config/feedback-loop/documente_engine.py \
   entreprise/config/feedback-loop/tests/test_documente_engine.py
-git -C "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise" commit -m "feat(documente): commit-atomic stage+commit+push idempotent
+git -C "/Users/bhamon/git/claude-enterprise" commit -m "feat(documente): commit-atomic stage+commit+push idempotent
 
 Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ```
@@ -1447,10 +1447,10 @@ Expected: 2 tests OK.
 - [ ] **Step 5: Commit**
 
 ```bash
-git -C "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise" add \
+git -C "/Users/bhamon/git/claude-enterprise" add \
   entreprise/config/feedback-loop/documente_engine.py \
   entreprise/config/feedback-loop/tests/test_documente_engine.py
-git -C "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise" commit -m "feat(documente): scan-impacted liste les exécutants candidats
+git -C "/Users/bhamon/git/claude-enterprise" commit -m "feat(documente): scan-impacted liste les exécutants candidats
 
 Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ```
@@ -1594,10 +1594,10 @@ Expected: 3 tests OK.
 - [ ] **Step 5: Commit**
 
 ```bash
-git -C "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise" add \
+git -C "/Users/bhamon/git/claude-enterprise" add \
   entreprise/config/feedback-loop/documente_engine.py \
   entreprise/config/feedback-loop/tests/test_documente_engine.py
-git -C "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise" commit -m "feat(documente): check-coherence détecte conflits sur active_decisions
+git -C "/Users/bhamon/git/claude-enterprise" commit -m "feat(documente): check-coherence détecte conflits sur active_decisions
 
 Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ```
@@ -1784,10 +1784,10 @@ Expected: 3 tests OK.
 - [ ] **Step 5: Commit**
 
 ```bash
-git -C "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise" add \
+git -C "/Users/bhamon/git/claude-enterprise" add \
   entreprise/config/feedback-loop/documente_engine.py \
   entreprise/config/feedback-loop/tests/test_documente_engine.py
-git -C "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise" commit -m "feat(documente): write-capture compose frontmatter Python (LLM ne fournit que le body)
+git -C "/Users/bhamon/git/claude-enterprise" commit -m "feat(documente): write-capture compose frontmatter Python (LLM ne fournit que le body)
 
 Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ```
@@ -1902,10 +1902,10 @@ Expected: tous les tests OK (~22 au total).
 - [ ] **Step 6: Commit**
 
 ```bash
-git -C "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise" add \
+git -C "/Users/bhamon/git/claude-enterprise" add \
   entreprise/config/feedback-loop/documente_engine.py \
   entreprise/config/feedback-loop/tests/test_documente_engine.py
-git -C "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise" commit -m "feat(documente): cascade-last-event réutilise patch-frontmatter
+git -C "/Users/bhamon/git/claude-enterprise" commit -m "feat(documente): cascade-last-event réutilise patch-frontmatter
 
 - Suite unittest complète passe (22 tests)
 
@@ -2007,13 +2007,13 @@ Si une fixture n'existe pas, elle est silencieusement skippée.
 - [ ] **Step 3: Tagger l'état actuel pour rollback**
 
 ```bash
-git -C "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise" tag pre-documente-engine-cutover
+git -C "/Users/bhamon/git/claude-enterprise" tag pre-documente-engine-cutover
 ```
 
 Expected: tag créé. Vérifier :
 
 ```bash
-git -C "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise" tag | grep cutover
+git -C "/Users/bhamon/git/claude-enterprise" tag | grep cutover
 ```
 
 Expected: `pre-documente-engine-cutover`.
@@ -2021,9 +2021,9 @@ Expected: `pre-documente-engine-cutover`.
 - [ ] **Step 4: Commit**
 
 ```bash
-git -C "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise" add \
+git -C "/Users/bhamon/git/claude-enterprise" add \
   entreprise/config/feedback-loop/tests/run_regression.sh
-git -C "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise" commit -m "test(documente): script de régression sur 3 subjects réels + tag rollback
+git -C "/Users/bhamon/git/claude-enterprise" commit -m "test(documente): script de régression sur 3 subjects réels + tag rollback
 
 Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ```
@@ -2243,9 +2243,9 @@ rm -rf services/achats/subjects/test-cutover-2026-05-04
 - [ ] **Step 6: Commit de la bascule**
 
 ```bash
-git -C "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise" add \
+git -C "/Users/bhamon/git/claude-enterprise" add \
   entreprise/skills/documente/SKILL.md
-git -C "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise" commit -m "refactor(documente): bascule SKILL.md vers documente_engine.py
+git -C "/Users/bhamon/git/claude-enterprise" commit -m "refactor(documente): bascule SKILL.md vers documente_engine.py
 
 Le skill devient un orchestrateur léger. Phases déterministes
 (0a-0e, 3 frontmatter, 6, 7 mécanique, 8 scan, 9 commit) déléguées
@@ -2266,7 +2266,7 @@ Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 - [ ] **Step 7: Push (bascule en prod)**
 
 ```bash
-git -C "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise" push
+git -C "/Users/bhamon/git/claude-enterprise" push
 ```
 
 - [ ] **Step 8: Test de validation post-bascule**

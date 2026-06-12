@@ -1,7 +1,7 @@
 {
   "version": 1,
   "ran_at": "2026-05-24T09:42:40",
-  "project_dir": "/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-enterprise",
+  "project_dir": "/Users/bhamon/git/claude-enterprise",
   "corpus_path": "/tmp/forge-bench-corpus.json",
   "retrievers": [
     "R1",

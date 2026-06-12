@@ -72,7 +72,7 @@ Cette leçon est intégrée dans la doctrine via la section « Quand invoquer ce
 
 ## Liens
 
-- Subject auto-référentiel : `/Users/bhamon/Documents/1 - Boulot/Dev/Git/claude-forge/subjects/claude-forge/`
+- Subject auto-référentiel : `/Users/bhamon/git/claude-forge/subjects/claude-forge/`
 - Analyse déclencheuse : `benjamin-perso/Forge-lab/analyses/2026-05-09-meta-meta-prompting-garry-tan.md`
 - Schéma post-refonte : `benjamin-perso/Forge-lab/analyses/2026-05-10-schema-forge-apres-refonte-cycle.html`
 - 4 décisions YAML actives : `subjects/claude-forge/decisions/2026-05-10-*.yaml`
