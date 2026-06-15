@@ -435,6 +435,19 @@ def render_html(graph_data):
 
 def cmd_render(args):
     project_dir = get_project_dir()
+
+    # Rafraîchit les liens inline OKF (`## Liens`) avant le render — « on ouvre
+    # un viewer » est le moment naturel pour resynchroniser les liens (décision
+    # 2026-06-15 : okf-sync à la demande, hors chemin critique de /documente).
+    # Désactivable via --no-sync pour un render rapide.
+    okf_sync_summary = None
+    if not args.no_sync:
+        try:
+            from okf_sync_engine import sync_all
+            okf_sync_summary = sync_all(project_dir, dry_run=False)
+        except Exception as e:
+            okf_sync_summary = {"ok": False, "error": f"{type(e).__name__}: {e}"}
+
     graph_data = build_graph_data(project_dir)
     html = render_html(graph_data)
 
@@ -450,6 +463,7 @@ def cmd_render(args):
         "node_count": graph_data["stats"]["node_count"],
         "edge_count": graph_data["stats"]["edge_count"],
         "type_count": graph_data["stats"]["type_count"],
+        "okf_sync": okf_sync_summary,
     }, indent=2, ensure_ascii=False))
 
     if not args.no_open:
@@ -498,6 +512,12 @@ def main():
         "--no-open",
         action="store_true",
         help="Do not auto-open the result in Chrome",
+    )
+    p_render.add_argument(
+        "--no-sync",
+        action="store_true",
+        help="Skip the OKF inline-links refresh before rendering (faster, but "
+             "the `## Liens` sections may be stale for external OKF consumers)",
     )
 
     sub.add_parser("stats", help="Print node/edge counts (debug)")

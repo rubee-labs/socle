@@ -35,7 +35,7 @@ import sys
 from pathlib import Path
 
 from forge_lib import get_project_dir, parse_frontmatter, parse_subject_slug
-from autolink_engine import _build_full_graph
+from autolink_engine import _load_type_index
 
 # ----------------------------------------------------------------------------
 # Constantes
@@ -247,12 +247,16 @@ def _process_memory(memory, fm, slug_to_path, alias_map, known_types):
     return changed, old_content, new_content, targets
 
 
-def cmd_sync(args):
-    project_dir = get_project_dir() if not args.root else Path(args.root).resolve()
+def sync_all(project_dir, dry_run=False):
+    """Régénère la section `## Liens` dans tous les MEMORY.md du pool.
+
+    Fonction publique réutilisable (appelée par cmd_sync ET par graph_engine
+    avant un render, pour rafraîchir les liens à la demande quand on ouvre un
+    viewer). Retourne un dict-résumé JSON-serializable.
+    """
     slug_to_path = _build_slug_to_path(project_dir)
     alias_map = _build_alias_map(slug_to_path)
-    _, _, known_types_set = _build_full_graph(project_dir)
-    known_types = set(known_types_set)
+    known_types = set(_load_type_index(project_dir).keys())
 
     changed_files = []
     resolved_count = 0
@@ -269,19 +273,25 @@ def cmd_sync(args):
         rel = str(memory.relative_to(project_dir)) if memory.is_relative_to(project_dir) else str(memory)
         if changed:
             changed_files.append(rel)
-            if not args.dry_run:
+            if not dry_run:
                 memory.write_text(new_content, encoding="utf-8")
 
-    result = {
+    return {
         "ok": True,
-        "dry_run": args.dry_run,
+        "dry_run": dry_run,
         "subject_count": len(slug_to_path),
         "changed_count": len(changed_files),
         "resolved_links": resolved_count,
         "unresolved_links": unresolved_count,
-        "changed_files": changed_files[:20] if args.dry_run else changed_files,
+        "changed_files": changed_files,
     }
-    if args.dry_run and len(changed_files) > 20:
+
+
+def cmd_sync(args):
+    project_dir = get_project_dir() if not args.root else Path(args.root).resolve()
+    result = sync_all(project_dir, dry_run=args.dry_run)
+    if args.dry_run and len(result["changed_files"]) > 20:
+        result["changed_files"] = result["changed_files"][:20]
         result["changed_files_truncated"] = True
     print(json.dumps(result, indent=2, ensure_ascii=False))
     return 0
@@ -291,7 +301,7 @@ def cmd_check(args):
     project_dir = get_project_dir() if not args.root else Path(args.root).resolve()
     slug_to_path = _build_slug_to_path(project_dir)
     alias_map = _build_alias_map(slug_to_path)
-    _, _, known_types_set = _build_full_graph(project_dir)
+    known_types_set = set(_load_type_index(project_dir).keys())
     known_types = set(known_types_set)
 
     missing = []

@@ -471,4 +471,8 @@ forge okf-sync sync --dry-run # voir ce qui changerait
 forge okf-sync check          # liste les MEMORY.md où la section est absente ou périmée
 ```
 
-À invoquer après les modifications structurelles du pool (création / archivage de subject, mise à jour de `linked_subjects:`). Idempotent : invocation multiple sans effet si rien n'a changé.
+**Déclenchement à la demande (décision 2026-06-15)** : la section `## Liens` n'est lue par AUCUN composant Forge (Claude, autolink, cascade lisent tous le `linked_subjects:` du frontmatter, toujours frais). Elle ne sert qu'aux **consommateurs OKF externes** (viewer Google, Obsidian). Donc `okf-sync` n'est **pas** câblé dans `/documente` (ce serait ~2s payés à chaque run pour un artefact que la boucle Claude ne consomme pas, et ça casserait l'atomicité du commit).
+
+À la place, `forge graph render` **rafraîchit automatiquement** les liens inline avant de produire le HTML (« ouvrir un viewer » = le moment naturel de resync). Désactivable via `forge graph render --no-sync` pour un render rapide. Pour un usage hors `graph render` (ex: avant d'ouvrir le bundle dans Obsidian ou le viewer Google), lancer `forge okf-sync sync` manuellement.
+
+Idempotent : invocation multiple sans effet si rien n'a changé.
