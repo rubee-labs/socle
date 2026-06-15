@@ -243,6 +243,11 @@ Le graph **n'est pas persisté** (ni dans le frontmatter, ni dans un sidecar) �
 | `linked_skills` | list[str] | (optionnel) skills produits via `/skillify` à partir de ce subject |
 | `linked_evals` | list[ref] | (optionnel) cross-modal-reviews effectuées (`analyses/<date>-cross-modal-eval.md`) |
 | `quick_produced_from` | obj | (optionnel) provenance backward du `## Quick` régénéré par `/documente` Phase F. Liste les sources qui ont produit la synthèse courante : `{events: [...], analyses: [...], decisions: [...], generated_at: <iso8601>}`. Permet de remonter du Quick aux fichiers sources sans deviner. Ajouté 2026-05-21 (analyse Forge-Lab cognee). |
+| `title` | str | (optionnel, OKF v0.1) Nom lisible du subject pour les UI tierces (viewers OKF, Obsidian Dataview, Notion). Si absent, les consumers OKF dérivent du filename. |
+| `description` | str | (optionnel, OKF v0.1) Résumé court (1 ligne) pour les indexes et previews OKF. |
+| `resource` | str (URI) | (optionnel, OKF v0.1) URI canonique de l'asset externe que le subject décrit (ex: lien BigQuery table, console Cloud, dashboard). |
+| `tags` | list[str] | (optionnel, OKF v0.1) Étiquettes libres pour filtrage cross-cutting dans les viewers OKF. |
+| `timestamp` | iso8601 | (optionnel, OKF v0.1) Dernière révision significative. Alias de `last_event.date` si présent. |
 
 ---
 
@@ -428,3 +433,42 @@ status: active                    # active | archived
 - **CE-Lab / WM-Lab / Alter-Lab** continuent d'exister sans modification. Ces 3 Labs sont des subjects matures (instances du type `strategic-vision`). `/CE-analyse`, `/WM-analyse`, `/alter-analyse` restent inchangés.
 - **`discussions/` + `decisions/` répartis** dans les services restent valides (cf. `entreprise/config/rules/savoirs.md` § Stockage réparti). Les nouveaux fichiers utilisent le frontmatter étendu, les anciens migrent **opportunistiquement** quand on les touche.
 - **`savoirs/`** reste pour les savoirs procéduraux établis (glossaires, SOP). Les subjects sont pour les sujets en cours d'accumulation et de maturation.
+
+---
+
+## Conformance Open Knowledge Format (OKF v0.1)
+
+Depuis le 2026-06-15 (analyse Forge-Lab #8), un subject pool Forge est **conformant OKF v0.1** — la spec ouverte publiée par Google Cloud Data Cloud le 2026-06-12 ([repo](https://github.com/GoogleCloudPlatform/knowledge-catalog/tree/main/okf), [SPEC.md](https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md)).
+
+OKF formalise le pattern « LLM wiki » qui sous-tend Forge depuis sa Phase 0. Forge couvre les 3 conditions de conformance :
+
+1. **Markdown + YAML frontmatter** — Format natif de chaque `MEMORY.md` (et des sous-fichiers `events/`, `analyses/`, `discussions/`, `decisions/`).
+2. **Champ `type` obligatoire** — Présent dans le frontmatter de chaque subject (référence au type parent).
+3. **Cross-links dans le body** — Émis par `forge okf-sync` dans une section `## Liens` entourée de markers HTML idempotents.
+
+Conséquence pratique : un consumer OKF tiers (le visualizer Google Cytoscape.js, Obsidian, Notion, MkDocs, Hugo, n'importe quel parser markdown + frontmatter) **lit directement** un bundle Forge sans translation. Inversement, Forge peut absorber un bundle OKF tiers sans modification.
+
+### Couches Forge au-dessus d'OKF (spécifiques, non-OKF)
+
+- **Cycle de vie γ 3 états** (`actif` / `mature` / `archived`)
+- **4 sous-dossiers par producteur** (`events/` / `analyses/` / `discussions/` / `decisions/`)
+- **Autolink typed déterministe** via `typical_linked_types` enrichi
+- **Compilation continue** via `/skillify`
+- **Cross-modal review** via `/cross-modal-review`
+- **Orchestrateur unique** `/documente`
+- **Bilingue squelette anglais / contenu français**
+- **Lecture en cascade** SUBJECTS-INDEX → MEMORY.md → fichier
+
+Ces couches restent **Forge-spécifiques** et ne sont ni requises ni interdites par OKF — la spec définit l'interopérabilité, pas le content model (« Extensions: Producers MAY include any additional keys. Consumers SHOULD preserve unknown keys when round-tripping »).
+
+### `forge okf-sync` — maintien de la section `## Liens`
+
+Le binaire `forge okf-sync` synchronise les `linked_subjects:` du frontmatter avec des markdown links inline dans le body de chaque `MEMORY.md`, entourés de markers `<!-- okf-links:start -->` / `<!-- okf-links:end -->` pour idempotence. Les paths sont relatifs au MEMORY.md émetteur (OKF §5.2) pour rester valides quel que soit le choix de bundle root du consumer.
+
+```bash
+forge okf-sync sync           # régénère tous les MEMORY.md
+forge okf-sync sync --dry-run # voir ce qui changerait
+forge okf-sync check          # liste les MEMORY.md où la section est absente ou périmée
+```
+
+À invoquer après les modifications structurelles du pool (création / archivage de subject, mise à jour de `linked_subjects:`). Idempotent : invocation multiple sans effet si rien n'a changé.

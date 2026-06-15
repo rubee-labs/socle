@@ -54,6 +54,10 @@ case "$1" in
     shift
     exec python3 "$BIN_DIR/graph_engine.py" "$@"
     ;;
+  okf-sync)
+    shift
+    exec python3 "$BIN_DIR/okf_sync_engine.py" "$@"
+    ;;
   --version|-v)
     cat "$ROOT_DIR/VERSION"
     ;;
@@ -71,6 +75,7 @@ Sous-commandes :
   eval <subcommand> [args]        Cross-modal eval (prepare, aggregate, write-analysis)
   bench <subcommand> [args]       Retriever bench (prepare, run, report)
   graph <subcommand> [args]       Interactive HTML graph (render, stats)
+  okf-sync <subcommand> [args]    OKF v0.1 compat: inline cross-links section (sync, check)
 
 Options :
   --version, -v                   Affiche la version

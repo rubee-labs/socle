@@ -1,0 +1,101 @@
+---
+date: 2026-06-15
+type: decision
+produced_by: human
+decided_by: benjamin
+status: active
+upstream_discussions:
+  - 2026-06-15-okf-positionnement.md
+upstream_analyses:
+  - benjamin-perso/Forge-lab/analyses/2026-06-15-okf-google-open-knowledge-format.md
+parameters:
+  d7_frontmatter_fields_added: [title, description, resource, tags, timestamp]
+  d8_section_doctrine: "Conformance Open Knowledge Format (OKF v0.1)"
+  d9_binary: forge okf-sync
+  d9_engine: bin/okf_sync_engine.py
+  d9_subcommands: [sync, check]
+  d9_marker_start: "<!-- okf-links:start -->"
+  d9_marker_end: "<!-- okf-links:end -->"
+  d9_link_style: relative (OKF §5.2)
+  spec_url: https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md
+  spec_version: 0.1
+  validation_marketing: "32 concepts × 20 edges"
+  validation_achats: "129 concepts × 34 edges"
+  validation_consumer: "Google Cytoscape.js visualizer (knowledge-catalog/okf)"
+---
+
+# Décision — Forge devient superset OKF v0.1 conformant
+
+## Contexte
+
+Analyse Forge-Lab #8 (2026-06-15) sur la publication OKF par Google Cloud (2026-06-12) a chiffré le signal à pertinence 10 (premier de Forge-Lab) avec action `faire-evoluer-doctrine`. Discussion 2026-06-15-okf-positionnement.md a tranché entre 3 options (A ignorer / B migrer / C superset) en faveur du **C**.
+
+## Décision
+
+Forge adopte la conformance OKF v0.1 sans renoncer à ses couches au-dessus.
+
+### D7 — Frontmatter étendu (subject-pool.md § Champs du frontmatter)
+
+Ajout de 5 champs optionnels conventionnels OKF dans la table de référence du frontmatter d'une instance :
+
+- `title` — nom lisible pour les UI tierces
+- `description` — résumé court (1 ligne)
+- `resource` — URI canonique de l'asset externe
+- `tags` — liste d'étiquettes libres
+- `timestamp` — dernière révision ISO 8601
+
+Tous **optionnels**, rétrocompatibles, zéro casse. Aucun subject existant n'a besoin de migration.
+
+### D8 — Doctrine de conformance (subject-pool.md § nouveau)
+
+Nouvelle section « Conformance Open Knowledge Format (OKF v0.1) » qui acte :
+- Les 3 conditions de conformance Forge remplit (markdown + frontmatter, `type` obligatoire, cross-links body)
+- Les 8 couches Forge-spécifiques au-dessus d'OKF (cycle γ, producer typing, autolink typed, /skillify, /cross-modal-review, /documente, MCPs Rubee, dogfooding)
+- L'invocation `forge okf-sync sync|check`
+
+### D9 — Binaire `forge okf-sync`
+
+Nouvel engine `bin/okf_sync_engine.py` + dispatch `forge okf-sync` qui maintient une section `## Liens` dans le body de chaque MEMORY.md :
+
+- Section entourée de markers HTML `<!-- okf-links:start -->` / `<!-- okf-links:end -->` (idempotent, invisibles au rendu)
+- Liens en format relatif (OKF §5.2) au MEMORY.md émetteur — survit aux changements de bundle root
+- 3 familles d'alias pour résoudre les variantes de slugs (préfixe type, name unique, séparateur historique `-`)
+- Sous-commandes `sync` (régénère) et `check` (audit)
+
+## Validation empirique
+
+Le visualizer Google Cytoscape.js du repo `GoogleCloudPlatform/knowledge-catalog` (lancé via `enrichment_agent visualize --bundle <path>`) a rendu correctement des bundles Forge sans translation :
+
+| Bundle | Concepts | Edges | Verdict |
+|---|---|---|---|
+| services/marketing/subjects | 32 | 20 | ✅ Graphe rendu correctement |
+| services/achats/subjects | 129 | 34 | ✅ Graphe rendu correctement |
+
+Preuve que Forge ↔ OKF est vraie compat fonctionnelle, pas juste théorique.
+
+## Conséquences pratiques
+
+- Tout consumer OKF tiers (viewer Google, Obsidian Dataview, Notion, MkDocs, Hugo, parser markdown générique) peut lire un Forge bundle sans modification.
+- Réciproquement, Forge peut absorber un bundle OKF tiers (catalog metadata BigQuery, etc.) sans translation layer.
+- Aucun outil annexe (`forge export okf`, `forge import okf`) n'est nécessaire — la compat est structurelle, par construction.
+
+## Suite immédiate
+
+- `forge okf-sync sync` exécuté sur Rubee (56 liens résolus, 0 non-résolus, 37 subjects scannés)
+- Publication v0.1.3 minimum du plugin claude-forge pour propager D7+D8+D9 au cache
+- `/plugin update rubee-labs/claude-forge` côté Benjamin pour aligner l'exécution réelle
+
+## Limites / vigilance
+
+- **Veille passive monosignal** : délai détection OKF = 3 jours. Si plusieurs signaux d'ampleur arrivent en parallèle, pas de mécanisme actif. Flag pour le premortem du subject auto-référentiel claude-forge.
+- **Plugin publication** : tant que le plugin n'est pas en v0.1.3, les skills exécutés depuis le cache 0.1.2 ne connaissent pas `forge okf-sync` ni les 5 champs étendus.
+
+## Lien avec décisions précédentes
+
+- 2026-04-29 — Adoption pattern subject pool : confirmé, étendu OKF.
+- 2026-05-10 — Refonte γ 3 états + skillify + cross-modal : couches au-dessus d'OKF, intactes.
+- 2026-05-21 — D2 `quick_produced_from` + D3 `valid_at` : extensions Forge-spécifiques compatibles OKF.
+- 2026-05-24 — D5 / D6 SamourAI : non affectées.
+- 2026-05-26 — bench_engine + Obsidian Bridge : `forge graph render` reste valide, complémentaire au viz Google.
+
+Strictement additif. Aucune mutation de l'archi Forge core.
