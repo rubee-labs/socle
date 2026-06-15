@@ -129,7 +129,7 @@ def cmd_prepare(args):
 
     rel_path = str(p.relative_to(project_dir)) if p.is_relative_to(project_dir) else str(p)
 
-    # Détection service root + statut structure (utile en legacy comme en subject pool)
+    # Détection service root + statut structure (utile en mode folder comme en subject pool)
     service_root_abs = _detect_service_root(p, project_dir)
     if service_root_abs is not None:
         service_root_rel = str(service_root_abs.relative_to(project_dir))
@@ -141,8 +141,8 @@ def cmd_prepare(args):
         service_structure_exists = None
 
     if not is_subject_pool:
-        # En legacy : si le service existe mais pas la structure, proposer le service root
-        # comme path par défaut (Phase L0.0 du skill).
+        # En mode folder : si le service existe mais pas la structure, proposer le service root
+        # comme path par défaut (Phase F0.0 du skill).
         proposed_default_path = (
             service_root_rel
             if (service_root_abs is not None and service_structure_exists is False)
@@ -152,7 +152,7 @@ def cmd_prepare(args):
             is_subject_pool=False,
             subject_exists=False,
             needs_creation=False,
-            recommended_workflow="legacy",
+            recommended_workflow="folder",
             path=rel_path,
             service_root=service_root_rel,
             service_structure_exists=service_structure_exists,
