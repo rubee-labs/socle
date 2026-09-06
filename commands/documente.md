@@ -1,6 +1,6 @@
 ---
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash, Skill
-effort: low
+effort: medium
 ---
 
 Utilise le skill `documente` (plugin claude-forge) pour documenter la discussion et/ou décision de cette session.

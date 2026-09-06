@@ -22,6 +22,7 @@ import datetime as _dt
 import hashlib
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -561,6 +562,135 @@ def cmd_cascade_last_event(args):
     return _ok(linked_path=rel, **result)
 
 
+# ---------------------------------------------------------------------------
+# MEMORY.md borné (décision CE 2026-09-06 — re-synthèse bornée, jamais append)
+# ---------------------------------------------------------------------------
+
+DEFAULT_MEMORY_MAX_KB = 8
+RE_SECTION = re.compile(r"^## .*$", re.M)
+RE_JOURNAL_LINE = re.compile(r"^\s*-\s+\**\d{4}-\d{2}-\d{2}", re.M)
+RE_DERNIERE_MAJ = re.compile(r"^(derniere_maj:\s*).*$", re.M)
+RE_MAX_KB = re.compile(r"^memory_max_kb:\s*(\d+)", re.M)
+
+
+def _memory_path(args_path):
+    project_dir = get_project_dir()
+    p = Path(args_path)
+    if not p.is_absolute():
+        p = project_dir / args_path
+    if p.is_dir():
+        p = p / "MEMORY.md"
+    return p
+
+
+def _split_fm(content):
+    """Retourne (frontmatter_text_ou_'', body). Le frontmatter inclut ses deux '---'."""
+    if content.startswith("---"):
+        m = re.match(r"^---\n.*?\n---\n?", content, re.DOTALL)
+        if m:
+            return content[: m.end()], content[m.end():]
+    return "", content
+
+
+def _sections(body):
+    """Liste [(titre, start, end)] des sections '## ' du corps (end exclusif)."""
+    heads = list(RE_SECTION.finditer(body))
+    out = []
+    for i, h in enumerate(heads):
+        end = heads[i + 1].start() if i + 1 < len(heads) else len(body)
+        out.append((h.group(0).strip(), h.start(), end))
+    return out
+
+
+def cmd_check_memory(args):
+    """Diagnostic déterministe d'un MEMORY.md : taille vs plafond, sections, lignes de journal, derniere_maj."""
+    md = _memory_path(args.path)
+    if not md.is_file():
+        return _err(f"MEMORY.md not found: {md}", code="missing_file")
+    content = md.read_text(encoding="utf-8")
+    fm, body = _split_fm(content)
+    size_kb = round(len(content.encode("utf-8")) / 1024, 1)
+    m_kb = RE_MAX_KB.search(fm)
+    max_kb = int(m_kb.group(1)) if m_kb else DEFAULT_MEMORY_MAX_KB
+    m_maj = re.search(r"^derniere_maj:\s*[\"']?(\d{4}-\d{2}-\d{2})", fm, re.M)
+    sections = _sections(body)
+    journal = {}
+    for title, s, e in sections:
+        n = len(RE_JOURNAL_LINE.findall(body[s:e]))
+        if n:
+            journal[title] = n
+    decisions = 0
+    for title, s, e in sections:
+        if re.match(r"^## D[ée]cisions actives", title):
+            decisions = len(re.findall(r"^\s*(?:-|\d+\.)\s+", body[s:e], re.M))
+    return _ok(
+        path=str(md),
+        size_kb=size_kb,
+        max_kb=max_kb,
+        over=size_kb > max_kb,
+        derniere_maj=m_maj.group(1) if m_maj else None,
+        derniere_maj_today=(m_maj.group(1) == _dt.date.today().isoformat()) if m_maj else False,
+        sections=[title for title, _, _ in sections],
+        journal_lines=journal,
+        decisions_actives=decisions,
+        has_quick=any(re.match(r"^## (⚡ )?Quick", title) for title, _, _ in sections),
+    )
+
+
+def cmd_patch_section(args):
+    """Remplace (ou crée) le corps d'une section '## X' d'un MEMORY.md par le contenu d'un fichier.
+
+    Ne touche à rien d'autre : les autres sections et le frontmatter sont conservés octet pour
+    octet. Option --touch-derniere-maj : met derniere_maj à aujourd'hui (créé s'il manque).
+    Option --expected-hash : refus si le fichier a changé depuis (stale_hash).
+    """
+    md = _memory_path(args.path)
+    if not md.is_file():
+        return _err(f"MEMORY.md not found: {md}", code="missing_file")
+    body_file = Path(args.body_file)
+    if not body_file.is_file():
+        return _err(f"body file not found: {body_file}", code="missing_file")
+    content = md.read_text(encoding="utf-8")
+    if args.expected_hash:
+        actual = hashlib.sha256(content.encode("utf-8")).hexdigest()[:12]
+        if actual != args.expected_hash:
+            return _err("file changed since expected hash", code="stale_hash", actual_hash=actual)
+
+    title = args.section.strip()
+    if not title.startswith("## "):
+        title = "## " + title
+    new_body = body_file.read_text(encoding="utf-8").strip("\n")
+    block = f"{title}\n\n{new_body}\n\n" if new_body else f"{title}\n\n"
+
+    fm, body = _split_fm(content)
+    action = "created"
+    for sec_title, s, e in _sections(body):
+        if sec_title == title:
+            body = body[:s] + block + body[e:]
+            action = "replaced"
+            break
+    if action == "created":
+        body = body.rstrip("\n") + "\n\n" + block
+
+    if args.touch_derniere_maj:
+        today = _dt.date.today().isoformat()
+        if RE_DERNIERE_MAJ.search(fm):
+            fm = RE_DERNIERE_MAJ.sub(lambda m: m.group(1) + today, fm, count=1)
+        elif fm:
+            fm = fm.replace("\n---", f"\nderniere_maj: {today}\n---", 1)
+        else:
+            fm = f"---\nderniere_maj: {today}\n---\n"
+
+    new_content = fm + body.rstrip("\n") + "\n"
+    if args.dry_run:
+        return _ok(action=action, dry_run=True, size_kb_after=round(len(new_content.encode("utf-8")) / 1024, 1))
+    md.write_text(new_content, encoding="utf-8")
+    size_kb = round(len(new_content.encode("utf-8")) / 1024, 1)
+    m_kb = RE_MAX_KB.search(fm)
+    max_kb = int(m_kb.group(1)) if m_kb else DEFAULT_MEMORY_MAX_KB
+    return _ok(action=action, path=str(md), size_kb_after=size_kb, max_kb=max_kb, over=size_kb > max_kb)
+
+
 def main():
     parser = argparse.ArgumentParser(prog="documente_engine.py")
     sub = parser.add_subparsers(dest="cmd", required=True)
@@ -616,6 +746,17 @@ def main():
     p_cascade.add_argument("linked_path")
     p_cascade.add_argument("--event-ref", required=True)
 
+    p_chkmem = sub.add_parser("check-memory", help="Diagnostic d'un MEMORY.md (taille, sections, journal, derniere_maj)")
+    p_chkmem.add_argument("path", help="dossier de l'entité ou chemin du MEMORY.md")
+
+    p_sect = sub.add_parser("patch-section", help="Remplace/crée le corps d'une section '## X' d'un MEMORY.md")
+    p_sect.add_argument("path")
+    p_sect.add_argument("--section", required=True, help="titre de section, ex. '## Quick'")
+    p_sect.add_argument("--body-file", required=True)
+    p_sect.add_argument("--touch-derniere-maj", action="store_true")
+    p_sect.add_argument("--expected-hash", default=None)
+    p_sect.add_argument("--dry-run", action="store_true")
+
     args = parser.parse_args()
 
     handlers = {
@@ -629,6 +770,8 @@ def main():
         "check-coherence": cmd_check_coherence,
         "write-capture": cmd_write_capture,
         "cascade-last-event": cmd_cascade_last_event,
+        "check-memory": cmd_check_memory,
+        "patch-section": cmd_patch_section,
     }
 
     t_start = time.perf_counter()

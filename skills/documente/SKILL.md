@@ -16,9 +16,9 @@ type_anthropic: 4
 visibilite: entreprise
 auteur: Benjamin
 date_creation: 2026-03-31
-version: 2.7
+version: 2.8
 tags: [documentation, decision, discussion, memory, subject-pool, forge, orchestrator, workflow]
-effort: low
+effort: medium
 outils_requis: []
 securite_externe: false
 ---
@@ -411,15 +411,44 @@ Mettre à jour la discussion existante via Edit pour passer `statut: aboutie` + 
 
 Le binaire `check-coherence` ne s'applique pas au folder (il lit le frontmatter du MEMORY.md format subject pool). En folder, le LLM lit la section "Décisions actives" du MEMORY.md (markdown) et compare manuellement avec la nouvelle décision. Si conflit, alerter Benjamin avant Phase F3.
 
-### Phase F4 — MAJ MEMORY.md local (LLM, hors binaire)
+### Phase F4 — Re-synthèse bornée du MEMORY.md (Python pour le diagnostic et l'écriture, LLM pour la rédaction)
 
-Lire/créer le `MEMORY.md` du dossier (template : `templates/entity.memory.md`). Mettre à jour via Edit :
-- Section "Décisions actives"
-- Section "Doctrine en vigueur" (si la décision change une règle active)
-- Section "Décisions annulées" (si Phase F3.5 a identifié une contradiction)
-- `derniere_maj` dans le frontmatter
+Décision CE 2026-09-06 : le MEMORY.md d'une entité est une **synthèse bornée**, jamais un journal en append. Incident de référence : `services/finance/tools/factures/MEMORY.md` passé de 33 Ko à 187 Ko en 7 semaines (318 lignes de journal de runs), non relu avant un niveau 2 → 4 doublons publiés (2026-08-06).
 
-Ne PAS réécrire l'historique — état courant uniquement. Le format MEMORY.md folder est markdown structuré (pas frontmatter étendu), donc reste LLM only — pas de `patch-frontmatter`.
+**F4.1 — Diagnostic (Python)**
+
+```bash
+forge documente check-memory <dossier>
+```
+
+JSON : `size_kb`, `max_kb` (frontmatter `memory_max_kb`, défaut 8), `over`, `derniere_maj`, `derniere_maj_today`, `sections`, `journal_lines` (lignes datées `- YYYY-MM-DD …` par section : signature d'un journal), `decisions_actives`, `has_quick`. Afficher `▸ F4 check-memory (<size_kb>/<max_kb> Ko, <n> lignes de journal)`.
+
+**F4.2 — Rédiger les sections bornées (LLM)** — à partir du MEMORY.md actuel, de la discussion/décision écrites en F2/F3 et, si `journal_lines` non vide, des lignes de journal à évacuer :
+
+| Section | Contenu | Borne |
+|---|---|---|
+| `## Quick` | état, dernier run/événement (date + pointeur `rapports/…`), prochaines étapes, risques | < 100 mots |
+| `## Doctrine en vigueur` | règles actives, état courant, pas l'historique ; intégrer la nouvelle décision si elle change une règle | 1 ligne par règle |
+| `## Décisions actives` | les plus récentes, une ligne chacune avec pointeur `decisions/<fichier>.yaml` ; les plus anciennes sortent de la liste mais restent dans `decisions/` | ≤ 10 |
+| `## Décisions annulées` | règle inversée + raison + date (si F3.5 a trouvé une contradiction) | 1 ligne par annulation |
+| `## Règles apprises` | contraintes découvertes en session (gotchas durables), extraites notamment du journal évacué | 1 ligne par règle |
+
+Interdits : section `## État` ou tout journal daté dans le MEMORY ; un run écrit `<entité>/rapports/YYYY-MM-DD-<slug>.md`. Si `journal_lines` non vide, proposer à l'utilisateur de déplacer ces lignes en un fichier `rapports/<date-min>-au-<date-max>-journal.md` (Write) puis remplacer la section par son Quick — **validation explicite** avant de retirer du contenu (relecture humaine, `/cross-modal-review` recommandé sur les fichiers > 30 Ko).
+
+**F4.3 — Écrire (Python, une commande par section)**
+
+```bash
+DOC_SECTION=$(mktemp /tmp/documente-section.XXXXXX)
+cat > "$DOC_SECTION" << 'EOF'
+[corps de la section]
+EOF
+forge documente patch-section <dossier> --section "## Quick" --body-file "$DOC_SECTION" --touch-derniere-maj
+rm -f "$DOC_SECTION"
+```
+
+`patch-section` remplace uniquement le corps de la section visée (ou la crée en fin de fichier), conserve le reste octet pour octet, met `derniere_maj` à aujourd'hui avec `--touch-derniere-maj`, refuse si `--expected-hash` (de `compute-hash`) ne correspond plus (`stale_hash`). Retourne `size_kb_after` / `over` : si `over` reste vrai après re-synthèse, l'annoncer dans le récap (le hook Stop de CE le rappellera au prochain bloc). Ne pas patcher une section dont le contenu n'a pas changé (idempotence : 2 invocations sans nouvel input = diff vide).
+
+Le format MEMORY.md folder reste du markdown structuré (pas de frontmatter étendu) : `patch-frontmatter` ne s'applique pas, seul `derniere_maj` est géré via `--touch-derniere-maj`.
 
 ### Phase F5 — Propagation (Python pour scan, LLM pour jugement)
 
