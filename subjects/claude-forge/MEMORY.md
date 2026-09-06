@@ -1,7 +1,7 @@
 ---
 projet: claude-forge
-statut: phase-3-refonte-process-gamma-3-etats + vague-3-p4-livree + decouplage-CE-0.2.0
-derniere_maj: 2026-06-05
+statut: phase-3-refonte-process-gamma-3-etats + vague-3-p4-livree + decouplage-CE-0.2.0 + fix-parseur-scanner-0.2.2
+derniere_maj: 2026-09-06
 auteur: benjamin
 ---
 
@@ -11,6 +11,7 @@ auteur: benjamin
 
 État : actif (subject auto-référentiel du projet, pas une instance de type métier)
 Statut : Phase 3 livrée + Vague 3 P4 livrée (bench_engine 2026-05-24) + **Découplage CE livré (0.2.0, 2026-06-05)**. Le plugin est désormais distribuable : config par-repo `.forge.yaml` (loader `load_forge_config`), `forge init`, skill `/forge-init`, hook SessionStart nudge. 1er pool non-CE bootstrapé : `benjamin-perso/jean-claude-code` (subject `kite-connect`). CE strictement inchangé (zéro config).
+**0.2.2 (2026-09-06)** : parseur frontmatter corrigé (dicts imbriqués `last_event` lus `[]` sur 39/39 subjects CE → 34 stagnants faux) + scanner idempotent (plus de réécriture des index à chaque SessionStart, cause de 90 % des commits « Session » CE). Bloc 1 du plan « mémoire re-synthèse bornée + hook post-bloc » ; blocs 2-4 à venir (hook Stop CE, Phase L4 bornée, migration 3 gros MEMORY.md).
 Liens forts : aucun (subject racine du projet)
 Prochaines étapes : surveillance bench Forge (re-run dans 3-6 mois pour mesurer dérive cascade), arbitrage backlog Forge-Lab (Obsidian comme lecteur ? couche d'entreprise ? — flaggés 2026-05-24 post-SamourAI), migration progressive des 33 subjects vers les 3 nouveaux états (non urgent grâce au mapping legacy)
 Risques : hint /skillify toujours discret (0 skillify livré à ce jour), bench v1 limité aux questions frontmatter (questions sémantiques sur Quick non couvertes — évolution v2 à instruire si signal de saturation)

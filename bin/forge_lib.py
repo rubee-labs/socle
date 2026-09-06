@@ -150,21 +150,36 @@ def parse_frontmatter(path):
 
 
 def parse_simple_yaml(yaml_text):
-    """Parser YAML minimal — gère les cas simples du frontmatter subject."""
+    """Parser YAML minimal — gère les cas simples du frontmatter subject.
+
+    Une clé sans valeur inline (`last_event:`) est résolue par la ligne
+    suivante : `  - item` → liste, `  sous_cle: valeur` → dict. Sans ligne
+    indentée derrière, la clé vaut [] (compat historique : liste vide).
+    Correctif 2026-09-06 : avant, toute clé sans valeur devenait une liste,
+    et les blocs `last_event:` / `last_synthesis:` étaient lus comme [].
+    """
     result = {}
     current_key = None
     current_list = None
+    pending_key = None  # clé sans valeur inline, type encore indéterminé
     for line in yaml_text.split("\n"):
         if not line.strip() or line.strip().startswith("#"):
             continue
 
         if line.startswith("  - ") or line.startswith("    - "):
+            if pending_key is not None:
+                result[pending_key] = []
+                current_list = result[pending_key]
+                pending_key = None
             if current_list is not None:
                 value = line.split("-", 1)[1].strip()
                 current_list.append(parse_value(value))
             continue
 
         if line.startswith("  ") and ":" in line and current_key is not None:
+            if pending_key is not None:
+                result[pending_key] = {}
+                pending_key = None
             sub_key, sub_value = line.strip().split(":", 1)
             sub_value = sub_value.strip()
             if isinstance(result.get(current_key), dict):
@@ -172,6 +187,9 @@ def parse_simple_yaml(yaml_text):
             continue
 
         if ":" in line and not line.startswith(" "):
+            if pending_key is not None:
+                result[pending_key] = []
+                pending_key = None
             key, value = line.split(":", 1)
             key = key.strip()
             value = value.strip()
@@ -179,13 +197,15 @@ def parse_simple_yaml(yaml_text):
             current_list = None
             if not value:
                 result[key] = []
-                current_list = result[key]
+                pending_key = key
             elif value.startswith("["):
                 result[key] = parse_inline_list(value)
             elif value.startswith("{"):
                 result[key] = parse_inline_dict(value)
             else:
                 result[key] = parse_value(value)
+    if pending_key is not None:
+        result[pending_key] = []
     return result
 
 

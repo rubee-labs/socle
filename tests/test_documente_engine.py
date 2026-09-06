@@ -10,8 +10,20 @@ import tempfile
 import unittest
 from pathlib import Path
 
-ENGINE = Path(__file__).resolve().parent.parent / "documente_engine.py"
+ENGINE = Path(__file__).resolve().parent.parent / "bin" / "documente_engine.py"
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
+
+
+def _consumer_root():
+    """Repo consommateur avec un vrai subject pool (ex. claude-enterprise).
+
+    Le plugin est standalone depuis 0.1.0 : `parents[4]` ne pointe plus sur CE.
+    Ces tests d'intégration exigent CLAUDE_FORGE_PROJECT_DIR, sinon skip.
+    """
+    root = os.environ.get("CLAUDE_FORGE_PROJECT_DIR")
+    if not root or not (Path(root) / "services/achats/subjects/order-398/MEMORY.md").exists():
+        raise unittest.SkipTest("CLAUDE_FORGE_PROJECT_DIR absent ou sans subject order-398")
+    return Path(root)
 
 
 def run_engine(*args, cwd=None):
@@ -216,14 +228,14 @@ parameters:
 class TestScanImpacted(unittest.TestCase):
 
     def test_scan_returns_candidates(self):
-        repo_root = Path(__file__).resolve().parents[4]
+        repo_root = _consumer_root()
         result = run_engine("scan-impacted", "services/achats/subjects/order-398", cwd=str(repo_root))
         self.assertTrue(result["ok"])
         self.assertIn("candidates", result)
         self.assertIsInstance(result["candidates"], list)
 
     def test_each_candidate_has_path_and_kind(self):
-        repo_root = Path(__file__).resolve().parents[4]
+        repo_root = _consumer_root()
         result = run_engine("scan-impacted", "services/achats/subjects/order-398", cwd=str(repo_root))
         for c in result["candidates"]:
             self.assertIn("path", c)
@@ -387,7 +399,7 @@ Texte libre.
 class TestInferType(unittest.TestCase):
 
     def test_infer_from_existing_frontmatter(self):
-        repo_root = Path(__file__).resolve().parents[4]
+        repo_root = _consumer_root()
         result = run_engine("infer-type", "services/achats/subjects/order-398", cwd=str(repo_root))
         self.assertTrue(result["ok"])
         self.assertEqual(result["strategy"], "from_frontmatter")
@@ -396,7 +408,7 @@ class TestInferType(unittest.TestCase):
     def test_infer_from_naming_convention(self):
         # Si nom commence par <type>- et <type> existe dans parent/types/
         # supplier-XXX → type "supplier"
-        repo_root = Path(__file__).resolve().parents[4]
+        repo_root = _consumer_root()
         result = run_engine("infer-type", "services/achats/subjects/supplier-newone", cwd=str(repo_root))
         self.assertTrue(result["ok"])
         # Doit trouver "supplier" via naming (services/achats/types/supplier existe)
@@ -404,7 +416,7 @@ class TestInferType(unittest.TestCase):
         self.assertEqual(result["strategy"], "from_naming")
 
     def test_no_match_returns_ambiguous_or_none(self):
-        repo_root = Path(__file__).resolve().parents[4]
+        repo_root = _consumer_root()
         # Subject avec un nom qui ne matche aucun type
         result = run_engine("infer-type", "services/achats/subjects/zzz-no-match-xyz", cwd=str(repo_root))
         self.assertTrue(result["ok"])
@@ -414,7 +426,7 @@ class TestInferType(unittest.TestCase):
 class TestPrepare(unittest.TestCase):
 
     def test_existing_subject(self):
-        repo_root = Path(__file__).resolve().parents[4]
+        repo_root = _consumer_root()
         result = run_engine("prepare", "services/achats/subjects/order-398", cwd=str(repo_root))
         self.assertTrue(result["ok"])
         self.assertTrue(result["is_subject_pool"])
@@ -424,7 +436,7 @@ class TestPrepare(unittest.TestCase):
         self.assertFalse(result["needs_creation"])
 
     def test_nonexistent_subject(self):
-        repo_root = Path(__file__).resolve().parents[4]
+        repo_root = _consumer_root()
         result = run_engine("prepare", "services/achats/subjects/order-99999", cwd=str(repo_root))
         self.assertTrue(result["ok"])
         self.assertTrue(result["is_subject_pool"])
@@ -432,7 +444,7 @@ class TestPrepare(unittest.TestCase):
         self.assertTrue(result["needs_creation"])
 
     def test_non_subject_pool_path(self):
-        repo_root = Path(__file__).resolve().parents[4]
+        repo_root = _consumer_root()
         result = run_engine("prepare", "entreprise/config", cwd=str(repo_root))
         self.assertTrue(result["ok"])
         self.assertFalse(result["is_subject_pool"])
@@ -442,14 +454,14 @@ class TestListSubjects(unittest.TestCase):
 
     def test_returns_at_least_one_subject(self):
         # Lancer depuis racine repo pour scanner subjects/ réels
-        repo_root = Path(__file__).resolve().parents[4]
+        repo_root = _consumer_root()
         result = run_engine("list-subjects", cwd=str(repo_root))
         self.assertTrue(result["ok"])
         self.assertIn("subjects", result)
         self.assertGreater(len(result["subjects"]), 0)
 
     def test_each_subject_has_path_and_state(self):
-        repo_root = Path(__file__).resolve().parents[4]
+        repo_root = _consumer_root()
         result = run_engine("list-subjects", cwd=str(repo_root))
         for subj in result["subjects"]:
             self.assertIn("path", subj)

@@ -219,6 +219,31 @@ def compute_metrics(subjects):
     }
 
 
+def _strip_timestamp_line(text):
+    """Retire la ligne d'horodatage pour comparer deux rendus à contenu égal."""
+    return "\n".join(l for l in text.split("\n") if not l.startswith("_Régénéré automatiquement"))
+
+
+def write_if_changed(path, text):
+    """Écrit `text` dans `path` seulement si le contenu (hors horodatage) change.
+
+    Motif (2026-09-06) : le scanner tourne à chaque SessionStart et réécrivait
+    les 2 index avec un nouvel horodatage → 90 % des commits « Session » du
+    repo consommateur ne contenaient que ces 2 fichiers, et rafales de commits
+    concurrents. Retourne True si écrit.
+    """
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if path.exists():
+        try:
+            old = path.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            old = None
+        if old is not None and _strip_timestamp_line(old) == _strip_timestamp_line(text):
+            return False
+    path.write_text(text, encoding="utf-8")
+    return True
+
+
 def regenerate_metrics(m):
     """Régénère entreprise/SUBJECT-POOL-METRICS.md (refonte 2026-05-10, 3 états)."""
     state_order = ["actif", "mature", "archived"]
@@ -272,8 +297,7 @@ def regenerate_metrics(m):
     lines.append("")
     lines.append("_Pour la doctrine complète : plugin `claude-forge` — `rules/subject-pool.md` (cache runtime : `~/.claude/plugins/cache/rubee-labs/claude-forge/<version>/rules/subject-pool.md`)._")
 
-    METRICS_FILE.parent.mkdir(parents=True, exist_ok=True)
-    METRICS_FILE.write_text("\n".join(lines), encoding="utf-8")
+    write_if_changed(METRICS_FILE, "\n".join(lines))
 
 
 def regenerate_index(subjects):
@@ -314,8 +338,7 @@ def regenerate_index(subjects):
                 lines.append(f"  - liens : {link_preview}")
         lines.append("")
 
-    INDEX_FILE.parent.mkdir(parents=True, exist_ok=True)
-    INDEX_FILE.write_text("\n".join(lines), encoding="utf-8")
+    write_if_changed(INDEX_FILE, "\n".join(lines))
 
 
 def format_alerts(alerts):
