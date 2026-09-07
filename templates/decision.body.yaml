@@ -1,0 +1,27 @@
+# Corps d'une décision (le frontmatter est composé par `forge documente write-capture`).
+# Structure libre, MAIS deux champs MADR attendus à la racine (décision CE 2026-09-07) :
+# `options_considerees` et `confirmation`. Absents → avertissement dans le récap /documente.
+
+contexte: >
+  Pourquoi on décide maintenant : le fait déclencheur, la contrainte, l'incident.
+
+options_considerees:
+  - option: A — <alternative écartée>
+    retenue: false
+    raison: <pourquoi écartée : coût, risque, contradiction avec une doctrine>
+  - option: B — <alternative retenue>
+    retenue: true
+    raison: <pourquoi retenue>
+
+decision: >
+  La règle ou le paramètre tranché, en une phrase actionnable.
+
+parameters:            # valeurs exactes si la décision fixe des seuils
+  <nom>: <valeur>
+
+consequences:          # optionnel : ce que la décision change ailleurs (code, doctrine, coût)
+  - <conséquence>
+
+confirmation:          # comment on saura que la décision est appliquée (jamais « on verra »)
+  preuve: <test, EVAL, hook, métrique, fichier attendu>
+  echeance: YYYY-MM-DD

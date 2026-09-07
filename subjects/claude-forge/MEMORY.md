@@ -1,7 +1,7 @@
 ---
 projet: claude-forge
-statut: phase-3-refonte-process-gamma-3-etats + vague-3-p4-livree + decouplage-CE-0.2.0 + fix-parseur-scanner-0.2.2 + memory-borne-0.2.3
-derniere_maj: 2026-09-06
+statut: phase-3-refonte-process-gamma-3-etats + vague-3-p4-livree + decouplage-CE-0.2.0 + fix-parseur-scanner-0.2.2 + memory-borne-0.2.3 + madr-decision-0.2.4
+derniere_maj: 2026-09-07
 auteur: benjamin
 ---
 
@@ -58,6 +58,7 @@ Cycle simplifié à **3 états** (`actif` / `mature` / `archived`), transitions 
 
 ## Décisions actives
 
+- **2026-09-07 — Champs MADR dans le corps des décisions (0.2.4)** : `options_considerees` + `confirmation` attendus à la racine ; `write-capture` avertit (`madr_missing`) sans refuser ; modèle `templates/decision.body.yaml`. Voir `decisions/2026-09-07-champs-madr-decision-0-2-4.yaml`.
 - **2026-04-29 — Adoption du pattern subject pool en γ pragmatique** : adoption opportuniste, pas de migration forcée. Les anciens patterns (Labs, MEMORY.md de service, discussions/decisions répartis) restent valides.
 - **2026-04-29 — Intégration Forge au Health-check** : `forge_scanner.py` branché dans `~/.claude/scripts/init-healthcheck.sh`. Voir `decisions/2026-04-29-fix-integration-healthcheck.yaml`.
 - **2026-05-01 — Raffinements post-Phase 0** : règle bilingue stricte, doctrine `subject-pool.md` extraite, KPIs scanner. Voir `decisions/2026-05-01-raffinements-post-phase-0.yaml`.

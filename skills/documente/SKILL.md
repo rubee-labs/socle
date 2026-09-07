@@ -16,7 +16,7 @@ type_anthropic: 4
 visibilite: entreprise
 auteur: Benjamin
 date_creation: 2026-03-31
-version: 2.8
+version: 2.9
 tags: [documentation, decision, discussion, memory, subject-pool, forge, orchestrator, workflow]
 effort: medium
 outils_requis: []
@@ -63,6 +63,7 @@ Une fois le path inféré, `forge documente prepare` retourne `service_root` + `
 - **Création paresseuse v2.1** : si le subject path n'existe pas, `/documente` le crée automatiquement (via `/subject-create`) après avoir inféré ou reçu son type. Si le type lui-même n'existe pas, `/documente` **demande validation** avant d'invoquer `/subject-create-type` (acte structurel rare). Les skills appelants (/control-tower, /optimisation-campagne-google) doivent passer l'argument `--type` pour éviter l'inférence.
 - **0 intervention sur création d'instance** : le pas `/subject-create` est silencieux. Si tu vois un prompt sur les linked_subjects pendant un appel automatique, c'est un bug — `/subject-create` doit utiliser des valeurs par défaut quand appelé depuis `/documente`.
 - **Identifier le bon subject (ou dossier)** : si subject pool, le chemin doit pointer vers `<...>/subjects/<name>/`. Si le `MEMORY.md` n'existe pas, Phase B (création paresseuse) gère la création. En contexte classique (sans subjects/ dans le path), stocker au plus près du sujet (cf. workflow folder ci-dessous).
+- **Une décision porte ses options écartées et sa preuve d'application (v2.9)** : clés `options_considerees` et `confirmation` à la racine du corps YAML (MADR). `write-capture` avertit sans refuser ; l'avertissement doit apparaître dans le récap.
 - **Ne pas créer de décision si la discussion n'est pas aboutie** : si le statut est `en_cours` / `open`, créer uniquement la discussion. La décision viendra quand ce sera tranché.
 - **Phases E-H lisent les sous-dossiers, ne les modifient pas** : seule la Phase D (`write-capture`) écrit dans `discussions/` et `decisions/`. Le reste lit puis régénère le `MEMORY.md` (frontmatter + Quick + Détails).
 - **Préserver les sections custom du `## Détails`** : `### Notes libres`, `### Stress tests à prévoir`, ou toute section ajoutée à la main par Benjamin doit être conservée lors de la régénération.
@@ -182,6 +183,11 @@ forge documente write-capture <subject-path> \
 # Cleanup post-écriture (les fichiers sont copiés dans le subject path par write-capture)
 rm -f "$DOC_BODY" "$DOC_DECISION"
 ```
+
+**Corps d'une décision — champs MADR (v2.9, décision CE 2026-09-07)** : structure YAML libre, mais deux clés attendues à la racine, modèle dans `templates/decision.body.yaml` :
+- `options_considerees` : liste `{option, retenue: true|false, raison}` — les alternatives écartées et pourquoi (une décision sans alternative écartée n'est pas une décision, c'est un constat).
+- `confirmation` : `{preuve, echeance}` — comment on saura qu'elle est appliquée (test, EVAL, hook, métrique, fichier attendu), jamais « on verra ».
+`write-capture` retourne `madr_missing` + `warnings` si l'une manque : écriture acceptée, mais **afficher l'avertissement dans le récap** et compléter dans la même invocation si l'information est dans la conversation.
 
 Le frontmatter est entièrement composé par Python (pas de risque de corruption YAML par le LLM). Si l'écriture échoue avec `code: exists`, c'est qu'un fichier du même slug existe déjà — choisir un autre slug ou archiver l'ancien.
 
@@ -405,6 +411,8 @@ forge documente write-capture <dossier> \
 rm -f "$DOC_BODY" "$DOC_DECISION"
 ```
 
+Mêmes champs MADR `options_considerees` + `confirmation` qu'en Phase D (modèle `templates/decision.body.yaml`) ; afficher `warnings` de `write-capture` si présents.
+
 Mettre à jour la discussion existante via Edit pour passer `statut: aboutie` + lien (Phase F4 inchangée).
 
 ### Phase F3.5 — Vérification de cohérence (LLM, hors binaire)
@@ -529,7 +537,7 @@ Fail: Au mauvais endroit ou absent
 
 EVAL 2 : Décision si aboutie
 Question: La décision a-t-elle été créée si la discussion est aboutie ?
-Pass: decisions/*.yaml présent avec paramètres exacts
+Pass: decisions/*.yaml présent avec paramètres exacts, `options_considerees` et `confirmation` à la racine
 Fail: Discussion aboutie mais pas de décision
 
 EVAL 3 : Couche 1 invoquée (subject pool)

@@ -517,7 +517,34 @@ def cmd_write_capture(args):
 
     target.write_text(content, encoding="utf-8")
     rel = str(target.relative_to(project_dir)) if target.is_relative_to(project_dir) else str(target)
+    if args.kind == "decision":
+        missing = madr_missing(body)
+        warnings = []
+        if missing:
+            warnings.append(
+                "champs MADR absents du corps de la décision : " + ", ".join(missing)
+                + " — une décision documente les options écartées (options_considerees)"
+                " et la preuve qui confirmera son application (confirmation)"
+            )
+        return _ok(written=rel, madr_missing=missing, warnings=warnings)
     return _ok(written=rel)
+
+
+MADR_KEYS = ("options_considerees", "confirmation")
+
+
+def madr_missing(body):
+    """Clés MADR attendues à la racine du corps YAML d'une décision (décision CE 2026-09-07).
+
+    Une clé indentée (imbriquée) ne compte pas : le lecteur cherche `options_considerees:`
+    et `confirmation:` en colonne 0.
+    """
+    present = set()
+    for line in body.splitlines():
+        for key in MADR_KEYS:
+            if line.startswith(key + ":"):
+                present.add(key)
+    return [k for k in MADR_KEYS if k not in present]
 
 
 def _yaml_scalar(v):
