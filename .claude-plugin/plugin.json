@@ -1,11 +1,10 @@
 {
   "name": "claude-forge",
   "description": "Structured memory layer for Claude Code — subjects with γ lifecycle, typed decisions/discussions, and cross-subject cascade. The 4th memory layer.",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "author": {
     "name": "Benjamin Hamon"
   },
-  "hooks": "./hooks/hooks.json",
   "repository": "https://github.com/rubee-labs/claude-forge",
   "license": "MIT",
   "keywords": [
