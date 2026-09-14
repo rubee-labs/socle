@@ -60,6 +60,7 @@ Cycle réduit à **2 états** (`actif` / `archived`), transitions 100% manuelles
 
 ## Décisions actives
 
+- **2026-09-14 — Volet échéances du scanner (0.3.1)** : alerte `decision_echue` au health-check sur toute décision active dont `confirmation.echeance` est dépassée sans `verdict:` — verdict humain (`{date, resultat, note}`), jamais de règlement auto. Issue de l'analyse Forge-Lab #10 YOINK (le sursis 15/07 avait dormi 2 mois). Voir `decisions/2026-09-14-volet-echeances-scanner.yaml`.
 - **2026-09-14 — Cycle de vie 2 états (0.3.0)** : `actif` / `archived`, `mature` supprimé (0 transition en 4 mois), « cycle γ » retiré des surfaces publiques, normalisation legacy en écriture, /subject-create initialise `actif`, /cross-modal-review détaché de toute transition. Supersede la refonte 3 états du 2026-05-10. Voir `decisions/2026-09-14-cycle-de-vie-2-etats.yaml`.
 - **2026-09-14 — D10 : provenance bidirectionnelle skill ↔ subjects (0.2.5)** : `skillify scaffold --source-subjects` écrit `source_subjects:` dans le SKILL.md généré et ajoute le skill aux `linked_skills` des subjects d'origine ; 11e check hygiène `provenance_declared`. Équivalent PURPOSE.md WikiSkill (arXiv 2608.27454, analyse Forge-Lab #9). Voir `decisions/2026-09-14-d10-provenance-bidirectionnelle-skillify.yaml`.
 - **2026-09-07 — Champs MADR dans le corps des décisions (0.2.4)** : `options_considerees` + `confirmation` attendus à la racine ; `write-capture` avertit (`madr_missing`) sans refuser ; modèle `templates/decision.body.yaml`. Voir `decisions/2026-09-07-champs-madr-decision-0-2-4.yaml`.

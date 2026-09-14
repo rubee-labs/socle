@@ -25,3 +25,7 @@ consequences:          # optionnel : ce que la décision change ailleurs (code, 
 confirmation:          # comment on saura que la décision est appliquée (jamais « on verra »)
   preuve: <test, EVAL, hook, métrique, fichier attendu>
   echeance: YYYY-MM-DD
+  # À l'échéance, le scanner alerte tant que le verdict n'est pas écrit
+  # (`decision_echue` au health-check, depuis 2026-09-14). Rendre le verdict :
+  # verdict: {date: YYYY-MM-DD, resultat: tenue | non-tenue | reportee, note: <1 ligne>}
+  # (ou archiver la décision si elle est caduque)

@@ -26,6 +26,7 @@ Intégré au hook SessionStart en complément de knowledge-coordinator.py.
 import argparse
 import json
 import os
+import re
 import sys
 from collections import Counter
 from datetime import datetime, timedelta
@@ -97,9 +98,57 @@ def find_subject_memory_files():
     return subjects
 
 
+def detect_overdue_decisions(subjects, project_dir=None):
+    """Décisions actives dont `confirmation.echeance` est passée sans verdict.
+
+    Ajouté 2026-09-14 (analyse Forge-Lab #10 YOINK) : une échéance qui ne vit
+    que dans un YAML est de la prose — l'alerte en fait du code. Preuve du
+    besoin : la review du sursis 2026-06-15 (due 15/07) a dormi 2 mois.
+
+    Détection volontairement textuelle (les corps de décision ne sont pas du
+    YAML strict) : ligne `echeance: YYYY-MM-DD` dans le corps, absence de
+    ligne `verdict:`. Le verdict s'enregistre en ajoutant sous `confirmation:`
+    un bloc `verdict: {date, resultat, note}` — ou en archivant la décision.
+    Aucun règlement automatique : le scanner affiche, l'humain tranche.
+    """
+    project_dir = project_dir or PROJECT_DIR
+    alerts = []
+    for path, _fm in subjects:
+        decisions_dir = path.parent / "decisions"
+        if not decisions_dir.is_dir():
+            continue
+        for dec in sorted(decisions_dir.glob("*.yaml")):
+            try:
+                text = dec.read_text(encoding="utf-8")
+            except (OSError, UnicodeDecodeError):
+                continue
+            dec_fm = parse_frontmatter(dec)
+            if (dec_fm or {}).get("status") != "active":
+                continue
+            m = re.search(r"^\s*echeance:\s*[\"']?(\d{4}-\d{2}-\d{2})", text, re.MULTILINE)
+            if not m:
+                continue
+            if re.search(r"^\s*verdict\s*:", text, re.MULTILINE):
+                continue
+            days = days_since(m.group(1))
+            if days is not None and days > 0:
+                try:
+                    rel = str(dec.relative_to(project_dir))
+                except ValueError:
+                    rel = str(dec)
+                alerts.append({
+                    "type": "decision_echue",
+                    "subject": rel,
+                    "detail": f"échéance {m.group(1)} dépassée de {days}j sans verdict — écrire confirmation.verdict ou archiver",
+                })
+    return alerts
+
+
 def detect_alerts(subjects):
     """Détecte les alertes sur tous les subjects."""
     alerts = []
+
+    alerts.extend(detect_overdue_decisions(subjects))
 
     for path, fm in subjects:
         rel_path = path.relative_to(PROJECT_DIR)

@@ -1,0 +1,73 @@
+---
+date: 2026-09-14
+type: decision
+produced_by: human
+decided_by: benjamin
+status: active
+upstream_analyses:
+  - benjamin-perso/Forge-lab/analyses/2026-09-14-yoink-claims-auto-reglees.md
+---
+
+contexte: >
+  Analyse Forge-Lab #10 (YOINK) : le champ MADR `confirmation: {preuve, echeance}`
+  (0.2.4) est un faux confort — écrit au moment de la décision, jamais vérifié
+  à l'échéance. Preuve terrain : la review du sursis 2026-06-15 (due le
+  2026-07-15) a dormi 2 mois sans verdict, découverte par accident. Vérifié
+  au passage : le fichier du sursis ne contient aucune ligne `echeance:`
+  machine-lisible (antérieur au MADR) — l'oubli était structurellement garanti.
+
+options_considerees:
+  - option: A — Règlement automatique à la YOINK (source nommée + prédicat, verdict écrit par le code)
+    retenue: false
+    raison: >
+      Les preuves CE sont souvent des jugements humains (« les clients
+      comprennent », « la migration a pris ») — non machine-réglables. Et un
+      settle automatique sur source serait une grosse machinerie pour ~2
+      décisions MADR à ce jour. YAGNI.
+  - option: B — Rappel par mémoire/discipline (statu quo)
+    retenue: false
+    raison: >
+      Démontré défaillant deux fois le même jour (sursis dormi 2 mois,
+      « 0 skillify » cru 3 mois). Une échéance qui ne vit que dans un YAML
+      est de la prose.
+  - option: C — Alerte scanner read-only au health-check, verdict humain
+    retenue: true
+    raison: >
+      ~60 lignes stdlib dans un scanner qui tourne déjà à chaque SessionStart.
+      Rend l'oubli impossible sans rien automatiser du jugement. Généralise
+      la règle « cash » (feedback_regle_cash_structurelle) : la boucle
+      décision → preuve se ferme par code, pas par mémoire. Validé par
+      Benjamin le 2026-09-14 après explication détaillée.
+
+decision: >
+  Le scanner Forge alerte (`decision_echue`) au health-check sur toute
+  décision de subject `status: active` dont `confirmation.echeance` est
+  dépassée sans `verdict:` écrit. Le verdict se rend en ajoutant
+  `confirmation.verdict: {date, resultat: tenue|non-tenue|reportee, note}`
+  ou en archivant la décision. Aucun règlement automatique.
+
+parameters:
+  version_plugin: 0.3.1
+  alerte: decision_echue
+  detection: "ligne `echeance: YYYY-MM-DD` dans le corps + absence de ligne `verdict:` + frontmatter status: active"
+  verdict_format: "verdict: {date, resultat: tenue | non-tenue | reportee, note}"
+  limite_assumee: >
+    les décisions antérieures au MADR (sans ligne echeance) restent
+    invisibles — le standard s'applique en avant, pas de rétrofit massif
+
+consequences:
+  - bin/forge_scanner.py — detect_overdue_decisions() branchée dans detect_alerts()
+  - templates/decision.body.yaml — champ verdict documenté sous confirmation
+  - rules/subject-pool.md — règle de gestion 10
+  - skills/documente/SKILL.md — Phase D : proposer le verdict si une alerte decision_echue vise le subject traité
+  - tests/test_scanner_echeances.py — 5 tests (échue sans verdict, verdict présent, future, archivée, sans échéance)
+  - les décisions D10 (échéance 2026-12-31) et cycle-2-états (2026-10-31) sont les premières sous surveillance
+
+confirmation:
+  preuve: >
+    au plus tard début novembre, la décision cycle-de-vie-2-etats (échéance
+    2026-10-31) a soit un verdict rendu, soit une alerte decision_echue
+    visible au health-check qui l'exige — dans les deux cas la boucle
+    aura fonctionné. Contre-preuve d'échec : une échéance MADR passée
+    silencieusement sans alerte ni verdict.
+  echeance: 2026-11-07

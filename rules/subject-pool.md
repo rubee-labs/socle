@@ -422,6 +422,7 @@ status: active                    # active | archived
 7. **Pas de migration forcée** : les anciens `MEMORY.md` / `discussions/` / `decisions/` sans frontmatter étendu restent valides. Adoption opportuniste (lors de modification).
 8. **Producteur (`produced_by`)** : `external` (monde/MCP), `claude` (Claude seul), `human_and_claude` (échange), `human` (Benjamin valide).
 9. **Lecture en cascade** : niveau 1 = `<output_dir>/SUBJECTS-INDEX.md` (défaut `entreprise/`, cf. `.forge.yaml`) toujours, niveau 2 = `MEMORY.md` du subject, niveau 3 = un fichier précis à la demande.
+10. **Échéances de confirmation surveillées** (2026-09-14, analyse Forge-Lab #10 YOINK) : toute décision `status: active` dont `confirmation.echeance` est dépassée **sans verdict** remonte une alerte `decision_echue` au scanner (health-check SessionStart). Le verdict s'enregistre sous `confirmation:` — `verdict: {date, resultat: tenue | non-tenue | reportee, note}` — ou la décision s'archive si caduque. Aucun règlement automatique : le scanner rend l'oubli impossible, l'humain tranche. Une échéance qui ne vit que dans un YAML est de la prose ; l'alerte en fait du code (généralisation de la règle « cash » au-delà du cash).
 
 ---
 

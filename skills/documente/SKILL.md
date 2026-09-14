@@ -187,7 +187,7 @@ rm -f "$DOC_BODY" "$DOC_DECISION"
 
 **Corps d'une décision — champs MADR (v2.9, décision CE 2026-09-07)** : structure YAML libre, mais deux clés attendues à la racine, modèle dans `templates/decision.body.yaml` :
 - `options_considerees` : liste `{option, retenue: true|false, raison}` — les alternatives écartées et pourquoi (une décision sans alternative écartée n'est pas une décision, c'est un constat).
-- `confirmation` : `{preuve, echeance}` — comment on saura qu'elle est appliquée (test, EVAL, hook, métrique, fichier attendu), jamais « on verra ».
+- `confirmation` : `{preuve, echeance}` — comment on saura qu'elle est appliquée (test, EVAL, hook, métrique, fichier attendu), jamais « on verra ». À l'échéance, le scanner alerte (`decision_echue`) tant que `confirmation.verdict: {date, resultat, note}` n'est pas écrit ou la décision archivée — si une alerte de ce type est visible en début de session sur le subject traité, proposer de rendre le verdict dans la même invocation.
 `write-capture` retourne `madr_missing` + `warnings` si l'une manque : écriture acceptée, mais **afficher l'avertissement dans le récap** et compléter dans la même invocation si l'information est dans la conversation.
 
 Le frontmatter est entièrement composé par Python (pas de risque de corruption YAML par le LLM). Si l'écriture échoue avec `code: exists`, c'est qu'un fichier du même slug existe déjà — choisir un autre slug ou archiver l'ancien.
