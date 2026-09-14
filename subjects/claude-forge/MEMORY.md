@@ -1,7 +1,7 @@
 ---
 projet: claude-forge
-statut: phase-3-refonte-process-gamma-3-etats + vague-3-p4-livree + decouplage-CE-0.2.0 + fix-parseur-scanner-0.2.2 + memory-borne-0.2.3 + madr-decision-0.2.4
-derniere_maj: 2026-09-07
+statut: phase-3-refonte-process-gamma-3-etats + vague-3-p4-livree + decouplage-CE-0.2.0 + fix-parseur-scanner-0.2.2 + memory-borne-0.2.3 + madr-decision-0.2.4 + d10-provenance-skillify-0.2.5
+derniere_maj: 2026-09-14
 auteur: benjamin
 ---
 
@@ -13,9 +13,10 @@ auteur: benjamin
 Statut : Phase 3 livrée + Vague 3 P4 livrée (bench_engine 2026-05-24) + **Découplage CE livré (0.2.0, 2026-06-05)**. Le plugin est désormais distribuable : config par-repo `.forge.yaml` (loader `load_forge_config`), `forge init`, skill `/forge-init`, hook SessionStart nudge. 1er pool non-CE bootstrapé : `benjamin-perso/jean-claude-code` (subject `kite-connect`). CE strictement inchangé (zéro config).
 **0.2.3 (2026-09-06)** : MEMORY.md d'entité borné — commandes `check-memory` + `patch-section`, Phase F4 v2.8 (Quick < 100 mots, ≤ 10 décisions actives, règles apprises, plafond 8 Ko, journal de runs interdit → `rapports/`), `/documente` en `effort: medium`. Bloc 3 du plan CE ; bloc 4 (migration des 3 gros MEMORY.md CE) sous relecture Benjamin.
 **0.2.2 (2026-09-06)** : parseur frontmatter corrigé (dicts imbriqués `last_event` lus `[]` sur 39/39 subjects CE → 34 stagnants faux) + scanner idempotent (plus de réécriture des index à chaque SessionStart, cause de 90 % des commits « Session » CE). Bloc 1 du plan « mémoire re-synthèse bornée + hook post-bloc » ; blocs 2-4 à venir (hook Stop CE, Phase L4 bornée, migration 3 gros MEMORY.md).
+**0.2.5 (2026-09-14)** : D10 provenance bidirectionnelle skill ↔ subjects — `skillify scaffold --source-subjects` écrit `source_subjects:` dans le SKILL.md généré ET met à jour `linked_skills` des subjects d'origine ; 11e check hygiène `provenance_declared`. Déclencheur : analyse Forge-Lab #9 WikiSkill (Google Research) + incident « 0 skillify » (voir Règles apprises). **/skillify est vivant** : 4 skills réels côté CE (annote 23/06, compta-facture-suspens 20/07, compta-valeur-en-transit 27/07, compta-analyse-gcp 07/08) — sursis 2026-06-15 levé sur pièces pour /skillify.
 Liens forts : aucun (subject racine du projet)
-Prochaines étapes : surveillance bench Forge (re-run dans 3-6 mois pour mesurer dérive cascade), arbitrage backlog Forge-Lab (Obsidian comme lecteur ? couche d'entreprise ? — flaggés 2026-05-24 post-SamourAI), migration progressive des 33 subjects vers les 3 nouveaux états (non urgent grâce au mapping legacy)
-Risques : hint /skillify toujours discret (0 skillify livré à ce jour), bench v1 limité aux questions frontmatter (questions sémantiques sur Quick non couvertes — évolution v2 à instruire si signal de saturation)
+Prochaines étapes : rétrofit provenance des 4 skills CE existants (optionnel), trancher le reste du sursis 2026-06-15 (/cross-modal-review adoption ?, cycle γ influence réelle ? — review du 15/07 en retard), surveillance bench Forge (re-run 3-6 mois), arbitrage backlog Forge-Lab (Obsidian lecteur ? couche d'entreprise ?)
+Risques : bench v1 limité aux questions frontmatter (questions sémantiques sur Quick non couvertes — évolution v2 à instruire si signal de saturation) ; hors /skillify, adoption /cross-modal-review et valeur du cycle γ toujours non démontrées
 
 ## Doctrine en vigueur (2026-05-11)
 
@@ -50,7 +51,7 @@ Cycle simplifié à **3 états** (`actif` / `mature` / `archived`), transitions 
 | `/subject-create-type` | actif | Crée un type avec `typical_linked_types` enrichi `{name, type}`. |
 | `/subject-create` | actif | Instancie un subject depuis un type. |
 | `/subject-merge` | actif | Soude 2 subjects (validation Benjamin obligatoire). |
-| `/skillify` | actif (depuis 2026-05-10) | Compile un workflow ad hoc en skill réutilisable (5 stubs). Pattern Garry Tan. Trigger humain explicite, hint dans /documente Phase J. |
+| `/skillify` | actif (depuis 2026-05-10), **4 skills livrés côté CE** (juin-août 2026) | Compile un workflow ad hoc en skill réutilisable (5 stubs). Pattern Garry Tan. Trigger humain explicite, hint dans /documente Phase J. Depuis 0.2.5 (D10) : `--source-subjects` pose la provenance bidirectionnelle skill ↔ subjects. |
 | `/cross-modal-review` | actif (depuis 2026-05-10) | Évalue la qualité d'un MEMORY.md (4 axes, 2-3 modèles). À invoquer avant `actif → mature`. |
 | `/stress-test` | optionnel à la demande | Challenge un subject (contradicteur, steelman, yagni). Pas de mutation d'état. Pas encore implémenté. |
 | `forge bench` | actif (depuis 2026-05-24) | Outil de surveillance retriever (prepare / run / report). 3 retrievers déterministes (R1 cascade / R2 grep-agrégé / R3 fs-grep). Mode stdlib, $0, reproductible. Pas un skill (pas de slash command) — invocable directement via le binaire. |
@@ -58,6 +59,7 @@ Cycle simplifié à **3 états** (`actif` / `mature` / `archived`), transitions 
 
 ## Décisions actives
 
+- **2026-09-14 — D10 : provenance bidirectionnelle skill ↔ subjects (0.2.5)** : `skillify scaffold --source-subjects` écrit `source_subjects:` dans le SKILL.md généré et ajoute le skill aux `linked_skills` des subjects d'origine ; 11e check hygiène `provenance_declared`. Équivalent PURPOSE.md WikiSkill (arXiv 2608.27454, analyse Forge-Lab #9). Voir `decisions/2026-09-14-d10-provenance-bidirectionnelle-skillify.yaml`.
 - **2026-09-07 — Champs MADR dans le corps des décisions (0.2.4)** : `options_considerees` + `confirmation` attendus à la racine ; `write-capture` avertit (`madr_missing`) sans refuser ; modèle `templates/decision.body.yaml`. Voir `decisions/2026-09-07-champs-madr-decision-0-2-4.yaml`.
 - **2026-04-29 — Adoption du pattern subject pool en γ pragmatique** : adoption opportuniste, pas de migration forcée. Les anciens patterns (Labs, MEMORY.md de service, discussions/decisions répartis) restent valides.
 - **2026-04-29 — Intégration Forge au Health-check** : `forge_scanner.py` branché dans `~/.claude/scripts/init-healthcheck.sh`. Voir `decisions/2026-04-29-fix-integration-healthcheck.yaml`.
@@ -166,12 +168,16 @@ Sauvegardé : `bench/2026-05-24-rubee-baseline-{corpus,results,report}.{json,md}
 
 - **Re-run bench Forge dans 3-6 mois** : comparer baseline 2026-05-24 (R1 cascade 100%, 33 subjects) à un nouveau run. Si dérive significative (R1 < 90% par exemple), instruire évolution v2 du bench (questions sémantiques sur Quick, génération synthétique 100/300 subjects).
 - **2 sujets flaggés post-SamourAI (2026-05-24)** à rediscuter — voir `benjamin-perso/Forge-lab/MEMORY.md` § Discussions ouvertes : (1) Obsidian comme lecteur (plugin frontmatter → wikilinks), (2) Forge n'est pas une couche d'entreprise (réouvrir D1 si scale Rubee).
-- **Adoption /skillify** : hint discret dans /documente Phase J — vérifier sur 4 semaines que des workflows ad hoc sont effectivement skillifiés. Si 0 skillify livré → hint trop faible, revoir.
-- **Adoption /cross-modal-review** : pareil. Si aucun subject n'est passé en `mature` avec eval préalable, le hint n'est pas opérant.
+- **Adoption /skillify** : ~~si 0 skillify livré → hint trop faible~~ **résolu 2026-09-14** : 4 skills réels livrés côté CE (annote, compta-facture-suspens, compta-valeur-en-transit, compta-analyse-gcp). Nouvelle veille : vérifier que les prochains skillify passent `--source-subjects` (D10) et que les `linked_skills` se peuplent.
+- **Adoption /cross-modal-review** : toujours non démontrée. Si aucun subject n'est passé en `mature` avec eval préalable, le hint n'est pas opérant. Reste du sursis 2026-06-15 à trancher (avec la valeur du cycle γ).
 - **Migration legacy** : combien de subjects ont encore un ancien `forging_state` (seed/debating/tentative/...) après 30 jours ? Si > 50%, signaler que la migration ne se fait pas naturellement.
 - **Bilingue chaotique futur** : pertinent dès le 3ème type créé. Anticiper un canon de dimensions partagées.
 - **Cohabitation Labs** : `/CE-analyse` écrit dans CE-Lab sans frontmatter étendu. Phase 2 (adoption opportuniste) à amorcer.
 - **Courbe apprentissage équipe** : pool reste outil personnel. Pas de transfert tant que pas de doctrine compilée et utilisée.
+
+## Règles apprises
+
+- **L'usage d'une feature se vérifie dans git, jamais dans un MEMORY** (incident 2026-09-14) : ce MEMORY a affirmé « 0 skillify livré » pendant 3 mois alors que 4 skills existaient — les runs skillify ne remontaient aucune trace dans le pool (pas de provenance, `linked_skills` vides). Un MEMORY re-synthétisé ne voit que ce qu'on lui remonte. Correction structurelle : D10.
 
 ## Alertes
 
