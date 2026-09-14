@@ -76,6 +76,82 @@ class TestScaffold(unittest.TestCase):
         self.assertEqual(exit_code, 1)
         self.assertIn("existe déjà", result["error"])
 
+    def _make_subject(self, rel_path, name, linked_skills_line="linked_skills: []"):
+        subj = self.tmpdir / rel_path
+        subj.mkdir(parents=True)
+        (subj / "MEMORY.md").write_text(f"""---
+name: {name}
+type: domain
+forging_state: actif
+{linked_skills_line}
+---
+
+## Quick
+
+État : actif
+""", encoding="utf-8")
+        return subj
+
+    def test_scaffold_with_source_subjects_writes_provenance_and_backlink(self):
+        """D10 : source_subjects dans le SKILL.md généré + backlink linked_skills."""
+        subj = self._make_subject("services/finance/subjects/tresorerie", "tresorerie")
+        result, exit_code = run_engine(
+            "scaffold", "compta-x",
+            "--description", "Skill de test provenance, assez long pour le seuil de 30 chars.",
+            "--source-subjects", "services/finance/subjects/tresorerie",
+            env={"CLAUDE_FORGE_PROJECT_DIR": str(self.tmpdir)},
+        )
+        self.assertTrue(result["ok"])
+        self.assertEqual(result["provenance"]["source_subjects"],
+                         ["services/finance/subjects/tresorerie"])
+        self.assertEqual(result["provenance"]["backlinks_updated"],
+                         ["services/finance/subjects/tresorerie"])
+        self.assertEqual(result["provenance"]["warnings"], [])
+        skill_md = (self.tmpdir / "skills" / "compta-x" / "SKILL.md").read_text(encoding="utf-8")
+        self.assertIn("source_subjects: [services/finance/subjects/tresorerie]", skill_md)
+        memory = (subj / "MEMORY.md").read_text(encoding="utf-8")
+        self.assertIn("linked_skills: [compta-x]", memory)
+        # Deuxième skill sur le même subject → append dans la liste inline
+        result2, _ = run_engine(
+            "scaffold", "compta-y",
+            "--description", "Deuxième skill de test provenance, assez long pour 30 chars.",
+            "--source-subjects", "services/finance/subjects/tresorerie",
+            env={"CLAUDE_FORGE_PROJECT_DIR": str(self.tmpdir)},
+        )
+        self.assertTrue(result2["ok"])
+        memory = (subj / "MEMORY.md").read_text(encoding="utf-8")
+        self.assertIn("linked_skills: [compta-x, compta-y]", memory)
+
+    def test_scaffold_source_subject_missing_warns_but_succeeds(self):
+        """Subject introuvable = warning, pas d'échec du scaffold."""
+        result, exit_code = run_engine(
+            "scaffold", "compta-z",
+            "--description", "Skill de test avec subject fantôme, assez long pour 30 chars.",
+            "--source-subjects", "services/nulle-part/subjects/fantome",
+            env={"CLAUDE_FORGE_PROJECT_DIR": str(self.tmpdir)},
+        )
+        self.assertTrue(result["ok"])
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(len(result["provenance"]["warnings"]), 1)
+        self.assertIn("introuvable", result["provenance"]["warnings"][0])
+        self.assertEqual(result["provenance"]["backlinks_updated"], [])
+
+    def test_scaffold_backlink_multiline_list(self):
+        """Backlink sur un linked_skills en bloc multi-ligne."""
+        subj = self._make_subject(
+            "services/finance/subjects/factures", "factures",
+            linked_skills_line="linked_skills:\n  - deja-la",
+        )
+        result, _ = run_engine(
+            "scaffold", "compta-w",
+            "--description", "Skill de test multiline backlink, assez long pour 30 chars.",
+            "--source-subjects", "services/finance/subjects/factures",
+            env={"CLAUDE_FORGE_PROJECT_DIR": str(self.tmpdir)},
+        )
+        self.assertTrue(result["ok"])
+        memory = (subj / "MEMORY.md").read_text(encoding="utf-8")
+        self.assertIn("  - deja-la\n  - compta-w", memory)
+
     def test_scaffold_targets_entreprise_skills_when_present(self):
         """Si entreprise/skills/ existe, scaffold doit cibler là plutôt que skills/."""
         ent_skills = self.tmpdir / "entreprise" / "skills"
@@ -174,7 +250,7 @@ B
         self.assertIn("description_long_enough", result["summary"]["failed_critical"])
 
     def test_check_distinguishes_critical_from_hygiene(self):
-        """scripts_dir et tests_dir absents = warning, pas critique."""
+        """scripts_dir, tests_dir et provenance absents = warning, pas critique."""
         (self.skill / "SKILL.md").write_text("""---
 name: test-skill
 description: >-
@@ -193,11 +269,11 @@ B
 ## Critères d'évaluation
 - EVAL 1 : marker
 """, encoding="utf-8")
-        # Pas de scripts/ ni tests/
+        # Pas de scripts/ ni tests/ ni source_subjects
         result, _ = run_engine("check", str(self.skill))
         self.assertTrue(result["ok"])  # ok parce que les hygiene checks ne bloquent pas
         self.assertEqual(set(result["summary"]["failed_hygiene"]),
-                         {"scripts_dir", "tests_dir"})
+                         {"scripts_dir", "tests_dir", "provenance_declared"})
 
 
 class TestAudit(unittest.TestCase):

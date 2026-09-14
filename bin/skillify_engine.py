@@ -7,13 +7,18 @@ Adapté du pattern `gbrain skillify` de Garry Tan (cf. analyse Forge-Lab
 + fixtures » dans Forge. Stdlib only.
 
 Sous-commandes :
-- scaffold <name> [--description X] [--triggers X,Y]
+- scaffold <name> [--description X] [--triggers X,Y] [--source-subjects P,Q]
        Crée les 5 stubs d'un nouveau skill : SKILL.md + scripts/<name>.py +
        tests/test_<name>.py + fixtures/<name>.routing.jsonl + EVAL.md.
        Sentinelle SKILLIFY_STUB sur les contenus à compléter par l'humain.
+       --source-subjects (D10, 2026-09-14) : provenance bidirectionnelle —
+       écrit `source_subjects: [...]` dans le frontmatter du SKILL.md généré
+       ET ajoute le skill aux `linked_skills` du MEMORY.md de chaque subject
+       d'origine (équivalent du PURPOSE.md WikiSkill, arXiv 2608.27454).
 - check <skill-path>
-       Audit 10-points sur un skill existant (présence SKILL.md, sections,
-       tests, scripts, sentinelles résiduelles, description suffisante).
+       Audit 11-points sur un skill existant (présence SKILL.md, sections,
+       tests, scripts, sentinelles résiduelles, description suffisante,
+       provenance déclarée).
 - audit [--target <dir>]
        Scanne tous les skills d'un répertoire et agrège les résultats du check.
        Par défaut : skills/ du repo courant.
@@ -32,11 +37,11 @@ from forge_lib import get_project_dir, load_forge_config
 
 STUB_SENTINEL = "SKILLIFY_STUB"
 
-# 10 checks de l'audit `check`. 8 sont critiques (must pass pour ok=true),
-# 2 sont des checks d'hygiène (HYGIENE_CHECKS) — utiles à signaler mais pas
+# 11 checks de l'audit `check`. 8 sont critiques (must pass pour ok=true),
+# 3 sont des checks d'hygiène (HYGIENE_CHECKS) — utiles à signaler mais pas
 # bloquants. Cohérent avec le fait que dans claude-forge les engines vivent
 # dans bin/ partagé, pas dans skills/<name>/scripts/.
-HYGIENE_CHECKS = {"scripts_dir", "tests_dir"}
+HYGIENE_CHECKS = {"scripts_dir", "tests_dir", "provenance_declared"}
 
 CHECK_LABELS = {
     "skill_md_exists":       "SKILL.md existe à la racine du skill",
@@ -49,6 +54,7 @@ CHECK_LABELS = {
     "tests_dir":             "dossier tests/ présent (hygiène — non bloquant)",
     "no_residual_stubs":     f"aucun sentinel `{STUB_SENTINEL}` résiduel",
     "description_long_enough": "description du frontmatter ≥30 chars",
+    "provenance_declared":   "frontmatter source_subjects non vide (provenance skill → subjects, hygiène — non bloquant)",
 }
 
 
@@ -75,12 +81,15 @@ def _resolve_skills_root(project_dir: Path) -> Path:
     return project_dir / "skills"
 
 
-def _make_skill_md(name, description, triggers, visibility="entreprise"):
+def _make_skill_md(name, description, triggers, visibility="entreprise", source_subjects=None):
     triggers_block = ""
     if triggers:
         triggers_block = "\n  ".join(f"- {t.strip()}" for t in triggers if t.strip())
     desc = description or f"{STUB_SENTINEL} — décrire en ≥30 chars ce que fait le skill, ses triggers, ses limites."
     today = date.today().isoformat()
+    # D10 (2026-09-14) : provenance skill → subjects. Liste vide si le skill
+    # ne naît d'aucun subject — le check `provenance_declared` (hygiène) le signale.
+    sources = ", ".join(source_subjects) if source_subjects else ""
     return f"""---
 name: {name}
 description: >-
@@ -93,6 +102,7 @@ tags: [{STUB_SENTINEL}]
 effort: medium
 outils_requis: []
 securite_externe: false
+source_subjects: [{sources}]
 {f"triggers:\\n  {triggers_block}" if triggers_block else ""}
 ---
 
@@ -245,7 +255,77 @@ Voir `forge skillify check skills/{name}` pour le rapport JSON.
 """
 
 
-def cmd_scaffold(name, description=None, triggers=None, target_root=None):
+def _resolve_subject_memory(project_dir: Path, ref: str):
+    """Résout une référence de subject (chemin de dossier ou de MEMORY.md,
+    relatif au repo ou absolu) vers son MEMORY.md. Retourne (Path|None, ref_norm).
+
+    ref_norm = chemin du dossier subject relatif au repo quand résolvable
+    (c'est la forme stockée dans `source_subjects:`), sinon la ref d'origine.
+    """
+    ref = ref.strip().rstrip("/")
+    if not ref:
+        return None, ref
+    candidates = [Path(ref)] if Path(ref).is_absolute() else [project_dir / ref]
+    for c in candidates:
+        memory = c if c.name == "MEMORY.md" else c / "MEMORY.md"
+        if memory.is_file():
+            subject_dir = memory.parent
+            try:
+                ref_norm = str(subject_dir.relative_to(project_dir))
+            except ValueError:
+                ref_norm = str(subject_dir)
+            return memory, ref_norm
+    return None, ref
+
+
+def _update_subject_linked_skills(memory_path: Path, skill_name: str):
+    """Ajoute `skill_name` au `linked_skills:` du frontmatter d'un MEMORY.md
+    (backlink subject → skill, D10). Édition textuelle minimale — on ne
+    régénère jamais le frontmatter entier (le MEMORY.md appartient à
+    /documente, pas à skillify).
+
+    Formats gérés : liste inline `linked_skills: [a, b]` (canonique), bloc
+    multi-ligne `linked_skills:\\n  - a`, clé absente (insérée avant le `---`
+    fermant). Retourne (updated: bool, reason: str).
+    """
+    try:
+        text = memory_path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as e:
+        return False, f"unreadable: {e}"
+
+    fm_match = re.match(r"^---\s*\n(.*?)\n---", text, re.DOTALL)
+    if not fm_match:
+        return False, "no_frontmatter"
+    fm_text = fm_match.group(1)
+
+    # Cas 1 — liste inline `linked_skills: [a, b]`
+    inline = re.search(r"^(linked_skills:\s*\[)([^\]]*)(\])", fm_text, re.MULTILINE)
+    if inline:
+        items = [s.strip() for s in inline.group(2).split(",") if s.strip()]
+        if skill_name in items:
+            return False, "already_present"
+        items.append(skill_name)
+        new_fm = fm_text[:inline.start()] + inline.group(1) + ", ".join(items) \
+            + inline.group(3) + fm_text[inline.end():]
+    else:
+        # Cas 2 — bloc multi-ligne `linked_skills:` suivi de `  - item`
+        block = re.search(r"^linked_skills:[ \t]*\n((?:[ \t]+-[^\n]*\n?)*)", fm_text, re.MULTILINE)
+        if block:
+            if re.search(rf"-\s*{re.escape(skill_name)}\s*$", block.group(1), re.MULTILINE):
+                return False, "already_present"
+            insert_at = block.end(1)
+            prefix = "" if (insert_at == 0 or fm_text[insert_at - 1] == "\n") else "\n"
+            new_fm = fm_text[:insert_at] + f"{prefix}  - {skill_name}\n" + fm_text[insert_at:]
+        else:
+            # Cas 3 — clé absente : ajout en fin de frontmatter
+            new_fm = fm_text.rstrip("\n") + f"\nlinked_skills: [{skill_name}]"
+
+    new_text = text[:fm_match.start(1)] + new_fm + text[fm_match.end(1):]
+    memory_path.write_text(new_text, encoding="utf-8")
+    return True, "updated"
+
+
+def cmd_scaffold(name, description=None, triggers=None, target_root=None, source_subjects=None):
     """Crée les 5 stubs d'un nouveau skill."""
     project_dir = get_project_dir()
     if target_root:
@@ -265,10 +345,23 @@ def cmd_scaffold(name, description=None, triggers=None, target_root=None):
     (skill_dir / "tests").mkdir()
     (skill_dir / "fixtures").mkdir()
 
+    # D10 — provenance bidirectionnelle skill ↔ subjects : résolution des refs
+    # AVANT génération (les refs normalisées vont dans le frontmatter), backlink
+    # APRÈS création des fichiers.
+    provenance = {"source_subjects": [], "backlinks_updated": [], "warnings": []}
+    resolved = []  # [(memory_path|None, ref_norm)]
+    for ref in (source_subjects or []):
+        memory_path, ref_norm = _resolve_subject_memory(project_dir, ref)
+        resolved.append((memory_path, ref_norm))
+        provenance["source_subjects"].append(ref_norm)
+        if memory_path is None:
+            provenance["warnings"].append(f"subject introuvable (pas de MEMORY.md) : {ref}")
+
     triggers_list = triggers or []
     visibility = load_forge_config(project_dir)["skill_visibility"]
     (skill_dir / "SKILL.md").write_text(
-        _make_skill_md(name, description, triggers_list, visibility=visibility),
+        _make_skill_md(name, description, triggers_list, visibility=visibility,
+                       source_subjects=provenance["source_subjects"]),
         encoding="utf-8",
     )
     (skill_dir / "scripts" / f"{name}.py").write_text(
@@ -282,11 +375,21 @@ def cmd_scaffold(name, description=None, triggers=None, target_root=None):
     )
     (skill_dir / "EVAL.md").write_text(_make_eval_md(name), encoding="utf-8")
 
+    for memory_path, ref_norm in resolved:
+        if memory_path is None:
+            continue
+        updated, reason = _update_subject_linked_skills(memory_path, name)
+        if updated:
+            provenance["backlinks_updated"].append(ref_norm)
+        elif reason not in ("already_present",):
+            provenance["warnings"].append(f"backlink non appliqué sur {ref_norm} : {reason}")
+
     return {
         "ok": True,
         "version": 1,
         "skill_name": name,
         "skill_dir": str(skill_dir),
+        "provenance": provenance,
         "files_created": [
             str(skill_dir / "SKILL.md"),
             str(skill_dir / "scripts" / f"{name}.py"),
@@ -400,7 +503,7 @@ def _count_residual_stubs(skill_path: Path):
 
 
 def cmd_check(skill_path):
-    """Audit 10-points sur un skill."""
+    """Audit 11-points sur un skill."""
     skill_path = Path(skill_path).resolve()
     if not skill_path.is_dir():
         return {"ok": False, "error": f"not a directory: {skill_path}"}
@@ -434,6 +537,13 @@ def cmd_check(skill_path):
             _has_section(body, r"Crit[èe]res d'?[ée]valuation")
             or _has_section(body, r"EVAL")
         )
+
+        # D10 — provenance skill → subjects (hygiène). `source_subjects: []`
+        # ou clé absente = non déclaré. Le parser stocke les listes inline
+        # comme string brute → on inspecte le contenu des crochets.
+        raw_src = str(fm.get("source_subjects", "") or "").strip()
+        inner = raw_src[1:-1].strip() if raw_src.startswith("[") and raw_src.endswith("]") else raw_src
+        checks["provenance_declared"] = bool(inner)
 
     checks["scripts_dir"] = (skill_path / "scripts").is_dir()
     checks["tests_dir"] = (skill_path / "tests").is_dir()
@@ -534,8 +644,12 @@ def main():
                       help="Triggers comma-separated (ex: 'verify webhook,check tunnel')")
     p_sc.add_argument("--target", default=None,
                       help="Override skills root (default: skills/ ou entreprise/skills/)")
+    p_sc.add_argument("--source-subjects", default=None,
+                      help="Subjects d'origine comma-separated (chemins de dossiers subject, "
+                           "ex: 'services/finance/subjects/tresorerie'). Écrit source_subjects "
+                           "dans le SKILL.md et met à jour linked_skills des subjects (D10).")
 
-    p_ck = sub.add_parser("check", help="Audit 10-points sur un skill")
+    p_ck = sub.add_parser("check", help="Audit 11-points sur un skill")
     p_ck.add_argument("skill_path")
 
     p_au = sub.add_parser("audit", help="Audit global du répertoire skills/")
@@ -547,8 +661,10 @@ def main():
 
     if args.cmd == "scaffold":
         triggers = [t for t in (args.triggers or "").split(",") if t.strip()]
+        sources = [s.strip() for s in (args.source_subjects or "").split(",") if s.strip()]
         result = cmd_scaffold(args.name, description=args.description,
-                              triggers=triggers, target_root=args.target)
+                              triggers=triggers, target_root=args.target,
+                              source_subjects=sources)
     elif args.cmd == "check":
         result = cmd_check(args.skill_path)
     elif args.cmd == "audit":

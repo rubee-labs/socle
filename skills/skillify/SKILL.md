@@ -10,7 +10,7 @@ type_anthropic: 5
 visibilité: entreprise
 auteur: Benjamin
 date_creation: 2026-05-10
-version: 0.1
+version: 0.2
 tags: [meta, scaffolding, compilation-continue, garry-tan]
 effort: medium
 outils_requis: [forge_skillify_engine]
@@ -53,6 +53,7 @@ Présenter ce résumé à Benjamin et lui demander :
 - Le nom kebab-case du skill (ex: `verify-archive-expunge`).
 - 2-4 phrases déclencheurs alternatives (pour la fixture routing).
 - Une description ≥30 chars qui discrimine ce skill des skills voisins.
+- **Le(s) subject(s) d'origine** (D10) : de quel(s) subject(s) du pool ce workflow est-il issu ? Chemins de dossiers subject (ex: `services/finance/subjects/tresorerie`). Si le workflow ne naît d'aucun subject, le dire explicitement — la provenance restera vide et le check le signalera en hygiène.
 
 Validation explicite avant Phase 2.
 
@@ -63,12 +64,15 @@ Invoquer `forge skillify scaffold` :
 ```bash
 forge skillify scaffold <name> \
   --description "<description ≥30 chars>" \
-  --triggers "<phrase déclencheur 1>,<phrase déclencheur 2>,..."
+  --triggers "<phrase déclencheur 1>,<phrase déclencheur 2>,..." \
+  --source-subjects "<chemin subject 1>,<chemin subject 2>"
 ```
 
-Sortie JSON `{ok, skill_dir, files_created: [SKILL.md, scripts/<n>.py, tests/test_<n>.py, fixtures/<n>.routing.jsonl, EVAL.md]}`.
+Sortie JSON `{ok, skill_dir, files_created: [...], provenance: {source_subjects, backlinks_updated, warnings}}`.
 
 Le moteur cible `entreprise/skills/<name>/` si `entreprise/skills/` existe, sinon `skills/<name>/`. Override possible via `--target <chemin>`.
+
+**Provenance bidirectionnelle (D10)** : `--source-subjects` écrit `source_subjects: [...]` dans le frontmatter du SKILL.md généré ET ajoute le skill aux `linked_skills` du MEMORY.md de chaque subject cité. Vérifier les `warnings` de la sortie (subject introuvable = backlink non posé). Les MEMORY.md modifiés font partie du commit de Phase 6.
 
 ### Phase 3 — Compléter les stubs (LLM)
 
@@ -88,7 +92,7 @@ Les 5 fichiers contiennent des sentinelles `SKILLIFY_STUB`. Compléter dans cet 
 forge skillify check <skill-dir>
 ```
 
-Sortie JSON détaillée : 10 checks, dont 8 critiques (bloquants) + 2 hygiène (scripts/, tests/ — bloquants seulement en `--strict`).
+Sortie JSON détaillée : 11 checks, dont 8 critiques (bloquants) + 3 hygiène (scripts/, tests/, source_subjects — bloquants seulement en `--strict`).
 
 Si `ok: false` → afficher les `failed_critical` à Benjamin, demander de corriger, ré-itérer.
 
@@ -144,6 +148,7 @@ forge skillify check passes ok: true
 - **Sentinelles `SKILLIFY_STUB` résiduelles = skill cassé**. Le check les détecte et bloque le `ok: true`. Ne pas committer un skill avec des stubs.
 - **Description du frontmatter < 30 chars = skill mal discriminé**. Claude Code dispatche les skills par leur description ; trop courte = collision avec d'autres skills.
 - **Un skill par cas concret**, pas un skill fourre-tout. Si tu hésites entre 2 skills, c'est qu'il y en a 2 qui se cachent — découper.
+- **Provenance omise = pool aveugle**. Incident 2026-09-14 : 4 skills skillifiés (juin-août 2026) sans `source_subjects` ni backlink → le subject claude-forge croyait `/skillify` mort (« 0 skillify livré » dans son MEMORY). Toujours passer `--source-subjects` quand le workflow vient d'un subject ; l'omission volontaire se justifie en Phase 1.
 - **Doctrine Rubee** : un skill ne doit jamais embarquer une clé API Anthropic ni `from anthropic import Anthropic`. Si le skill a besoin d'invoquer Claude pour un sub-task, utiliser le Task tool ou le SDK Claude Agent (cf. `feedback_jamais_cle_api_toujours_max_via_sdk.md`).
 
 ## Critères d'évaluation
@@ -153,3 +158,4 @@ forge skillify check passes ok: true
 - **EVAL 3** : Le skill a-t-il été testé en conditions réelles ≥1 fois et le résultat est-il satisfaisant ? (Pass si Benjamin a confirmé le résultat sur un cas concret post-création / Fail si scaffolding seul sans validation)
 - **EVAL 4** : Le script Python (si présent) reste-t-il stdlib only et ne fait-il que du déterministe (pas de LLM call inline) ? (Pass / Fail)
 - **EVAL 5** : Le skill a-t-il été décidé suite à un workflow ad hoc effectivement répété ≥2 fois (pas hypothétique) ? (Pass si Benjamin peut citer ≥2 occurrences passées / Fail si skill spéculatif)
+- **EVAL 6** : La provenance est-elle posée (D10) ? (Pass si `source_subjects` non vide dans le SKILL.md ET les `linked_skills` des subjects d'origine mis à jour, OU omission explicitement justifiée en Phase 1 / Fail si oubliée)
