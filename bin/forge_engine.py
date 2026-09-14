@@ -4,8 +4,7 @@ forge_engine.py — Couche 1 du moteur /documente (re-synthese continue).
 
 Lit un subject (MEMORY.md + sous-dossiers events/ analyses/ discussions/
 decisions/), extrait les donnees structurees, calcule les stats agregees,
-recalcule last_event, detecte les conditions de transition gamma. Cascade
-vers les linked_subjects sur 1 niveau strict.
+recalcule last_event. Cascade vers les linked_subjects sur 1 niveau strict.
 
 NE TOUCHE PAS aux fichiers — retourne un plan d'ecritures (JSON) que
 /documente applique via Edit cote Claude.
@@ -15,20 +14,23 @@ Usage CLI :
 
 Imprime le JSON sur stdout. Permet a Claude d'invoquer via Bash.
 
-Cycle de vie (refonte 2026-05-10) — 3 etats, transitions 100% manuelles :
-  actif    : subject en accumulation / reflexion en cours
-  mature   : opinion formee, stable. /cross-modal-review ou /stress-test
-             invocables a la demande, pas comme transition d'etat.
+Cycle de vie (refonte 2026-09-14, historiquement « cycle γ ») — 2 etats,
+transitions 100% manuelles :
+  actif    : subject vivant (accumulation, reflexion, ou opinion formee —
+             la maturite n'est plus un etat, c'est un jugement a la demande
+             via /cross-modal-review ou /stress-test).
   archived : subject clos, lecons remontees vers les parents.
 
 Aucune transition n'est jamais appliquee automatiquement par le moteur.
-Toutes passent par /documente avec validation Benjamin. Cf. subject-pool.md.
+Toutes passent par /documente avec validation utilisateur. Cf. subject-pool.md
+et decisions/2026-09-14-cycle-de-vie-2-etats.yaml (l'etat `mature` n'a connu
+0 transition reelle en 4 mois — supprime).
 
 Retrocompatibilite : les anciens etats (seed, debating, tentative,
-stress_testing, doctrine, in_service, under_review) sont mappes en lecture
-vers actif/mature/archived via LEGACY_STATE_MAP. Les champs frontmatter
-conviction, stress_tests_passed, compiled_artifacts sont deprecated et
-ignores par le moteur.
+stress_testing, doctrine, in_service, under_review, mature) sont mappes en
+lecture vers actif/archived via LEGACY_STATE_MAP, et normalises en ecriture
+au prochain /documente. Les champs frontmatter conviction,
+stress_tests_passed, compiled_artifacts sont deprecated et ignores.
 """
 
 import argparse
@@ -312,34 +314,35 @@ def resolve_link(link: str, current_subject_path: Path) -> Path | None:
 # ------------------------------------------------------- detection transition
 
 
-# Mapping ancien cycle gamma (8 etats) -> nouveau cycle (3 etats)
-# Refonte 2026-05-10. Cf. rules/subject-pool.md.
+# Mapping anciens cycles (8 etats de 2026-04, 3 etats de 2026-05) -> cycle
+# a 2 etats (refonte 2026-09-14). Cf. rules/subject-pool.md et
+# decisions/2026-09-14-cycle-de-vie-2-etats.yaml.
 LEGACY_STATE_MAP = {
     "seed": "actif",
     "debating": "actif",
     "tentative": "actif",
-    "stress_testing": "mature",
-    "doctrine": "mature",
-    "in_service": "mature",
-    "under_review": "mature",
+    "stress_testing": "actif",
+    "doctrine": "actif",
+    "in_service": "actif",
+    "under_review": "actif",
+    "mature": "actif",
     "archived": "archived",
-    # Nouveaux etats : passthrough
+    # Etats courants : passthrough
     "actif": "actif",
-    "mature": "mature",
 }
 
 
 def normalize_forging_state(raw_state):
-    """Mappe un forging_state (ancien ou nouveau) vers actif / mature / archived.
+    """Mappe un forging_state (ancien ou courant) vers actif / archived.
 
     Retourne tuple (normalized, was_legacy) :
-    - normalized : "actif" / "mature" / "archived" / "actif" si valeur inconnue
-    - was_legacy : True si la valeur d'entree etait un ancien etat (8-states)
+    - normalized : "actif" / "archived" ("actif" si valeur inconnue)
+    - was_legacy : True si la valeur d'entree etait un ancien etat
     """
     if not raw_state:
         return ("actif", False)
     if raw_state in LEGACY_STATE_MAP:
-        return (LEGACY_STATE_MAP[raw_state], raw_state not in ("actif", "mature", "archived"))
+        return (LEGACY_STATE_MAP[raw_state], raw_state not in ("actif", "archived"))
     return ("actif", False)
 
 
@@ -364,15 +367,12 @@ def detect_transition(
 
 
 def next_step_hint(forging_state_normalized: str) -> str | None:
-    """Hint informatif sur la prochaine action possible pour Benjamin (jamais
-    appliquee automatiquement)."""
+    """Hint informatif sur la prochaine action possible (jamais appliquee
+    automatiquement)."""
     if forging_state_normalized == "actif":
-        return ("subject en accumulation. Le passage a `mature` est manuel : "
-                "decide quand l'opinion est suffisamment ferme.")
-    if forging_state_normalized == "mature":
-        return ("subject mature. Si contre-signal, repasser en `actif`. "
-                "/cross-modal-review (qualite synthese) ou /stress-test "
-                "(challenge adversarial) sont invocables a la demande.")
+        return ("subject vivant. Cloture manuelle vers `archived` quand le "
+                "sujet est clos. /cross-modal-review (qualite synthese) ou "
+                "/stress-test (challenge adversarial) invocables a la demande.")
     if forging_state_normalized == "archived":
         return None
     return None
@@ -549,7 +549,7 @@ def forge_subject(subject_path: Path, cascade: bool = True) -> dict:
         last_event=last_event,
     )
 
-    # Detection transition gamma
+    # Etat du cycle de vie + stats decisions/discussions
     # On compte les active_decisions et open_discussions a la fois depuis le
     # frontmatter (qui peut referencer des fichiers externes) et depuis les
     # sous-dossiers (decisions/, discussions/). On prend le max pour ne pas
@@ -569,7 +569,8 @@ def forge_subject(subject_path: Path, cascade: bool = True) -> dict:
     if was_legacy:
         warnings.append(
             f"forging_state legacy `{forging_state_raw}` mappe automatiquement vers "
-            f"`{forging_state_normalized}` (refonte 2026-05-10, 3 etats)"
+            f"`{forging_state_normalized}` (refonte 2026-09-14, 2 etats) — "
+            f"/documente normalisera la valeur en ecriture"
         )
 
     # current_conviction conserve en lecture brute pour retrocompat (deprecated 2026-05-10).

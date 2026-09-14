@@ -7,8 +7,9 @@ description: >-
   user validation) and the instance (silent) if missing, captures
   conversation-derived discussion and decision when present, regenerates
   Quick + Détails from all sub-files, propagates to linked_subjects (1 level),
-  and auto-applies γ transitions seed→debating and debating→tentative when
-  conditions are met. Replaces the legacy /forge skill (archived). Optional
+  and normalizes legacy forging_state values on write (lifecycle is 2 manual
+  states actif/archived since 2026-09-14). Replaces the legacy /forge skill
+  (archived). Optional
   --type argument for skills callers. Trigger on "documente", "enregistre la
   décision", "sauvegarde", "log la décision", "mets à jour le memoire",
   "re-synthétise", "compile le subject".
@@ -16,7 +17,7 @@ type_anthropic: 4
 visibilite: entreprise
 auteur: Benjamin
 date_creation: 2026-03-31
-version: 2.9
+version: 3.0
 tags: [documentation, decision, discussion, memory, subject-pool, forge, orchestrator, workflow]
 effort: medium
 outils_requis: []
@@ -32,9 +33,9 @@ securite_externe: false
 1. **Création paresseuse du type** (v2.1) : si le type n'existe pas, demander à l'utilisateur de le créer (workflow interactif `/subject-create-type`). C'est la seule étape qui peut requérir une validation utilisateur en amont.
 2. **Création paresseuse de l'instance** (v2.1) : si le subject path n'existe pas (mais le type oui), invoquer `/subject-create` silencieusement, sans intervention utilisateur.
 3. **Capture verticale historique** (ex-`/documente` 1.0) : extraire de la conversation une discussion ou décision tranchée, écrire les fichiers `discussions/` et `decisions/` avec frontmatters structurés.
-4. **Re-synthèse continue** (ex-`/forge` archivé) : lire tous les sous-fichiers (`events/`, `analyses/`, `discussions/`, `decisions/`), régénérer `## Quick` + `## Détails` du `MEMORY.md`, propager aux `linked_subjects` sur 1 niveau, appliquer automatiquement les transitions γ `seed→debating` et `debating→tentative`.
+4. **Re-synthèse continue** (ex-`/forge` archivé) : lire tous les sous-fichiers (`events/`, `analyses/`, `discussions/`, `decisions/`), régénérer `## Quick` + `## Détails` du `MEMORY.md`, propager aux `linked_subjects` sur 1 niveau, normaliser un `forging_state` legacy vers le cycle à 2 états (`actif` / `archived`, refonte 2026-09-14 — aucune transition automatique, seules les clôtures/réouvertures manuelles existent).
 
-Le mot **« forge »** désigne le cycle de vie γ et le moteur Python sous-jacent (`forge_engine.py`, `forge_lib.py`, `forge_scanner.py`). Il n'existe plus de skill `/forge` séparé — `/documente` est l'entry point unique côté utilisateur.
+Le mot **« forge »** désigne le pattern subject pool et le moteur Python sous-jacent (`forge_engine.py`, `forge_lib.py`, `forge_scanner.py`). Il n'existe plus de skill `/forge` séparé — `/documente` est l'entry point unique côté utilisateur.
 
 ## Argument
 
@@ -68,11 +69,11 @@ Une fois le path inféré, `forge documente prepare` retourne `service_root` + `
 - **Phases E-H lisent les sous-dossiers, ne les modifient pas** : seule la Phase D (`write-capture`) écrit dans `discussions/` et `decisions/`. Le reste lit puis régénère le `MEMORY.md` (frontmatter + Quick + Détails).
 - **Préserver les sections custom du `## Détails`** : `### Notes libres`, `### Stress tests à prévoir`, ou toute section ajoutée à la main par Benjamin doit être conservée lors de la régénération.
 - **Cascade horizontale = 1 niveau strict** : pas de récursion. Sur les linked_subjects, on régénère le `## Quick` mais **PAS** le `## Détails` (réservé à l'invocation directe sur ce subject — éviter qu'une vue partielle écrase un détail riche).
-- **Transitions γ auto strictement limitées à `seed→debating` et `debating→tentative`** : `tentative→stress_testing` et au-delà nécessitent `/stress-test`, `/compile-doctrine`, ou décision manuelle Benjamin.
+- **Aucune transition d'état automatique** (cycle 2 états depuis 2026-09-14) : le moteur ne mute jamais `forging_state`. Seules transitions possibles : `actif → archived` (clôture) et `archived → actif` (réouverture), toutes deux **manuelles avec validation utilisateur**. La seule écriture d'état sans validation est la **normalisation d'un legacy** (`seed`/`debating`/`tentative`/`mature`/… → `actif`) — sans changement sémantique, signalée dans le récap.
 - **Idempotent** : 2 invocations consécutives sans nouvel input doivent produire un diff vide.
 - **Commit atomique** : committer discussion + decision + memory.md (subject + cascade) ensemble dans un seul commit.
 - **Propagation = proposition, pas imposition** : la Phase I (`scan-impacted` + jugement LLM) propose les modifications aux fichiers exécutants. L'utilisateur valide chaque modification.
-- **Critère subject pool vs entité (v2.6)** : à chaque invocation `/documente` sur un path non-subject-pool, appliquer le critère positif de Phase F0 (voir détail dans la section Phase F0). Le **défaut est l'entité** (`<entité>/decisions/`), pas le subject pool. Subject pool est réservé aux **objets métier durables avec cycle de vie γ** (suppliers, commandes, campagnes, décisions architecturales long-terme). Une modification de code/comportement d'UNE entité (skill, MCP, tool) reste dans son `decisions/` — pas de proposition de migration. Ne pas re-proposer si Benjamin a refusé sur ce path précédemment (marqueur `migration_subject_pool: refused` dans une décision).
+- **Critère subject pool vs entité (v2.6)** : à chaque invocation `/documente` sur un path non-subject-pool, appliquer le critère positif de Phase F0 (voir détail dans la section Phase F0). Le **défaut est l'entité** (`<entité>/decisions/`), pas le subject pool. Subject pool est réservé aux **objets métier durables avec cycle de vie** (suppliers, commandes, campagnes, décisions architecturales long-terme). Une modification de code/comportement d'UNE entité (skill, MCP, tool) reste dans son `decisions/` — pas de proposition de migration. Ne pas re-proposer si Benjamin a refusé sur ce path précédemment (marqueur `migration_subject_pool: refused` dans une décision).
 - **Structure service absente (v2.7)** : si `forge documente prepare` retourne `service_structure_exists: false` avec un `service_root` identifié (ex: `services/marketing/` existe mais `services/marketing/discussions/` et `services/marketing/decisions/` n'existent pas), la Phase F0.0 propose la création de la structure au niveau service par défaut (cohérent avec `services/achats/decisions/`, `services/tech/decisions/`). Subject pool reste une alternative explicite, mais n'est PAS proposé pour les modifications de code d'entité — seulement pour objets métier durables (cf. critère Phase F0). Une seule `AskUserQuestion` suffit (pas deux comme l'incident 2026-05-11 sur marketing).
 - **Folder aussi instrumenté Python (v2.3)** : depuis la bascule, les Phases F2/F3/F5/F6 du workflow folder invoquent `documente_engine.py` (`write-capture`, `scan-impacted`, `commit-atomic`). Phase F4 (MAJ MEMORY.md format markdown) reste LLM only car le format n'est pas du frontmatter mais des sections markdown.
 - **Fichiers temp uniques par invocation (v2.4)** : utiliser `mktemp /tmp/documente-*-body.XXXXXX` pour les body files passés à `write-capture`. Sinon 2 `/documente` parallèles écrasent leurs body files mutuellement (race condition observée le 2026-05-04 entre `/documente skills/documente` et `/documente knowledge-coordinator`). **Attention syntaxe BSD/macOS** : les `XXXXXX` doivent être en SUFFIXE final, pas suivis d'une extension (`.md` literal écrirait XXXXXX littéralement). L'extension n'est pas requise — `write-capture` lit le contenu, pas le nom. Conserver la variable shell (`$DOC_BODY`) entre Phase C/F2 et Phase D/F3, puis `rm -f` après écriture.
@@ -93,7 +94,7 @@ Codes par phase (subject pool) :
 - `▸ D write-capture` — fichiers écrits (`1 discussion`, `1 discussion + 1 décision`, ou `skip`)
 - `▸ E forge_engine` — `current_state`, transitions appliquées, count events
 - `▸ F quick+détails` — count mots Quick, sections custom préservées
-- `▸ G patch-frontmatter` — patches appliqués (last_event, +decision, transition γ)
+- `▸ G patch-frontmatter` — patches appliqués (last_event, +decision, normalisation forging_state)
 - `▸ H cascade` — count linked_subjects traités (ou « aucun »)
 - `▸ I scan-impacted` — count candidats / count pertinents proposés
 - `▸ J commit+push` — count fichiers, succès push
@@ -236,8 +237,7 @@ forge documente patch-frontmatter <subject-path> \
     "last_event": {"date": "...", "type": "...", "ref": "..."},
     "open_discussions": ["+<slug-discussion>"],
     "active_decisions": ["+<slug-decision>", "-<slug-archived>"],
-    "forging_state": "<si_transition_auto>",
-    "conviction": <bumped_value>
+    "forging_state": "<normalisation legacy, ou clôture/réouverture validée>"
   }'
 ```
 
@@ -246,9 +246,11 @@ Conventions de patch :
 - Dict (`"last_event": {...}`) → remplace tout le bloc
 - Liste avec `+slug` / `-slug` → append/remove (préserve les autres items)
 
-Si `transition_proposal.auto: true` dans `forge_result` :
-- Inclure `forging_state` et `conviction` dans le patch
-- **Re-invoquer `forge_engine.py`** après le patch pour vérifier 2ᵉ transition (chaînage max 2 itérations — au-delà c'est un bug, stopper)
+Si `current_state_was_legacy: true` dans `forge_result` :
+- Inclure `"forging_state": "<current_state>"` dans le patch (normalisation en écriture, refonte 2026-09-14 — la valeur normalisée est `actif` ou `archived`, sans changement sémantique)
+- Le mentionner dans le récap (`▸ G patch-frontmatter (forging_state normalisé <legacy> → <normalisé>)`)
+
+`transition_proposal` est toujours `null` depuis 2026-05-10 (aucune transition automatique) — une clôture `actif → archived` passe par une demande explicite de l'utilisateur, jamais par le moteur.
 
 ### Phase H — Cascade horizontale (Python pour mécanique, LLM pour Quick)
 
@@ -305,7 +307,7 @@ Si la commande retourne `noop: true` (idempotent — 2ᵉ invocation sans nouvel
 
 1. **`/skillify`** — Si la session a fait émerger un **workflow ad hoc répété** que Benjamin a exécuté à la main (suite de commandes, raisonnement reproductible, séquence de validation) qui mérite d'être réifié en skill. Détecter ce pattern revient à se poser la question : *« si je devais refaire la même chose la semaine prochaine, est-ce qu'un skill me ferait gagner du temps ? »*. Si oui, suggérer : *« Considère `/skillify <pattern>` avant la prochaine session pour éviter de refaire ce raisonnement à la main »*. Pas de déclenchement auto — Benjamin décide.
 
-2. **`/cross-modal-review`** — Si Benjamin envisage de passer le subject de `actif` à `mature` (transition manuelle), suggérer d'invoquer d'abord `/cross-modal-review` pour vérifier que la synthèse Quick + Détails tient la route avant de la considérer comme stable. Pas de déclenchement auto — pure suggestion.
+2. **`/cross-modal-review`** — Si la session s'apprête à s'appuyer durablement sur la synthèse du subject (référence pour d'autres décisions, base d'un skill, doctrine), suggérer d'invoquer `/cross-modal-review` pour vérifier que le Quick + Détails tiennent la route. Pas de déclenchement auto — pure suggestion.
 
 Ces hints sont des signaux pédagogiques — la décision reste humaine. Le pattern Garry Tan repose volontairement sur l'humain qui dit « skillify it » plutôt que sur une détection automatique (qui produirait du bruit sur des workflows non répétés ou trop vagues).
 
@@ -348,7 +350,7 @@ Avant de poursuivre en folder, **classifier la décision** selon ce critère pos
 
 **B. Migrer vers subject pool si** :
 - La décision concerne un **OBJET MÉTIER DURABLE** qui vit dans le temps avec des états successifs
-- L'objet va connaître des **transitions γ** (seed → debating → tentative → stress_testing → doctrine → in_service → archived)
+- L'objet va vivre puis se clore (**cycle de vie** `actif → archived`, avec réouvertures possibles)
 - La décision sera **révisée, complétée, contestée** plus tard — ce n'est pas une décision finale unique
 - L'objet est **lié à plusieurs entités** ou n'est pas naturellement rattaché à un fichier de code
 - Exemples : commande d'achat (order-398), relation fournisseur (supplier-weifang), campagne marketing (google-ads-skylantern), décision architecturale long-terme (ce-admin-v2)
@@ -491,14 +493,14 @@ Input :
 Output (résumé) :
 ```
 ✓ forge_engine.py invoqué — 6 events, 1 discussion ouverte, 1 décision active (frontmatter)
-✓ Transition γ auto : seed → debating → tentative (chaînée, conviction bump à 50)
-✓ ## Quick régénéré (8 lignes, état tentative, négo Weifang en cours, payment terms 10j accepté)
+✓ forging_state normalisé : seed → actif (legacy, refonte 2026-09-14)
+✓ ## Quick régénéré (8 lignes, état actif, négo Weifang en cours, payment terms 10j accepté)
 ✓ ## Détails régénéré (sections custom préservées : ### Notes libres)
 ✓ Cascade : supplier-weifang
   - last_event ← cascaded_from_order-398 (events/2026-05-04-reply-v3-sent-fancy-quantity-list.md)
   - ## Quick régénéré (1 commande active 16943 USD, négo en cours)
   - ## Détails inchangé
-✓ Hint : tentative → stress_testing → lance /stress-test si tu veux
+✓ Hint : /stress-test invocable à la demande si tu doutes de la conclusion
 Commit : docs: re-synthèse — order-398 + cascade weifang
 Push : OK
 ```
@@ -520,7 +522,6 @@ Phase C — Décision détectée :
 ✓ decisions/2026-05-04-payment-terms-acceptes.yaml créé (status: active)
 ✓ forge_engine.py invoqué
 ✓ active_decisions ← +"2026-05-04-payment-terms-acceptes" dans MEMORY.md
-✓ Transition γ : seed → debating → tentative (chaînée)
 ✓ ## Quick + ## Détails régénérés
 ✓ Cascade : supplier-weifang
 ✓ Phase I — Propagation : aucun exécutant impacté
@@ -555,10 +556,10 @@ Question: Tous les linked_subjects résolus voient-ils leur last_event + ## Quic
 Pass: Cascade complète sur 1 niveau, pas de récursion plus loin
 Fail: Linked_subjects non touchés OU cascade récursive multi-niveau
 
-EVAL 6 : Transitions γ auto (subject pool)
-Question: seed→debating et debating→tentative appliquées si conditions remplies ; autres → hint sans écrire ?
+EVAL 6 : Pas de transition d'état non validée (subject pool)
+Question: le forging_state n'a-t-il changé que par normalisation legacy (→ actif/archived, signalée au récap) ou par clôture/réouverture explicitement validée par l'utilisateur ?
 Pass: Comportement strict respecté
-Fail: Transition vers stress_testing/doctrine/etc auto-appliquée
+Fail: forging_state muté sans validation (hors normalisation legacy), ou normalisation silencieuse non signalée
 
 EVAL 7 : Propagation proposée
 Question: Les fichiers exécutants impactés ont-ils été identifiés et la modification proposée ?

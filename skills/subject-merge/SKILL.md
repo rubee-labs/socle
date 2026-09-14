@@ -55,7 +55,7 @@ Lire les 2 `MEMORY.md`. Vérifier :
 
 2. **Overlap des linked_subjects** : calculer l'intersection. Si >70% commun → forte présomption de doublon. Si <30% → demander pourquoi merger malgré tout.
 
-3. **States compatibles** : les 2 subjects doivent être dans des states qui acceptent la fusion (idéalement `in_service`, `under_review`, ou `archived`). Refuser si l'un est en `seed` ou `debating` (pas assez mûr pour décider d'une fusion).
+3. **Contenu suffisant** : la fusion se décide sur la substance, pas sur un état (cycle 2 états depuis 2026-09-14 : `actif` / `archived`). Refuser si l'un des deux subjects est quasi vide (0 event, 0 décision) — pas assez de matière pour justifier une soudure ; le supprimer ou le laisser vivre suffit.
 
 ### Phase 3 — Présenter le diff aux yeux de Benjamin
 
@@ -65,8 +65,7 @@ Afficher un tableau comparatif :
                     | Subject A          | Subject B          | Conflit ?
 --------------------|--------------------|--------------------|----------
 type                | supplier           | supplier           | non
-forging_state       | in_service         | doctrine           | oui
-conviction          | 75                 | 60                 | oui (max retenu)
+forging_state       | actif              | archived           | oui (actif retenu si l'entité vit encore)
 created_at          | 2026-01-10         | 2025-08-22         | oui (min retenu)
 linked_subjects     | [...A...]          | [...B...]          | union
 linked_records      | [...A...]          | [...B...]          | union
@@ -84,8 +83,7 @@ Demander à Benjamin :
 1. **Nom du subject consolidé** (généralement le plus parlant des 2, ou un nouveau)
 2. **Localisation** (généralement celle de A ou B selon usage principal)
 3. **Stratégie de résolution des conflits** :
-   - `forging_state` : généralement le plus "mûr" (in_service > doctrine > tentative > debating > seed)
-   - `conviction` : max(A, B) ou moyenne ? Demander
+   - `forging_state` : `actif` si l'entité consolidée vit encore, `archived` si les deux sources étaient closes
    - `created_at` : min(A, B) (le plus ancien)
    - `archived_at`: null (le nouveau subject est actif)
 4. **Quick section et Détails** : reprendre celui de A ou B, ou rédiger une nouvelle synthèse
@@ -143,8 +141,7 @@ Afficher à Benjamin :
   - Liens redirigés dans : <N subjects>
 
 Frontmatter du nouveau subject :
-  - forging_state: <état retenu>
-  - conviction: <valeur retenue>
+  - forging_state: <actif ou archived>
   - merged_from: 2 sources
   - linked_subjects: <count> liens
   - events: <count> events
@@ -170,8 +167,7 @@ Soudure validée par Benjamin.
 Nouveau subject : services/achats/subjects/supplier-simon/  (nom retenu)
 
 Détails :
-  - forging_state: in_service (max maturité)
-  - conviction: 75 (max(75, 60))
+  - forging_state: actif (relation fournisseur toujours vivante)
   - created_at: 2025-08-22 (min)
   - linked_subjects: 8 (union sans doublon)
   - merged_from: [supplier-simon, simon-pme-yiwu]

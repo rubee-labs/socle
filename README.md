@@ -2,7 +2,7 @@
 
 Couche de mémoire structurée pour Claude Code — la 4ème couche, après le contexte de session, l'auto-memory et `CLAUDE.md`.
 
-claude-forge ajoute au harnais Claude Code une primitive qui lui manque : **la mémoire structurée par sujets, avec cycle de vie γ et cascade entre sujets liés**. Là où l'auto-memory et `CLAUDE.md` stockent du markdown libre, claude-forge structure les décisions, discussions, événements en artefacts typés validés par Python.
+claude-forge ajoute au harnais Claude Code une primitive qui lui manque : **la mémoire structurée par sujets, avec cycle de vie et cascade entre sujets liés**. Là où l'auto-memory et `CLAUDE.md` stockent du markdown libre, claude-forge structure les décisions, discussions, événements en artefacts typés validés par Python.
 
 ## Différence avec claude-mem
 
@@ -11,7 +11,7 @@ claude-forge ajoute au harnais Claude Code une primitive qui lui manque : **la m
 | Axe | Temporel (continuité session-à-session) | Structurel (typage des décisions) |
 | Format | SQLite + Chroma + CLAUDE.md auto | `subjects/<name>/MEMORY.md` typés |
 | Auteur | Claude (auto) | **Co-écrit** humain + Claude |
-| Cycle de vie | aucun | γ (seed → debating → tentative → stress_testing → doctrine) |
+| Cycle de vie | aucun | 2 états (`actif` → `archived`), transitions manuelles |
 | Linked subjects, cascade | aucun | oui |
 | Décisions vs discussions | aucun | deux artefacts distincts |
 | Validation Python | aucune | oui (frontmatter typé) |

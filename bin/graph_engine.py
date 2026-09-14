@@ -8,7 +8,7 @@ un fichier HTML self-contained (vis.js inline via CDN) qui affiche :
 - les subjects comme nœuds (couleur par `type`, forme par `forging_state`)
 - les `linked_subjects` typés comme arêtes (label = nom de la relation extraite
   via `autolink_engine`)
-- des filtres par état (actif / mature / archived) et par type
+- des filtres par état (actif / archived) et par type
 - au hover : tooltip avec nom, type, état, last_event, chemin
 - au click : ouvre le MEMORY.md correspondant dans VS Code via URL `vscode://`
 
@@ -53,16 +53,15 @@ EXCLUDE_DIRS = {".git", "node_modules", "venv", "__pycache__", ".claude",
 
 LEGACY_STATE_MAP = {
     "seed": "actif", "debating": "actif", "tentative": "actif",
-    "stress_testing": "mature", "doctrine": "mature",
-    "in_service": "mature", "under_review": "mature",
-    "archived": "archived", "actif": "actif", "mature": "mature",
+    "stress_testing": "actif", "doctrine": "actif",
+    "in_service": "actif", "under_review": "actif", "mature": "actif",
+    "archived": "archived", "actif": "actif",
 }
 
-# Shape per cycle γ state. vis.js shapes: dot, square, triangle, diamond, star,
-# cross, hexagon, circle, ellipse, box.
+# Shape per lifecycle state (2 etats depuis 2026-09-14). vis.js shapes: dot,
+# square, triangle, diamond, star, cross, hexagon, circle, ellipse, box.
 SHAPE_BY_STATE = {
     "actif": "dot",
-    "mature": "diamond",
     "archived": "triangle",
 }
 
@@ -281,7 +280,7 @@ _HTML_TEMPLATE = """<!DOCTYPE html>
   <div class="stat">Subjects : <span id="stat-nodes">0</span></div>
   <div class="stat">Liens : <span id="stat-edges">0</span></div>
 
-  <h2>États (γ)</h2>
+  <h2>États (cycle de vie)</h2>
   <div id="state-filters"></div>
 
   <h2>Types</h2>

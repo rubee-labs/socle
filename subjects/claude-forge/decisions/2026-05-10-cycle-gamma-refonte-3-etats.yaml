@@ -3,7 +3,7 @@ date: 2026-05-10
 type: decision
 produced_by: human
 decided_by: benjamin
-status: active
+status: archived  # supersedée par 2026-09-14-cycle-de-vie-2-etats.yaml (mature supprimé, 2 états)
 title: "Refonte cycle γ : 8 états → 3 états (actif/mature/archived), abandon /compile-doctrine, /stress-test découplé"
 upstream_discussions:
   - benjamin-perso/Forge-lab/analyses/2026-05-09-meta-meta-prompting-garry-tan.md

@@ -92,7 +92,6 @@ def cmd_list_subjects(args):
             subjects.append({
                 "path": str(memory_md.parent.relative_to(project_dir)),
                 "forging_state": fm.get("forging_state"),
-                "conviction": fm.get("conviction"),
                 "type": fm.get("type"),
                 "last_event_date": last_event_date,
             })

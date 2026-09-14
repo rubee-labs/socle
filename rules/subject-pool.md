@@ -47,45 +47,42 @@ services/<X>/
 
 ---
 
-## Cycle de vie (3 états)
+## Cycle de vie (2 états)
 
-Refondu le 2026-05-10 (cf. `subjects/claude-forge/decisions/2026-05-10-cycle-gamma-refonte-3-etats.yaml`). Le cycle γ historique à 8 états + conviction numérique a été remplacé par un cycle à **3 états**, transitions 100 % manuelles, sans seuil automatique.
+Refondu le 2026-09-14 (cf. `subjects/claude-forge/decisions/2026-09-14-cycle-de-vie-2-etats.yaml`). Historique : le cycle à 8 états + conviction numérique (« cycle γ » — appellation abandonnée, incompréhensible hors Rubee) avait été réduit à 3 états le 2026-05-10 ; l'état intermédiaire `mature` a connu **0 transition réelle en 4 mois** (mesure git du 2026-09-14) et a été supprimé. Reste la seule distinction consommée en pratique : **vivant / clos**.
 
 ```
-actif ──► mature ──► archived
-   ▲        │
-   └────────┘ (retour possible si contre-signal)
+actif ──► archived
+   ▲         │
+   └─────────┘ (réouverture rare si le sujet redevient d'actualité)
 ```
 
 ### États
 
 | État (`forging_state`) | Description |
 |---|---|
-| `actif` | Subject en accumulation / en cours de réflexion. Sources collectées, opinion encore en formation ou volontairement débattue. |
-| `mature` | Subject avec une opinion formée et stable. Peut avoir été confronté (cross-modal-review, stress-test) ou pas — la maturation est jugée par l'humain, pas par un seuil. |
+| `actif` | Subject vivant : en accumulation, en réflexion, ou avec une opinion formée. La « maturité » n'est plus un état — c'est un jugement à la demande (`/cross-modal-review` pour la qualité de la synthèse, `/stress-test` pour l'adversité). |
 | `archived` | Subject clos. Leçons remontées vers les subjects parents le cas échéant. |
 
 ### Transitions
 
-Toutes manuelles, validées explicitement par Benjamin via `/documente` :
+Toutes manuelles, validées explicitement par l'utilisateur via `/documente` :
 
-- `actif → mature` : « cette opinion est suffisamment ferme pour être référence »
-- `mature → actif` : contre-signal détecté, on rouvre la réflexion
-- `actif|mature → archived` : subject clos
+- `actif → archived` : subject clos (commande soldée, campagne terminée, décision caduque)
+- `archived → actif` : réouverture rare, si le sujet redevient d'actualité
 
-**Pas de transition automatique.** Le moteur (`forge_engine.py`) ne mute jamais `forging_state` tout seul. Il fournit des informations descriptives (events récents, décisions actives, stats agrégées) qui aident Benjamin à décider, mais la décision lui appartient.
+**Pas de transition automatique.** Le moteur (`forge_engine.py`) ne mute jamais `forging_state` tout seul. Il fournit des informations descriptives (events récents, décisions actives, stats agrégées) qui aident l'humain à décider, mais la décision lui appartient.
 
-### Rétrocompatibilité avec l'ancien cycle γ
+### Rétrocompatibilité avec les anciens cycles
 
-Les subjects existants peuvent contenir un ancien `forging_state` (`seed`, `debating`, `tentative`, `stress_testing`, `doctrine`, `in_service`, `under_review`). Le moteur le mappe automatiquement :
+Les subjects existants peuvent contenir un ancien `forging_state` (`seed`, `debating`, `tentative`, `stress_testing`, `doctrine`, `in_service`, `under_review`, `mature`). Le moteur le mappe automatiquement :
 
 | Ancien | Nouveau |
 |---|---|
-| `seed`, `debating`, `tentative` | `actif` |
-| `stress_testing`, `doctrine`, `in_service`, `under_review` | `mature` |
+| `seed`, `debating`, `tentative`, `stress_testing`, `doctrine`, `in_service`, `under_review`, `mature` | `actif` |
 | `archived` | `archived` |
 
-Pas de migration forcée — les subjects gardent leur ancien `forging_state` jusqu'au prochain `/documente`, qui peut écrire la valeur normalisée.
+Pas de migration de masse, mais **normalisation en écriture** : au prochain `/documente` sur un subject, la valeur normalisée est écrite dans le frontmatter (la migration « opportuniste en lecture seule » de mai a laissé 80 % des subjects en vocabulaire legacy après 4 mois — leçon actée dans la décision 2026-09-14).
 
 Les champs `conviction` (0..100), `stress_tests_passed`, `compiled_artifacts` du frontmatter sont **déprécié·e·s** : ignorés par le moteur, conservés en lecture pour ne pas casser l'existant. Les nouveaux subjects ne les écrivent pas.
 
@@ -98,7 +95,7 @@ Les champs `conviction` (0..100), `stress_tests_passed`, `compiled_artifacts` du
 | `/documente <subject-path> [--type <type>]` | actif | **Orchestrateur unique du subject pool**. Création paresseuse type/instance si absents, capture conversation (discussion + décision), re-synthèse continue (Quick + Détails régénérés, cascade horizontale 1 niveau). **Plus de transitions auto** depuis 2026-05-10. |
 | `/subject-merge <A> <B>` | actif | Soudure de 2 subjects (validation Benjamin obligatoire). |
 | `/skillify` | actif (depuis 2026-05-10) | Compile un workflow ad hoc en skill réutilisable (SKILL.md + script + tests + fixtures). Compilation continue à l'usage, pattern Garry Tan. **Trigger humain explicite** (« skillify it ») — pas de déclenchement automatique. Hint post-commit suggéré par `/documente` Phase J si workflow ad hoc répété détecté. **Provenance bidirectionnelle (D10, depuis 2026-09-14)** : `scaffold --source-subjects` écrit `source_subjects: [...]` dans le frontmatter du SKILL.md généré ET ajoute le skill aux `linked_skills` du MEMORY.md de chaque subject d'origine — équivalent du `PURPOSE.md` WikiSkill (arXiv 2608.27454). Sans provenance, le pool est aveugle à sa propre compilation (incident 2026-09-14 : 4 skills skillifiés invisibles, MEMORY du subject claude-forge périmé). Voir `bin/skillify_engine.py`. |
-| `/cross-modal-review` | actif (depuis 2026-05-10) | Évalue la qualité d'un MEMORY.md re-synthétisé (4 axes : cohérence, complétude, spécificité, citations) via 2-3 modèles distincts (Opus + Sonnet + Haiku). **À invoquer typiquement avant transition `actif → mature`** — pour vérifier que la synthèse tient la route avant de considérer le subject comme stable. Voir `bin/eval_engine.py`. |
+| `/cross-modal-review` | actif (depuis 2026-05-10) | Évalue la qualité d'un MEMORY.md re-synthétisé (4 axes : cohérence, complétude, spécificité, citations) via 2-3 modèles distincts (Opus + Sonnet + Haiku). **Outil qualité à la demande** (depuis 2026-09-14, plus d'ancrage à une transition d'état) — à invoquer quand on s'apprête à s'appuyer durablement sur une synthèse. Voir `bin/eval_engine.py`. |
 | `/stress-test <subject-path>` | optionnel, à la demande | Challenge un subject sous 3 perspectives (contradicteur, steelman, yagni). **Découplé du cycle** depuis 2026-05-10 — invocable à tout moment quand Benjamin doute, sans transition d'état ni mutation de conviction. |
 | `/compile-doctrine` | **abandonné** | Skill théorique jamais utilisé en pratique. Sa branche « procédurale → skill » est désormais portée par `/skillify`. Les autres branches (règle / agent SDK / injection / monitor / FK) seront instruites au cas par cas si le besoin émerge. |
 
@@ -111,9 +108,9 @@ Aucun de ces skills n'a de déclencheur automatique — la décision reste humai
 | Trigger | Skill suggéré |
 |---|---|
 | Tu viens de faire à la main un workflow que tu sais que tu vas refaire (≥ 2 occurrences déjà observées) | `/skillify` |
-| Tu envisages de passer un subject de `actif` à `mature` | `/cross-modal-review` (vérifier la qualité de la synthèse) |
-| Tu doutes d'un subject `mature` (la conclusion tient-elle sous adversité ?) | `/stress-test` |
-| Un contre-signal apparaît sur un subject `mature` (data nouvelle qui contredit) | repasser le subject à `actif` via `/documente` (transition manuelle) |
+| Tu t'apprêtes à t'appuyer durablement sur la synthèse d'un subject | `/cross-modal-review` (vérifier la qualité de la synthèse) |
+| Tu doutes de la conclusion d'un subject (tient-elle sous adversité ?) | `/stress-test` |
+| Un subject est clos (commande soldée, campagne finie, décision caduque) | passer à `archived` via `/documente` (transition manuelle) |
 | Un workflow révèle que 2 subjects sont en réalité la même entité | `/subject-merge` |
 | Un nouveau pattern de subject émerge qui n'a pas de type | `/subject-create-type` (souvent invoqué via `/documente` lazy) |
 
@@ -212,13 +209,13 @@ Le graph **n'est pas persisté** (ni dans le frontmatter, ni dans un sidecar) �
 | Squelette / taxonomie (anglais) | Contenu métier (français) |
 |---|---|
 | Champs frontmatter (`type`, `name`, `forging_state`, `linked_subjects`…) | Valeurs de `analysis_dimensions` (ex: `tresorerie`, `delai`) |
-| Valeurs de `forging_state` (`actif`, `mature`, `archived`) | Valeurs de `expected_events` (ex: `alerte_stock`, `email_fournisseur_disponibilite`) |
+| Valeurs de `forging_state` (`actif`, `archived`) | Valeurs de `expected_events` (ex: `alerte_stock`, `email_fournisseur_disponibilite`) |
 | Valeurs de `produced_by` (`external`, `claude`, `human_and_claude`, `human`) | Tags personnels |
 | Valeurs de `horizon` (`bounded`, `permanent`, `unbounded`, `cyclic`) | Contenu narratif (Quick, Détails) |
 | Noms de **types** (`supplier-order`, `incident`, `marketing-campaign`…) | Suffixes identifiants des subjects (ex: `simon`, `400`, `2026-q2-brumeaux`) |
 | Noms de dossiers structuraux (`subjects/`, `types/`, `events/`, `analyses/`…) | Slugs de discussions / décisions |
 
-**Pourquoi bilingue** : le squelette anglais permet à n'importe quel skill ou outil tiers de raisonner sur le pattern (un `forging_state: mature` est identifiable partout). Le contenu français permet à Benjamin et à l'équipe Rubee de lire et utiliser naturellement les dimensions métier sans traduction mentale.
+**Pourquoi bilingue** : le squelette anglais permet à n'importe quel skill ou outil tiers de raisonner sur le pattern (un `forging_state: archived` est identifiable partout). Le contenu français permet à Benjamin et à l'équipe Rubee de lire et utiliser naturellement les dimensions métier sans traduction mentale.
 
 **Convention dates** : `*_at` (verbe au passé), statuts au présent.
 
@@ -228,7 +225,7 @@ Le graph **n'est pas persisté** (ni dans le frontmatter, ni dans un sidecar) �
 |---|---|---|
 | `name` | str | Nom du subject |
 | `type` | str | Référence au type parent |
-| `forging_state` | enum | État du cycle de vie γ |
+| `forging_state` | enum | État du cycle de vie (`actif` / `archived`) |
 | ~~`conviction`~~ | ~~int~~ | **déprécié** depuis 2026-05-10. Conservé en lecture sur les anciens subjects, ignoré. |
 | `horizon` | enum | `bounded`, `permanent`, `unbounded`, `cyclic` |
 | `created_at` | date | Date de création |
@@ -321,7 +318,7 @@ Squelette pré-rempli pour instancier un nouveau subject. Utilisé par `/subject
 ---
 name: order-400
 type: supplier-order
-forging_state: mature
+forging_state: actif
 horizon: bounded
 created_at: 2026-04-12
 archived_at: null
@@ -346,7 +343,7 @@ quick_produced_from:
 
 ## Quick
 
-État : mature
+État : actif
 Statut : prod terminée, container en route, ETA 2026-08-22
 Prochaines étapes : suivi douane, réception entrepôt
 Risques : -
@@ -418,7 +415,7 @@ status: active                    # active | archived
 
 1. **Création de type** : skill `/subject-create-type`, validation Benjamin obligatoire. Un type mal défini pollue toutes ses instances. Les `analysis_dimensions` et `expected_events` doivent être en français snake_case (contenu métier).
 2. **Création d'instance** : skill `/subject-create <type> <name>`. Pré-remplit `MEMORY.md` depuis le `TEMPLATE.md` du type. Met à jour les liens bidirectionnels avec les `linked_subjects` parents.
-3. **Cycle de vie (3 états)** : `actif` / `mature` / `archived`. Toutes les transitions sont **manuelles**, validées explicitement par Benjamin via `/documente`. Le moteur ne mute jamais `forging_state` automatiquement (depuis refonte 2026-05-10). Les anciens états (`seed`, `debating`, `tentative`, `stress_testing`, `doctrine`, `in_service`, `under_review`) sont mappés en lecture par le moteur — pas de migration forcée.
+3. **Cycle de vie (2 états)** : `actif` / `archived` (refonte 2026-09-14 — `mature` supprimé, 0 transition réelle en 4 mois). Toutes les transitions sont **manuelles**, validées explicitement par l'utilisateur via `/documente`. Le moteur ne mute jamais `forging_state` automatiquement. Les anciens états (`seed`, `debating`, `tentative`, `stress_testing`, `doctrine`, `in_service`, `under_review`, `mature`) sont mappés en lecture par le moteur et **normalisés en écriture** au prochain `/documente`.
 4. **Stress test** : skill `/stress-test` est **optionnel et à la demande**. Confronte un subject sous 3 perspectives (contradicteur, steelman, yagni). **Pas de mutation de `forging_state`** ni de `conviction`. Sortie : analyse adversariale dans `<subject>/analyses/<date>-stress-test.md`. Décision finale humaine.
 5. **Soudure (fusion)** : skill `/subject-merge <A> <B>` après validation humaine obligatoire. Les sources sont archivées avec pointeur `merged_into` vers le nouveau subject consolidé. Les liens entrants sont redirigés.
 6. **Compilation en exécutable** (refonte 2026-05-10) : `/compile-doctrine` est **abandonné** (théorique, jamais utilisé). La compilation continue à l'usage est portée par `/skillify` pour le pattern « procédurale → skill ». Les autres patterns historiquement listés (déclarative → règle, comportementale → agent SDK, évitement → injection, métrique → monitor, routing → FK) restent à instruire au cas par cas si le besoin émerge concrètement — pas d'API générique pré-construite. **Provenance obligatoire à la compilation (D10, 2026-09-14)** : tout skill compilé depuis le pool déclare ses subjects d'origine (`source_subjects:` dans son frontmatter) et les subjects d'origine pointent vers lui (`linked_skills:`) — la traçabilité est bidirectionnelle et posée par le scaffold, jamais à la main.
@@ -430,7 +427,7 @@ status: active                    # active | archived
 
 ## Rapport au pattern existant
 
-- **CE-Lab / WM-Lab / Alter-Lab** continuent d'exister sans modification. Ces 3 Labs sont des subjects matures (instances du type `strategic-vision`). `/CE-analyse`, `/WM-analyse`, `/alter-analyse` restent inchangés.
+- **CE-Lab / WM-Lab / Alter-Lab** continuent d'exister sans modification. Ces 3 Labs sont des subjects actifs de longue date (instances du type `strategic-vision`). `/CE-analyse`, `/WM-analyse`, `/alter-analyse` restent inchangés.
 - **`discussions/` + `decisions/` répartis** dans les services restent valides (cf. `entreprise/config/rules/savoirs.md` § Stockage réparti). Les nouveaux fichiers utilisent le frontmatter étendu, les anciens migrent **opportunistiquement** quand on les touche.
 - **`savoirs/`** reste pour les savoirs procéduraux établis (glossaires, SOP). Les subjects sont pour les sujets en cours d'accumulation et de maturation.
 
@@ -450,7 +447,7 @@ Conséquence pratique : un consumer OKF tiers (le visualizer Google Cytoscape.js
 
 ### Couches Forge au-dessus d'OKF (spécifiques, non-OKF)
 
-- **Cycle de vie γ 3 états** (`actif` / `mature` / `archived`)
+- **Cycle de vie 2 états** (`actif` / `archived`)
 - **4 sous-dossiers par producteur** (`events/` / `analyses/` / `discussions/` / `decisions/`)
 - **Autolink typed déterministe** via `typical_linked_types` enrichi
 - **Compilation continue** via `/skillify`

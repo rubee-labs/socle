@@ -57,13 +57,14 @@ EXCLUDE_DIRS = {".git", "node_modules", "venv", "__pycache__", ".claude", "templ
 STAGNATION_DAYS = 30
 MERGER_OVERLAP_THRESHOLD = 0.70
 
-# Mapping ancien cycle (8 etats) -> nouveau (3 etats). Cf. forge_engine.py.
+# Mapping anciens cycles (8 puis 3 etats) -> cycle a 2 etats (2026-09-14).
+# Cf. forge_engine.py.
 LEGACY_STATE_MAP = {
     "seed": "actif", "debating": "actif", "tentative": "actif",
-    "stress_testing": "mature", "doctrine": "mature",
-    "in_service": "mature", "under_review": "mature",
+    "stress_testing": "actif", "doctrine": "actif",
+    "in_service": "actif", "under_review": "actif", "mature": "actif",
     "archived": "archived",
-    "actif": "actif", "mature": "mature",
+    "actif": "actif",
 }
 
 
@@ -245,8 +246,8 @@ def write_if_changed(path, text):
 
 
 def regenerate_metrics(m):
-    """Régénère entreprise/SUBJECT-POOL-METRICS.md (refonte 2026-05-10, 3 états)."""
-    state_order = ["actif", "mature", "archived"]
+    """Régénère entreprise/SUBJECT-POOL-METRICS.md (refonte 2026-09-14, 2 états)."""
+    state_order = ["actif", "archived"]
 
     lines = [
         "# SUBJECT-POOL-METRICS",
@@ -317,7 +318,7 @@ def regenerate_index(subjects):
         state = normalize_state(state_raw)
         by_state.setdefault(state, []).append((path, fm))
 
-    state_order = ["actif", "mature", "archived"]
+    state_order = ["actif", "archived"]
 
     for state in state_order:
         if state not in by_state:
@@ -378,11 +379,11 @@ def main():
     regenerate_index(subjects)
     regenerate_metrics(metrics)
 
-    # Résumé KPIs pour la ligne Health-check (refonte 2026-05-10 : 3 états)
+    # Résumé KPIs pour la ligne Health-check (refonte 2026-09-14 : 2 états)
     by_state = metrics["by_state"]
     summary = (
-        f"{metrics['active']} actifs ({by_state.get('actif', 0)} actif "
-        f"+ {by_state.get('mature', 0)} mature), "
+        f"{by_state.get('actif', 0)} actifs, "
+        f"{by_state.get('archived', 0)} archivés, "
         f"{metrics['stagnant']} stagnants"
     )
 

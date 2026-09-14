@@ -96,7 +96,7 @@ Composer le fichier en suivant la structure validée du type d'exemple `services
 
 Un squelette de `MEMORY.md` vide à instancier par `/subject-create`. Doit contenir :
 
-- Frontmatter avec valeurs **par défaut** (forging_state: seed, conviction: 0, archived_at: null, listes vides)
+- Frontmatter avec valeurs **par défaut** (forging_state: actif, archived_at: null, listes vides — jamais d'état legacy ni de champ conviction déprécié)
 - Placeholders explicites avec `<...>` (ex: `name: <subject-name>`, `created_at: <YYYY-MM-DD>`)
 - Section `## Quick` pré-formatée (état initial, prochaines étapes, risques, liens)
 - Section `## Détails` avec sous-sections suggérées (Contexte, Paramètres, Stress tests à prévoir, Notes libres)

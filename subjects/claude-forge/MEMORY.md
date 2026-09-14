@@ -1,11 +1,11 @@
 ---
 projet: claude-forge
-statut: phase-3-refonte-process-gamma-3-etats + vague-3-p4-livree + decouplage-CE-0.2.0 + fix-parseur-scanner-0.2.2 + memory-borne-0.2.3 + madr-decision-0.2.4 + d10-provenance-skillify-0.2.5
+statut: vague-3-p4-livree + decouplage-CE-0.2.0 + fix-parseur-scanner-0.2.2 + memory-borne-0.2.3 + madr-decision-0.2.4 + d10-provenance-skillify-0.2.5 + cycle-de-vie-2-etats-0.3.0
 derniere_maj: 2026-09-14
 auteur: benjamin
 ---
 
-# Projet : Claude-Forge — pattern subject pool + process γ
+# Projet : Claude-Forge — pattern subject pool + cycle de vie
 
 ## Quick
 
@@ -14,13 +14,14 @@ Statut : Phase 3 livrée + Vague 3 P4 livrée (bench_engine 2026-05-24) + **Déc
 **0.2.3 (2026-09-06)** : MEMORY.md d'entité borné — commandes `check-memory` + `patch-section`, Phase F4 v2.8 (Quick < 100 mots, ≤ 10 décisions actives, règles apprises, plafond 8 Ko, journal de runs interdit → `rapports/`), `/documente` en `effort: medium`. Bloc 3 du plan CE ; bloc 4 (migration des 3 gros MEMORY.md CE) sous relecture Benjamin.
 **0.2.2 (2026-09-06)** : parseur frontmatter corrigé (dicts imbriqués `last_event` lus `[]` sur 39/39 subjects CE → 34 stagnants faux) + scanner idempotent (plus de réécriture des index à chaque SessionStart, cause de 90 % des commits « Session » CE). Bloc 1 du plan « mémoire re-synthèse bornée + hook post-bloc » ; blocs 2-4 à venir (hook Stop CE, Phase L4 bornée, migration 3 gros MEMORY.md).
 **0.2.5 (2026-09-14)** : D10 provenance bidirectionnelle skill ↔ subjects — `skillify scaffold --source-subjects` écrit `source_subjects:` dans le SKILL.md généré ET met à jour `linked_skills` des subjects d'origine ; 11e check hygiène `provenance_declared`. Déclencheur : analyse Forge-Lab #9 WikiSkill (Google Research) + incident « 0 skillify » (voir Règles apprises). **/skillify est vivant** : 4 skills réels côté CE (annote 23/06, compta-facture-suspens 20/07, compta-valeur-en-transit 27/07, compta-analyse-gcp 07/08) — sursis 2026-06-15 levé sur pièces pour /skillify.
+**0.3.0 (2026-09-14)** : cycle de vie réduit à **2 états** (`actif` / `archived`) — `mature` supprimé (0 transition réelle en 4 mois, mesure git), appellation « cycle γ » retirée des surfaces publiques (jargon incompréhensible pour les clients), normalisation des états legacy **en écriture** au prochain /documente, /subject-create initialise `actif` (fin de l'écriture de seed/conviction — cause racine des 18 subjects restés en seed). /cross-modal-review détaché de toute transition. Supersede la refonte 3 états du 2026-05-10.
 Liens forts : aucun (subject racine du projet)
-Prochaines étapes : rétrofit provenance des 4 skills CE existants (optionnel), trancher le reste du sursis 2026-06-15 (/cross-modal-review adoption ?, cycle γ influence réelle ? — review du 15/07 en retard), surveillance bench Forge (re-run 3-6 mois), arbitrage backlog Forge-Lab (Obsidian lecteur ? couche d'entreprise ?)
-Risques : bench v1 limité aux questions frontmatter (questions sémantiques sur Quick non couvertes — évolution v2 à instruire si signal de saturation) ; hors /skillify, adoption /cross-modal-review et valeur du cycle γ toujours non démontrées
+Prochaines étapes : rétrofit provenance des 4 skills CE existants (optionnel), trancher le dernier volet du sursis 2026-06-15 (/cross-modal-review : 1 usage recensé, order-395 19/05), surveillance bench Forge (re-run 3-6 mois), arbitrage backlog Forge-Lab (Obsidian lecteur ? couche d'entreprise ?)
+Risques : bench v1 limité aux questions frontmatter (questions sémantiques sur Quick non couvertes — évolution v2 à instruire si signal de saturation) ; adoption /cross-modal-review toujours non démontrée
 
-## Doctrine en vigueur (2026-05-11)
+## Doctrine en vigueur (2026-09-14)
 
-Le **subject pool** est l'infrastructure de stockage et de propagation de connaissance. Il généralise le pattern CE-Lab / WM-Lab / Alter-Lab. **Le pattern d'infrastructure est intact depuis Phase 0 (avril 2026)** — seul le **process γ** (mécanisme de maturation interne d'un subject) a été refondu le 2026-05-10.
+Le **subject pool** est l'infrastructure de stockage et de propagation de connaissance. Il généralise le pattern CE-Lab / WM-Lab / Alter-Lab. **Le pattern d'infrastructure est intact depuis Phase 0 (avril 2026)** — seul le **cycle de vie** (mécanisme de maturation interne d'un subject, historiquement « process γ ») a été refondu deux fois : 8→3 états le 2026-05-10, 3→2 états le 2026-09-14.
 
 ### Subject pool — infrastructure (intacte)
 
@@ -33,15 +34,15 @@ Le **subject pool** est l'infrastructure de stockage et de propagation de connai
 - **Nomenclature bilingue** : squelette anglais (taxonomie), contenu métier français snake_case.
 - **Lecture en cascade** : niveau 1 = `SUBJECTS-INDEX.md`, niveau 2 = `MEMORY.md`, niveau 3 = fichier précis à la demande.
 
-### Process γ — refondu (depuis 2026-05-10)
+### Cycle de vie — 2 états (depuis 2026-09-14, historiquement « process γ »)
 
-Cycle simplifié à **3 états** (`actif` / `mature` / `archived`), transitions 100% manuelles via `/documente` avec validation Benjamin. Rétrocompat 100% : anciens états (`seed`, `debating`, `tentative`, `stress_testing`, `doctrine`, `in_service`, `under_review`) mappés en lecture seule par `LEGACY_STATE_MAP`. Pas de migration forcée.
+Cycle réduit à **2 états** (`actif` / `archived`), transitions 100% manuelles (clôture / réouverture) via `/documente` avec validation utilisateur. `mature` supprimé (0 transition réelle en 4 mois) — la maturité est un jugement à la demande (/cross-modal-review, /stress-test), pas un état. Rétrocompat : tous les anciens états (`seed`, `debating`, `tentative`, `stress_testing`, `doctrine`, `in_service`, `under_review`, `mature`) mappés en lecture par `LEGACY_STATE_MAP` ET **normalisés en écriture** au prochain /documente (la migration lecture seule de mai n'avait pas pris : 80 % de legacy après 4 mois).
 
-- `conviction` numérique 0..100 → **supprimée** (champ deprecated, ignoré par le moteur)
+- `conviction` numérique 0..100 → **supprimée** (champ deprecated, ignoré par le moteur ; /subject-create ne l'écrit plus)
 - `/compile-doctrine` → **abandonné** (théorique, jamais utilisé en pratique)
 - `/stress-test` → **découplé** du cycle, optionnel à la demande
-- Transitions automatiques → **aucune** (moteur ne mute jamais `forging_state`)
-- Alertes scanner `doctrine_uncompiled` + `stress_test_missing` → **supprimées**
+- Transitions automatiques → **aucune** (moteur ne mute jamais `forging_state` ; seule la normalisation legacy est écrite, signalée au récap)
+- Appellation « cycle γ » → **retirée des surfaces publiques** (doctrine, README, manifest, skills, légendes graph)
 
 ### Skills opérationnels (8 + 1 outil bench + 1 abandonné)
 
@@ -52,13 +53,14 @@ Cycle simplifié à **3 états** (`actif` / `mature` / `archived`), transitions 
 | `/subject-create` | actif | Instancie un subject depuis un type. |
 | `/subject-merge` | actif | Soude 2 subjects (validation Benjamin obligatoire). |
 | `/skillify` | actif (depuis 2026-05-10), **4 skills livrés côté CE** (juin-août 2026) | Compile un workflow ad hoc en skill réutilisable (5 stubs). Pattern Garry Tan. Trigger humain explicite, hint dans /documente Phase J. Depuis 0.2.5 (D10) : `--source-subjects` pose la provenance bidirectionnelle skill ↔ subjects. |
-| `/cross-modal-review` | actif (depuis 2026-05-10) | Évalue la qualité d'un MEMORY.md (4 axes, 2-3 modèles). À invoquer avant `actif → mature`. |
+| `/cross-modal-review` | actif (depuis 2026-05-10), 1 usage recensé (order-395, 19/05) | Évalue la qualité d'un MEMORY.md (4 axes, 2-3 modèles). Outil qualité à la demande (détaché des transitions depuis 2026-09-14). |
 | `/stress-test` | optionnel à la demande | Challenge un subject (contradicteur, steelman, yagni). Pas de mutation d'état. Pas encore implémenté. |
 | `forge bench` | actif (depuis 2026-05-24) | Outil de surveillance retriever (prepare / run / report). 3 retrievers déterministes (R1 cascade / R2 grep-agrégé / R3 fs-grep). Mode stdlib, $0, reproductible. Pas un skill (pas de slash command) — invocable directement via le binaire. |
 | `/compile-doctrine` | **abandonné** (2026-05-10) | Théorique, 0 artefact compilé. Branche « procédurale → skill » reprise par `/skillify`. |
 
 ## Décisions actives
 
+- **2026-09-14 — Cycle de vie 2 états (0.3.0)** : `actif` / `archived`, `mature` supprimé (0 transition en 4 mois), « cycle γ » retiré des surfaces publiques, normalisation legacy en écriture, /subject-create initialise `actif`, /cross-modal-review détaché de toute transition. Supersede la refonte 3 états du 2026-05-10. Voir `decisions/2026-09-14-cycle-de-vie-2-etats.yaml`.
 - **2026-09-14 — D10 : provenance bidirectionnelle skill ↔ subjects (0.2.5)** : `skillify scaffold --source-subjects` écrit `source_subjects:` dans le SKILL.md généré et ajoute le skill aux `linked_skills` des subjects d'origine ; 11e check hygiène `provenance_declared`. Équivalent PURPOSE.md WikiSkill (arXiv 2608.27454, analyse Forge-Lab #9). Voir `decisions/2026-09-14-d10-provenance-bidirectionnelle-skillify.yaml`.
 - **2026-09-07 — Champs MADR dans le corps des décisions (0.2.4)** : `options_considerees` + `confirmation` attendus à la racine ; `write-capture` avertit (`madr_missing`) sans refuser ; modèle `templates/decision.body.yaml`. Voir `decisions/2026-09-07-champs-madr-decision-0-2-4.yaml`.
 - **2026-04-29 — Adoption du pattern subject pool en γ pragmatique** : adoption opportuniste, pas de migration forcée. Les anciens patterns (Labs, MEMORY.md de service, discussions/decisions répartis) restent valides.
@@ -70,13 +72,12 @@ Cycle simplifié à **3 états** (`actif` / `mature` / `archived`), transitions 
 - **2026-05-10 — P5 Auto-link déterministe** : `typical_linked_types` enrichi `[{name, type}]`, `bin/autolink_engine.py`, intégration /documente Phase F + H.5. Voir `decisions/2026-05-10-p5-autolink-typed-graph.yaml`.
 - **2026-05-10 — P3 Skillify** : 3 sous-commandes CLI (scaffold/check/audit), 8 critiques + 2 hygiène, sentinelle SKILLIFY_STUB. Skill orchestrateur `/skillify`. Voir `decisions/2026-05-10-p3-skillify-compilation-continue.yaml`.
 - **2026-05-10 — P2 Cross-modal eval** : 3 sous-commandes (prepare/aggregate/write-analysis), 4 axes, 2-3 modèles Anthropic via Task tool. Skill `/cross-modal-review`. Voir `decisions/2026-05-10-p2-cross-modal-eval.yaml`.
-- **2026-05-10 — Refonte process γ 8→3 états** : `actif` / `mature` / `archived`, conviction supprimée, `/compile-doctrine` abandonné, `/stress-test` découplé, transitions 100% manuelles. Voir `decisions/2026-05-10-cycle-gamma-refonte-3-etats.yaml`.
 - **2026-05-11 — Hints textuels orphelinat** : `/documente` Phase J suggère `/skillify` et `/cross-modal-review` sans déclenchement auto. Tableau « Quand invoquer ces skills » dans la doctrine. Pattern Garry = trigger humain explicite, pas de détection auto qui produirait du bruit.
 - **2026-05-24 — Vague 3 P4 livrée : `bench_engine`** : outil de surveillance retriever (`forge bench prepare / run / report`), 3 retrievers déterministes (R1 cascade Forge, R2 grep agrégé, R3 grep filesystem), mode stdlib zéro coût zéro LLM. Baseline Rubee 2026-05-24 : R1 100%, R3 100% mais 450× plus lent, R2 97%. **La cascade Forge tient à 100% au scope actuel (33 subjects)** — pas de panique structurelle. Strictement read-only, aucune mutation archi. Décision déclenchée par recadrage Benjamin post-analyse Forge-Lab #6 SamourAI (2026-05-24) : « on mesure avant de présumer ». Voir `decisions/2026-05-24-p4-bench-engine-livre.yaml`.
 
 ## Décisions annulées
 
-(aucune)
+- **2026-05-10 — Refonte process γ 8→3 états** : supersedée le 2026-09-14 par le cycle 2 états (`mature` jamais utilisé, appellation γ abandonnée). Le fichier `decisions/2026-05-10-cycle-gamma-refonte-3-etats.yaml` est passé `status: archived`.
 
 ## Détails
 
@@ -158,7 +159,7 @@ Sauvegardé : `bench/2026-05-24-rubee-baseline-{corpus,results,report}.{json,md}
 
 ## En attente
 - **MCP server natif OAuth 2.1** (5e primitive de l'analyse FORGE-analyse 2026-05-09) : hors scope vagues 1-3. À instruire via `/idea` si pertinence émerge.
-- **Migration progressive des 33 subjects existants** vers les nouveaux états (actif/mature/archived) — pas urgent, le mapping legacy garantit la rétrocompat. Nettoyage au fil des `/documente` successifs.
+- ~~Migration progressive des 33 subjects existants~~ **résolu 2026-09-14** : la normalisation est désormais écrite par `/documente` (la migration lecture seule de mai n'avait pas pris — 80 % de legacy après 4 mois).
 - **Phase 1.5** : enrichir `forge_engine.py` avec détection de patterns émergents inter-subjects (ex: 3 retards consécutifs Simon → analysis auto). Reporté.
 - **Test end-to-end `/control-tower → /documente`** sur un email réel (premier vrai cycle email automatique).
 - **Backlog Phase 0.5** : enrichir scanner forge pour détecter les liens orphelins (gotcha #4).
@@ -169,7 +170,7 @@ Sauvegardé : `bench/2026-05-24-rubee-baseline-{corpus,results,report}.{json,md}
 - **Re-run bench Forge dans 3-6 mois** : comparer baseline 2026-05-24 (R1 cascade 100%, 33 subjects) à un nouveau run. Si dérive significative (R1 < 90% par exemple), instruire évolution v2 du bench (questions sémantiques sur Quick, génération synthétique 100/300 subjects).
 - **2 sujets flaggés post-SamourAI (2026-05-24)** à rediscuter — voir `benjamin-perso/Forge-lab/MEMORY.md` § Discussions ouvertes : (1) Obsidian comme lecteur (plugin frontmatter → wikilinks), (2) Forge n'est pas une couche d'entreprise (réouvrir D1 si scale Rubee).
 - **Adoption /skillify** : ~~si 0 skillify livré → hint trop faible~~ **résolu 2026-09-14** : 4 skills réels livrés côté CE (annote, compta-facture-suspens, compta-valeur-en-transit, compta-analyse-gcp). Nouvelle veille : vérifier que les prochains skillify passent `--source-subjects` (D10) et que les `linked_skills` se peuplent.
-- **Adoption /cross-modal-review** : toujours non démontrée. Si aucun subject n'est passé en `mature` avec eval préalable, le hint n'est pas opérant. Reste du sursis 2026-06-15 à trancher (avec la valeur du cycle γ).
+- **Adoption /cross-modal-review** : 1 usage recensé (order-395, 2026-05-19). Dernier volet du sursis 2026-06-15 encore ouvert — vérifier si l'usage « à la demande » (post-détachement des transitions) prend, sinon trancher l'abandon.
 - **Migration legacy** : combien de subjects ont encore un ancien `forging_state` (seed/debating/tentative/...) après 30 jours ? Si > 50%, signaler que la migration ne se fait pas naturellement.
 - **Bilingue chaotique futur** : pertinent dès le 3ème type créé. Anticiper un canon de dimensions partagées.
 - **Cohabitation Labs** : `/CE-analyse` écrit dans CE-Lab sans frontmatter étendu. Phase 2 (adoption opportuniste) à amorcer.

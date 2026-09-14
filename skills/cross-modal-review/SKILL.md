@@ -30,14 +30,14 @@ C'est l'équivalent du *cross-modal eval* de Garry Tan : la mesure de qualité n
 
 ## Quand utiliser
 
-- Après une re-synthèse `/documente` significative (subject central, transition γ majeure, beaucoup d'events accumulés).
-- Périodiquement (mensuel ?) sur les subjects en `tentative` ou `doctrine` pour vérifier qu'ils ne dérivent pas.
+- Après une re-synthèse `/documente` significative (subject central, clôture, beaucoup d'events accumulés).
+- Avant de s'appuyer durablement sur la synthèse d'un subject (référence pour d'autres décisions, base d'un skill via `/skillify`, doctrine).
+- Périodiquement (mensuel ?) sur les subjects actifs de longue date pour vérifier qu'ils ne dérivent pas.
 - En diagnostic quand un subject « semble flou » à la lecture — l'eval donne des issues précises.
-- Avant de promouvoir un subject vers `compile-doctrine` (si la conviction est élevée mais le score d'eval médiocre, ne pas compiler).
 
 **Quand NE PAS utiliser** :
 
-- Sur les subjects en `seed` ou `debating` (pas assez de contenu pour mesurer quoi que ce soit).
+- Sur un subject qui vient d'être créé (pas assez de contenu pour mesurer quoi que ce soit).
 - Sur les subjects archivés (sauf audit historique).
 - En boucle automatique à chaque `/documente` (coût LLM × 3) — réserver aux moments structurants.
 
@@ -149,7 +149,7 @@ Analyse persistée : services/achats/subjects/order-398/analyses/2026-05-10-cros
 - **Modèles refusent parfois** : Haiku ou Sonnet peuvent renvoyer un texte au lieu de JSON valide (notamment si le subject est ambigu). L'engine `aggregate` gère le cas (skip les invalides) — mais si <2 évaluateurs valides, prévenir Benjamin.
 - **Pas de feedback loop automatique** : l'eval signale les issues, ne corrige pas. C'est volontaire — la correction est une re-invocation `/documente` ou un edit manuel par Benjamin.
 - **Cross-modal ≠ adversarial** : ce skill mesure la qualité d'une synthèse existante, il ne challenge pas la doctrine du subject. Pour challenger une décision active, utiliser `/stress-test`.
-- **Score < 6 = signal d'alarme** : ne pas promouvoir un subject vers `compile-doctrine` ou `in_service` si le cross-modal eval est sous 6. La conviction γ et le score d'eval doivent monter ensemble.
+- **Score < 6 = signal d'alarme** : ne pas s'appuyer sur la synthèse (skillify, doctrine, décision aval) tant que le cross-modal eval est sous 6 — re-passer `/documente` ou corriger à la main d'abord.
 
 ## Critères d'évaluation
 
