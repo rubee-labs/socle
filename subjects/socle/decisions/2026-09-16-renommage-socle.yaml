@@ -61,11 +61,39 @@ consequences:
   - 43 mentions de marque remplacées dans les fichiers vivants ; décisions/discussions historiques intactes
   - Réinstallation du plugin sous socle@rubee-labs sur les 2 scopes (uninstall claude-forge + install socle)
   - Références externes à mettre à jour : CLAUDE.md CE, skill /FORGE-analyse, memories, Forge-lab (topologie)
+  - >
+    Mapping `renames: {claude-forge: socle}` ajouté au marketplace.json (mécanisme
+    officiel Claude Code 2.1.193+, ici 2.1.273) : sans lui, une installation tierce
+    de `claude-forge@rubee-labs` lève un `plugin-not-found` à chaque session. Avec
+    lui, les settings utilisateur sont réécrits automatiquement au prochain refresh
+    du marketplace, sans réinstallation. Section **append-only** : ne jamais retirer
+    ce mapping, même après migration complète. `claude plugin validate .` passe.
+  - >
+    Installations tierces concernées : 2 collaborateurs externes en lecture sur le
+    repo privé (service-technique-civisol, loicdelecroix-ux). 0 fork, 0 clone sur
+    14 jours — volume faible.
+
+limites_assumees:
+  - >
+    La réécriture automatique des settings n'a PAS pu être vérifiée empiriquement :
+    le poste de Benjamin porte les deux clés (ancienne + nouvelle, suite à
+    l'uninstall/install manuel) donc n'est pas un cas de test valide, et la
+    simulation d'un settings.json client est refusée par le verrou MNLA R6
+    (faux positif de chemin, non contourné). Le comportement repose sur la
+    documentation officielle, pas sur une observation.
+  - >
+    Les managed settings (config d'org en lecture seule) ne bénéficient pas de la
+    réécriture auto — un admin doit y éditer `enabledPlugins` à la main.
 
 confirmation:
   preuve: >
-    `claude plugin list` montre socle@rubee-labs enabled sur les 2 scopes et
-    plus aucun claude-forge ; /documente répond sous le nouveau préfixe dans
-    une nouvelle session ; grep claude-forge sur les fichiers vivants du repo
-    ne rend que de l'historique daté.
+    (a) `claude plugin list` montre socle@rubee-labs enabled sur les 2 scopes et
+    plus aucun claude-forge ; /documente répond sous le nouveau préfixe dans une
+    nouvelle session ; grep claude-forge sur les fichiers vivants du repo ne rend
+    que de l'historique daté — FAIT le 2026-09-16.
+    (b) RESTE À PROUVER : qu'un des 2 collaborateurs externes ayant installé
+    `claude-forge@rubee-labs` voie sa session démarrer sans `plugin-not-found`
+    après refresh du marketplace (confirmation du mapping `renames` en conditions
+    réelles). Demander le retour à l'un d'eux, ou constater l'absence de
+    signalement d'erreur d'ici l'échéance.
   echeance: 2026-09-30

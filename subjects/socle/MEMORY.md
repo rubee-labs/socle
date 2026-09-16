@@ -61,7 +61,7 @@ Cycle réduit à **2 états** (`actif` / `archived`), transitions 100% manuelles
 
 ## Décisions actives
 
-- **2026-09-16 — Renommage claude-forge → SOCLE (0.4.0)** : « claude-* » suggère un produit Anthropic ; SOCLE = Synthèse et Organisation des Connaissances et Leçons d'Entreprise / Structured Organizational Context & Lifecycle Engine, vérifié libre après ~9 recherches de collisions. Binaire `forge` et engines inchangés (mécanique ≠ marque). Voir `decisions/2026-09-16-renommage-socle.yaml`.
+- **2026-09-16 — Renommage claude-forge → SOCLE (0.4.0)** : « claude-* » suggère un produit Anthropic ; SOCLE = Synthèse et Organisation des Connaissances et Leçons d'Entreprise / Structured Organizational Context & Lifecycle Engine, vérifié libre après ~9 recherches de collisions. Binaire `forge` et engines inchangés (mécanique ≠ marque). **Mapping `renames: {claude-forge: socle}` dans le marketplace.json — section append-only, ne jamais retirer** : sans lui toute install tierce lève un `plugin-not-found` à chaque session. Voir `decisions/2026-09-16-renommage-socle.yaml`.
 - **2026-09-14 — Volet échéances du scanner (0.3.1)** : alerte `decision_echue` au health-check sur toute décision active dont `confirmation.echeance` est dépassée sans `verdict:` — verdict humain (`{date, resultat, note}`), jamais de règlement auto. Issue de l'analyse Forge-Lab #10 YOINK (le sursis 15/07 avait dormi 2 mois). Voir `decisions/2026-09-14-volet-echeances-scanner.yaml`.
 - **2026-09-14 — Cycle de vie 2 états (0.3.0)** : `actif` / `archived`, `mature` supprimé (0 transition en 4 mois), « cycle γ » retiré des surfaces publiques, normalisation legacy en écriture, /subject-create initialise `actif`, /cross-modal-review détaché de toute transition. Supersede la refonte 3 états du 2026-05-10. Voir `decisions/2026-09-14-cycle-de-vie-2-etats.yaml`.
 - **2026-09-14 — D10 : provenance bidirectionnelle skill ↔ subjects (0.2.5)** : `skillify scaffold --source-subjects` écrit `source_subjects:` dans le SKILL.md généré et ajoute le skill aux `linked_skills` des subjects d'origine ; 11e check hygiène `provenance_declared`. Équivalent PURPOSE.md WikiSkill (arXiv 2608.27454, analyse Forge-Lab #9). Voir `decisions/2026-09-14-d10-provenance-bidirectionnelle-skillify.yaml`.
@@ -180,6 +180,8 @@ Sauvegardé : `bench/2026-05-24-rubee-baseline-{corpus,results,report}.{json,md}
 - **Courbe apprentissage équipe** : pool reste outil personnel. Pas de transfert tant que pas de doctrine compilée et utilisée.
 
 ## Règles apprises
+
+- **Renommer un plugin Claude Code exige un mapping `renames` dans le marketplace.json** (append-only, jamais retiré) : le nom du repo GitHub redirige, mais un plugin est identifié par `<nom>@<marketplace>` — sans mapping, les installs existantes lèvent `plugin-not-found` à chaque session. Corollaire : renommer un produit distribué n'est jamais qu'une opération de marque, c'est une migration d'installations tierces.
 
 - **L'usage d'une feature se vérifie dans git, jamais dans un MEMORY** (incident 2026-09-14) : ce MEMORY a affirmé « 0 skillify livré » pendant 3 mois alors que 4 skills existaient — les runs skillify ne remontaient aucune trace dans le pool (pas de provenance, `linked_skills` vides). Un MEMORY re-synthétisé ne voit que ce qu'on lui remonte. Correction structurelle : D10.
 
