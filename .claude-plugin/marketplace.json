@@ -1,5 +1,6 @@
 {
   "name": "rubee-labs",
+  "description": "Outils Claude Code de Rubee Labs. Contient SOCLE, la couche de mémoire d'entreprise structurée par sujets (4ème couche de mémoire).",
   "owner": {
     "name": "Benjamin Hamon",
     "email": "benjamin.hamon@rubee.company"
@@ -14,5 +15,8 @@
         "name": "Benjamin Hamon"
       }
     }
-  ]
+  ],
+  "renames": {
+    "claude-forge": "socle"
+  }
 }
