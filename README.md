@@ -90,3 +90,9 @@ v0.1.0 — extraction initiale depuis claude-enterprise (2026-05-05).
 ## Auteur
 
 Benjamin Hamon (Rubee Labs).
+
+## Licence
+
+**PolyForm Shield 1.0.0** — voir [LICENSE.md](LICENSE.md).
+
+Source visible, usage libre y compris commercial **en interne**. Seule interdiction : s'en servir pour proposer un produit ou un service **concurrent** de SOCLE ou des prestations de Rubee Labs bâties dessus. Ce n'est donc pas une licence open source au sens de l'OSI.
