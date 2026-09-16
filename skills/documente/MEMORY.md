@@ -36,7 +36,7 @@ derniere_maj: 2026-05-07
 
 - [2026-05-04-bascule-engine-python](decisions/2026-05-04-bascule-engine-python.yaml) — Bascule subject pool vers documente_engine.py (v2.1 → v2.2)
 - [2026-05-04-extension-engine-au-legacy](decisions/2026-05-04-extension-engine-au-legacy.yaml) — Extension binaire au workflow legacy + Phase L0 migration (v2.2 → v2.3)
-- [2026-05-07-phase-l0-critere-positif-defaut-entite](decisions/2026-05-07-phase-l0-critere-positif-defaut-entite.yaml) — Phase F0 reformulée en critère positif, défaut = entité (v2.5 → v2.6). Closes rubee-labs/claude-forge#1.
+- [2026-05-07-phase-l0-critere-positif-defaut-entite](decisions/2026-05-07-phase-l0-critere-positif-defaut-entite.yaml) — Phase F0 reformulée en critère positif, défaut = entité (v2.5 → v2.6). Closes rubee-labs/socle#1.
 
 ## Décisions annulées
 

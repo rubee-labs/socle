@@ -1,5 +1,5 @@
-# .forge.yaml — claude-forge mange sa propre config (dogfooding).
-# Le repo héberge le subject méta `subjects/claude-forge/` à sa racine.
+# .forge.yaml — socle mange sa propre config (dogfooding).
+# Le repo héberge le subject méta `subjects/socle/` à sa racine.
 
 # Index/metrics à la racine du repo
 output_dir: .
@@ -11,4 +11,4 @@ pool_roots: ["."]
 domain_roots: []
 
 # Visibilité des SKILL.md générés ici
-skill_visibility: claude-forge
+skill_visibility: socle

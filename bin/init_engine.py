@@ -37,7 +37,7 @@ def _err(message, code="generic_error", **extra):
 
 def _render_yaml(output_dir, pool_root, types_root, skill_visibility):
     lines = [
-        "# .forge.yaml — configuration claude-forge propre à ce repo.",
+        "# .forge.yaml — configuration socle propre à ce repo.",
         "# Écrit par `forge init`. Toutes les clés sont optionnelles (défauts auto-détectés).",
         "",
         "# Où écrire SUBJECTS-INDEX.md + SUBJECT-POOL-METRICS.md (\".\" = racine du repo)",

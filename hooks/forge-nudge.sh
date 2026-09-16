@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# forge-nudge.sh — SessionStart hook (mode nudge) du plugin claude-forge.
+# forge-nudge.sh — SessionStart hook (mode nudge) du plugin socle.
 #
 # Suggère `/forge-init` UNE SEULE FOIS : si un pool subjects/ existe dans le repo
 # mais qu'aucun .forge.yaml n'est configuré. Ne fait que SUGGÉRER — n'écrit jamais
@@ -33,7 +33,7 @@ _found -name '.forge.yaml' && exit 0
 
 # 3. Un pool subjects/ existe-t-il (non configuré) ? → nudge.
 if _found -type d -name 'subjects'; then
-  echo "claude-forge : un pool subjects/ existe ici mais n'est pas configuré — lance /forge-init pour choisir où stocker (écrit un .forge.yaml)."
+  echo "socle : un pool subjects/ existe ici mais n'est pas configuré — lance /forge-init pour choisir où stocker (écrit un .forge.yaml)."
 fi
 
 exit 0

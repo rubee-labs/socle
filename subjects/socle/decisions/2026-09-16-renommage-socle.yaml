@@ -1,0 +1,71 @@
+---
+date: 2026-09-16
+type: decision
+produced_by: human
+decided_by: benjamin
+status: active
+---
+
+contexte: >
+  Retour clients : le nom « claude-forge » laisse croire que le plugin est
+  édité par Anthropic, et le registre « forge » ne rassure pas des clients
+  qui achètent de la mémoire d'entreprise. Recherche de nom sur 2 jours
+  (14-16/09) avec ~9 vérifications de collisions : l'espace des noms
+  évocateurs est saturé (mem-forge/memforge ×2 même pitch, mnemosyne ×5,
+  engram, hephaestus ×4, memoria, tabularium ×2, memento ×3 dont un
+  runmemento.com quasi identique, blacksmith = boîte YC $10M, strata,
+  vulcain = dunglas, madeleine/proust jugés pas assez sérieux).
+
+options_considerees:
+  - option: A — Registre artisanal français (forgeron, enclume)
+    retenue: false
+    raison: libres et vérifiés, mais « ça ne sonne pas comme un outil de second cerveau » (Benjamin) — registre fabrication, pas mémoire.
+  - option: B — Registre poétique mémoire (madeleine, proust, souvenance)
+    retenue: false
+    raison: libres et vérifiés, mais pas assez sérieux pour de la mémoire d'entreprise — les clients ont besoin d'être rassurés.
+  - option: C — Marque + catégorie (rubee-memory, jcc-memory)
+    retenue: false
+    raison: rassurant mais fait outil interne, et lie le produit à une marque de conseil.
+  - option: D — Néologismes memento (mementum, mementor)
+    retenue: false
+    raison: quasi propres mais plus vierges (pseudo GitHub connu, outil dormant) et moins sobres que SOCLE.
+  - option: E — SOCLE avec double développé FR/EN
+    retenue: true
+    raison: >
+      100 % libre (vérifié), registre IT d'entreprise français établi
+      (« socle technique »), et l'acronyme résout l'objection anglophone :
+      FR « Synthèse et Organisation des Connaissances et Leçons
+      d'Entreprise », EN « Structured Organizational Context & Lifecycle
+      Engine ». « socle » est de plus un vrai mot d'architecture en anglais.
+
+decision: >
+  Le plugin claude-forge est renommé SOCLE (0.4.0). Repo GitHub
+  rubee-labs/claude-forge → rubee-labs/socle (redirections actives),
+  plugin `socle@rubee-labs`, skills `socle:documente` etc., subject
+  auto-référentiel `subjects/socle/`. Le binaire `forge`, `.forge.yaml`
+  et les engines `forge_*.py` gardent leur nom : la mécanique n'est pas
+  la marque. Le Lab personnel (Forge-lab, /FORGE-analyse) garde son nom.
+
+parameters:
+  nom: SOCLE
+  developpe_fr: Synthèse et Organisation des Connaissances et Leçons d'Entreprise
+  developpe_en: Structured Organizational Context & Lifecycle Engine
+  version_plugin: 0.4.0
+  repo: git@github.com:rubee-labs/socle.git
+  invariants: [binaire forge, .forge.yaml, bin/forge_*.py, Forge-lab perso]
+
+consequences:
+  - Repo GitHub renommé + remote local + dossier local /Users/bhamon/git/socle
+  - plugin.json + marketplace.json → socle 0.4.0 (marketplace.json était resté en 0.2.4 avec la description γ — corrigé au passage)
+  - README refondu (double développé + note de renommage)
+  - 43 mentions de marque remplacées dans les fichiers vivants ; décisions/discussions historiques intactes
+  - Réinstallation du plugin sous socle@rubee-labs sur les 2 scopes (uninstall claude-forge + install socle)
+  - Références externes à mettre à jour : CLAUDE.md CE, skill /FORGE-analyse, memories, Forge-lab (topologie)
+
+confirmation:
+  preuve: >
+    `claude plugin list` montre socle@rubee-labs enabled sur les 2 scopes et
+    plus aucun claude-forge ; /documente répond sous le nouveau préfixe dans
+    une nouvelle session ; grep claude-forge sur les fichiers vivants du repo
+    ne rend que de l'historique daté.
+  echeance: 2026-09-30

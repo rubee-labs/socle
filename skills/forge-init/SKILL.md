@@ -1,11 +1,11 @@
 ---
 name: forge-init
 description: >-
-  Initialise le subject pool claude-forge dans le repo courant : choisit
+  Initialise le subject pool socle dans le repo courant : choisit
   l'emplacement de stockage, écrit le `.forge.yaml`, et scaffolde `subjects/`
   + `types/`. Porte d'entrée pour un nouveau repo (client ou perso) qui adopte
-  claude-forge. Trigger sur "forge init", "initialise le pool", "configure
-  claude-forge ici", "où stocker ma mémoire forge", après le nudge SessionStart.
+  socle. Trigger sur "forge init", "initialise le pool", "configure
+  socle ici", "où stocker ma mémoire forge", après le nudge SessionStart.
 type_anthropic: 4
 visibilite: public
 auteur: Benjamin
@@ -21,13 +21,13 @@ securite_externe: false
 
 ## Objectif
 
-Configurer claude-forge dans le repo courant de façon **explicite et propre au repo** — sans hériter de l'arborescence d'un autre projet. Écrit un `.forge.yaml` à la racine du pool et crée la structure `subjects/` + `types/`.
+Configurer socle dans le repo courant de façon **explicite et propre au repo** — sans hériter de l'arborescence d'un autre projet. Écrit un `.forge.yaml` à la racine du pool et crée la structure `subjects/` + `types/`.
 
 C'est la réponse au nudge SessionStart « un pool subjects/ existe ici mais n'est pas configuré ».
 
 ## Quand utiliser
 
-- Premier usage de claude-forge dans un repo (le `.forge.yaml` n'existe pas encore).
+- Premier usage de socle dans un repo (le `.forge.yaml` n'existe pas encore).
 - L'utilisateur veut changer l'emplacement de stockage (relancer avec `--force`).
 
 ## Workflow

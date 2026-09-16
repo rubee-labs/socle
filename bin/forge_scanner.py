@@ -345,7 +345,7 @@ def regenerate_metrics(m):
 
     lines.append("---")
     lines.append("")
-    lines.append("_Pour la doctrine complète : plugin `claude-forge` — `rules/subject-pool.md` (cache runtime : `~/.claude/plugins/cache/rubee-labs/claude-forge/<version>/rules/subject-pool.md`)._")
+    lines.append("_Pour la doctrine complète : plugin `socle` — `rules/subject-pool.md` (cache runtime : `~/.claude/plugins/cache/rubee-labs/socle/<version>/rules/subject-pool.md`)._")
 
     write_if_changed(METRICS_FILE, "\n".join(lines))
 

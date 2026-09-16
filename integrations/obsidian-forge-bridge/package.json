@@ -8,7 +8,7 @@
     "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
     "check": "tsc -noEmit -skipLibCheck"
   },
-  "keywords": ["obsidian-plugin", "claude-forge", "subject-pool", "wikilinks"],
+  "keywords": ["obsidian-plugin", "socle", "subject-pool", "wikilinks"],
   "author": "Rubee Labs",
   "license": "MIT",
   "devDependencies": {

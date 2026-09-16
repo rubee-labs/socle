@@ -1,11 +1,11 @@
 {
-  "name": "claude-forge",
-  "description": "Structured memory layer for Claude Code — subjects with a lifecycle, typed decisions/discussions, and cross-subject cascade. The 4th memory layer.",
-  "version": "0.3.1",
+  "name": "socle",
+  "description": "SOCLE — Structured Organizational Context & Lifecycle Engine. Enterprise memory layer for Claude Code: subjects with a lifecycle, typed decisions/discussions, cross-subject cascade. The 4th memory layer. (FR: Synthèse et Organisation des Connaissances et Leçons d'Entreprise)",
+  "version": "0.4.0",
   "author": {
     "name": "Benjamin Hamon"
   },
-  "repository": "https://github.com/rubee-labs/claude-forge",
+  "repository": "https://github.com/rubee-labs/socle",
   "license": "MIT",
   "keywords": [
     "claude",
@@ -15,8 +15,7 @@
     "structured-memory",
     "decisions",
     "knowledge-management",
-    "documente",
-    "forge"
+    "documente"
   ],
-  "homepage": "https://github.com/rubee-labs/claude-forge#readme"
+  "homepage": "https://github.com/rubee-labs/socle#readme"
 }

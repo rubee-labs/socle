@@ -79,7 +79,7 @@ Le moteur cible `entreprise/skills/<name>/` si `entreprise/skills/` existe, sino
 Les 5 fichiers contiennent des sentinelles `SKILLIFY_STUB`. Compléter dans cet ordre (Edit) :
 
 1. **`SKILL.md`** : Objectif, Quand utiliser, Workflow (Phases), Gotchas, EVAL. Pas de générique — chaque section doit refléter le cas concret capturé en Phase 1.
-2. **`scripts/<name>.py`** : la logique déterministe. Stdlib only de préférence (rester aligné sur la doctrine claude-forge). Sortie JSON sur stdout.
+2. **`scripts/<name>.py`** : la logique déterministe. Stdlib only de préférence (rester aligné sur la doctrine socle). Sortie JSON sur stdout.
 3. **`tests/test_<name>.py`** : ≥2 tests sur le cas nominal et 1 cas d'erreur.
 4. **`fixtures/<name>.routing.jsonl`** : compléter avec les vraies phrases déclencheurs si Benjamin en a donné de nouvelles.
 5. **`EVAL.md`** : adapter la checklist au cas réel (ex: "le skill produit le même résultat 3 fois sur le même input").
@@ -148,7 +148,7 @@ forge skillify check passes ok: true
 - **Sentinelles `SKILLIFY_STUB` résiduelles = skill cassé**. Le check les détecte et bloque le `ok: true`. Ne pas committer un skill avec des stubs.
 - **Description du frontmatter < 30 chars = skill mal discriminé**. Claude Code dispatche les skills par leur description ; trop courte = collision avec d'autres skills.
 - **Un skill par cas concret**, pas un skill fourre-tout. Si tu hésites entre 2 skills, c'est qu'il y en a 2 qui se cachent — découper.
-- **Provenance omise = pool aveugle**. Incident 2026-09-14 : 4 skills skillifiés (juin-août 2026) sans `source_subjects` ni backlink → le subject claude-forge croyait `/skillify` mort (« 0 skillify livré » dans son MEMORY). Toujours passer `--source-subjects` quand le workflow vient d'un subject ; l'omission volontaire se justifie en Phase 1.
+- **Provenance omise = pool aveugle**. Incident 2026-09-14 : 4 skills skillifiés (juin-août 2026) sans `source_subjects` ni backlink → le subject socle croyait `/skillify` mort (« 0 skillify livré » dans son MEMORY). Toujours passer `--source-subjects` quand le workflow vient d'un subject ; l'omission volontaire se justifie en Phase 1.
 - **Doctrine Rubee** : un skill ne doit jamais embarquer une clé API Anthropic ni `from anthropic import Anthropic`. Si le skill a besoin d'invoquer Claude pour un sub-task, utiliser le Task tool ou le SDK Claude Agent (cf. `feedback_jamais_cle_api_toujours_max_via_sdk.md`).
 
 ## Critères d'évaluation

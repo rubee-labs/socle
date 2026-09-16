@@ -39,7 +39,7 @@ STUB_SENTINEL = "SKILLIFY_STUB"
 
 # 11 checks de l'audit `check`. 8 sont critiques (must pass pour ok=true),
 # 3 sont des checks d'hygiène (HYGIENE_CHECKS) — utiles à signaler mais pas
-# bloquants. Cohérent avec le fait que dans claude-forge les engines vivent
+# bloquants. Cohérent avec le fait que dans socle les engines vivent
 # dans bin/ partagé, pas dans skills/<name>/scripts/.
 HYGIENE_CHECKS = {"scripts_dir", "tests_dir", "provenance_declared"}
 
@@ -66,7 +66,7 @@ CHECK_LABELS = {
 def _resolve_skills_root(project_dir: Path) -> Path:
     """Devine le bon répertoire `skills/` selon le repo courant.
 
-    - Si `claude-forge/` (le plugin lui-même), cible `skills/`.
+    - Si `socle/` (le plugin lui-même), cible `skills/`.
     - Si repo client (ex: claude-enterprise), cible `entreprise/skills/` si
       ce dossier existe, sinon `skills/`.
     - Sinon fallback : `skills/` à la racine.

@@ -1,11 +1,11 @@
 ---
-projet: claude-forge
-statut: vague-3-p4-livree + decouplage-CE-0.2.0 + fix-parseur-scanner-0.2.2 + memory-borne-0.2.3 + madr-decision-0.2.4 + d10-provenance-skillify-0.2.5 + cycle-de-vie-2-etats-0.3.0
-derniere_maj: 2026-09-14
+projet: socle
+statut: decouplage-CE-0.2.0 + memory-borne-0.2.3 + madr-decision-0.2.4 + d10-provenance-skillify-0.2.5 + cycle-de-vie-2-etats-0.3.0 + volet-echeances-0.3.1 + renommage-socle-0.4.0
+derniere_maj: 2026-09-16
 auteur: benjamin
 ---
 
-# Projet : Claude-Forge — pattern subject pool + cycle de vie
+# Projet : SOCLE — pattern subject pool + cycle de vie (anciennement Claude-Forge)
 
 ## Quick
 
@@ -14,6 +14,7 @@ Statut : Phase 3 livrée + Vague 3 P4 livrée (bench_engine 2026-05-24) + **Déc
 **0.2.3 (2026-09-06)** : MEMORY.md d'entité borné — commandes `check-memory` + `patch-section`, Phase F4 v2.8 (Quick < 100 mots, ≤ 10 décisions actives, règles apprises, plafond 8 Ko, journal de runs interdit → `rapports/`), `/documente` en `effort: medium`. Bloc 3 du plan CE ; bloc 4 (migration des 3 gros MEMORY.md CE) sous relecture Benjamin.
 **0.2.2 (2026-09-06)** : parseur frontmatter corrigé (dicts imbriqués `last_event` lus `[]` sur 39/39 subjects CE → 34 stagnants faux) + scanner idempotent (plus de réécriture des index à chaque SessionStart, cause de 90 % des commits « Session » CE). Bloc 1 du plan « mémoire re-synthèse bornée + hook post-bloc » ; blocs 2-4 à venir (hook Stop CE, Phase L4 bornée, migration 3 gros MEMORY.md).
 **0.2.5 (2026-09-14)** : D10 provenance bidirectionnelle skill ↔ subjects — `skillify scaffold --source-subjects` écrit `source_subjects:` dans le SKILL.md généré ET met à jour `linked_skills` des subjects d'origine ; 11e check hygiène `provenance_declared`. Déclencheur : analyse Forge-Lab #9 WikiSkill (Google Research) + incident « 0 skillify » (voir Règles apprises). **/skillify est vivant** : 4 skills réels côté CE (annote 23/06, compta-facture-suspens 20/07, compta-valeur-en-transit 27/07, compta-analyse-gcp 07/08) — sursis 2026-06-15 levé sur pièces pour /skillify.
+**0.4.0 (2026-09-16)** : **renommage claude-forge → SOCLE** (Synthèse et Organisation des Connaissances et Leçons d'Entreprise / Structured Organizational Context & Lifecycle Engine). Motif : « claude-* » laisse croire à un produit Anthropic et le registre forge ne rassure pas des clients de mémoire d'entreprise ; ~9 recherches de collisions (mem-*, mnemosyne ×5, hephaestus ×4, memoria, tabularium ×2, memento ×3, blacksmith, strata tous pris) → SOCLE vérifié 100 % libre. Repo `rubee-labs/socle` (redirections GitHub actives), plugin `socle@rubee-labs`, subject renommé `subjects/socle/`. Le binaire `forge`, `.forge.yaml` et les engines gardent leur nom (mécanique ≠ marque).
 **0.3.0 (2026-09-14)** : cycle de vie réduit à **2 états** (`actif` / `archived`) — `mature` supprimé (0 transition réelle en 4 mois, mesure git), appellation « cycle γ » retirée des surfaces publiques (jargon incompréhensible pour les clients), normalisation des états legacy **en écriture** au prochain /documente, /subject-create initialise `actif` (fin de l'écriture de seed/conviction — cause racine des 18 subjects restés en seed). /cross-modal-review détaché de toute transition. Supersede la refonte 3 états du 2026-05-10.
 Liens forts : aucun (subject racine du projet)
 Prochaines étapes : rétrofit provenance des 4 skills CE existants (optionnel), trancher le dernier volet du sursis 2026-06-15 (/cross-modal-review : 1 usage recensé, order-395 19/05), surveillance bench Forge (re-run 3-6 mois), arbitrage backlog Forge-Lab (Obsidian lecteur ? couche d'entreprise ?)
@@ -60,6 +61,7 @@ Cycle réduit à **2 états** (`actif` / `archived`), transitions 100% manuelles
 
 ## Décisions actives
 
+- **2026-09-16 — Renommage claude-forge → SOCLE (0.4.0)** : « claude-* » suggère un produit Anthropic ; SOCLE = Synthèse et Organisation des Connaissances et Leçons d'Entreprise / Structured Organizational Context & Lifecycle Engine, vérifié libre après ~9 recherches de collisions. Binaire `forge` et engines inchangés (mécanique ≠ marque). Voir `decisions/2026-09-16-renommage-socle.yaml`.
 - **2026-09-14 — Volet échéances du scanner (0.3.1)** : alerte `decision_echue` au health-check sur toute décision active dont `confirmation.echeance` est dépassée sans `verdict:` — verdict humain (`{date, resultat, note}`), jamais de règlement auto. Issue de l'analyse Forge-Lab #10 YOINK (le sursis 15/07 avait dormi 2 mois). Voir `decisions/2026-09-14-volet-echeances-scanner.yaml`.
 - **2026-09-14 — Cycle de vie 2 états (0.3.0)** : `actif` / `archived`, `mature` supprimé (0 transition en 4 mois), « cycle γ » retiré des surfaces publiques, normalisation legacy en écriture, /subject-create initialise `actif`, /cross-modal-review détaché de toute transition. Supersede la refonte 3 états du 2026-05-10. Voir `decisions/2026-09-14-cycle-de-vie-2-etats.yaml`.
 - **2026-09-14 — D10 : provenance bidirectionnelle skill ↔ subjects (0.2.5)** : `skillify scaffold --source-subjects` écrit `source_subjects:` dans le SKILL.md généré et ajoute le skill aux `linked_skills` des subjects d'origine ; 11e check hygiène `provenance_declared`. Équivalent PURPOSE.md WikiSkill (arXiv 2608.27454, analyse Forge-Lab #9). Voir `decisions/2026-09-14-d10-provenance-bidirectionnelle-skillify.yaml`.

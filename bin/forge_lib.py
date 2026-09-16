@@ -21,7 +21,7 @@ from pathlib import Path
 def get_project_dir() -> Path:
     """Retourne le chemin absolu du repo de travail.
 
-    claude-forge est un binaire installé globalement (plugin Claude Code) qui
+    socle est un binaire installé globalement (plugin Claude Code) qui
     opère sur le repo dans lequel il est invoqué — pas sur son propre repo
     d'install. La résolution suit donc l'ordre suivant :
 

@@ -49,7 +49,7 @@ services/<X>/
 
 ## Cycle de vie (2 états)
 
-Refondu le 2026-09-14 (cf. `subjects/claude-forge/decisions/2026-09-14-cycle-de-vie-2-etats.yaml`). Historique : le cycle à 8 états + conviction numérique (« cycle γ » — appellation abandonnée, incompréhensible hors Rubee) avait été réduit à 3 états le 2026-05-10 ; l'état intermédiaire `mature` a connu **0 transition réelle en 4 mois** (mesure git du 2026-09-14) et a été supprimé. Reste la seule distinction consommée en pratique : **vivant / clos**.
+Refondu le 2026-09-14 (cf. `subjects/socle/decisions/2026-09-14-cycle-de-vie-2-etats.yaml`). Historique : le cycle à 8 états + conviction numérique (« cycle γ » — appellation abandonnée, incompréhensible hors Rubee) avait été réduit à 3 états le 2026-05-10 ; l'état intermédiaire `mature` a connu **0 transition réelle en 4 mois** (mesure git du 2026-09-14) et a été supprimé. Reste la seule distinction consommée en pratique : **vivant / clos**.
 
 ```
 actif ──► archived
@@ -94,7 +94,7 @@ Les champs `conviction` (0..100), `stress_tests_passed`, `compiled_artifacts` du
 | `/subject-create <type> <name>` | actif | Instancie un subject à partir d'un type existant. **Invocable directement ou indirectement via `/documente`** (mode silencieux). |
 | `/documente <subject-path> [--type <type>]` | actif | **Orchestrateur unique du subject pool**. Création paresseuse type/instance si absents, capture conversation (discussion + décision), re-synthèse continue (Quick + Détails régénérés, cascade horizontale 1 niveau). **Plus de transitions auto** depuis 2026-05-10. |
 | `/subject-merge <A> <B>` | actif | Soudure de 2 subjects (validation Benjamin obligatoire). |
-| `/skillify` | actif (depuis 2026-05-10) | Compile un workflow ad hoc en skill réutilisable (SKILL.md + script + tests + fixtures). Compilation continue à l'usage, pattern Garry Tan. **Trigger humain explicite** (« skillify it ») — pas de déclenchement automatique. Hint post-commit suggéré par `/documente` Phase J si workflow ad hoc répété détecté. **Provenance bidirectionnelle (D10, depuis 2026-09-14)** : `scaffold --source-subjects` écrit `source_subjects: [...]` dans le frontmatter du SKILL.md généré ET ajoute le skill aux `linked_skills` du MEMORY.md de chaque subject d'origine — équivalent du `PURPOSE.md` WikiSkill (arXiv 2608.27454). Sans provenance, le pool est aveugle à sa propre compilation (incident 2026-09-14 : 4 skills skillifiés invisibles, MEMORY du subject claude-forge périmé). Voir `bin/skillify_engine.py`. |
+| `/skillify` | actif (depuis 2026-05-10) | Compile un workflow ad hoc en skill réutilisable (SKILL.md + script + tests + fixtures). Compilation continue à l'usage, pattern Garry Tan. **Trigger humain explicite** (« skillify it ») — pas de déclenchement automatique. Hint post-commit suggéré par `/documente` Phase J si workflow ad hoc répété détecté. **Provenance bidirectionnelle (D10, depuis 2026-09-14)** : `scaffold --source-subjects` écrit `source_subjects: [...]` dans le frontmatter du SKILL.md généré ET ajoute le skill aux `linked_skills` du MEMORY.md de chaque subject d'origine — équivalent du `PURPOSE.md` WikiSkill (arXiv 2608.27454). Sans provenance, le pool est aveugle à sa propre compilation (incident 2026-09-14 : 4 skills skillifiés invisibles, MEMORY du subject socle périmé). Voir `bin/skillify_engine.py`. |
 | `/cross-modal-review` | actif (depuis 2026-05-10) | Évalue la qualité d'un MEMORY.md re-synthétisé (4 axes : cohérence, complétude, spécificité, citations) via 2-3 modèles distincts (Opus + Sonnet + Haiku). **Outil qualité à la demande** (depuis 2026-09-14, plus d'ancrage à une transition d'état) — à invoquer quand on s'apprête à s'appuyer durablement sur une synthèse. Voir `bin/eval_engine.py`. |
 | `/stress-test <subject-path>` | optionnel, à la demande | Challenge un subject sous 3 perspectives (contradicteur, steelman, yagni). **Découplé du cycle** depuis 2026-05-10 — invocable à tout moment quand Benjamin doute, sans transition d'état ni mutation de conviction. |
 | `/compile-doctrine` | **abandonné** | Skill théorique jamais utilisé en pratique. Sa branche « procédurale → skill » est désormais portée par `/skillify`. Les autres branches (règle / agent SDK / injection / monitor / FK) seront instruites au cas par cas si le besoin émerge. |
@@ -116,7 +116,7 @@ Aucun de ces skills n'a de déclencheur automatique — la décision reste humai
 
 `/documente` Phase J post-commit affiche des **hints** sur `/skillify` et `/cross-modal-review` quand les conditions sont remplies — pas d'exécution auto, juste un rappel pédagogique.
 
-Le scanner `forge scanner` (binaire claude-forge) peut tourner en hook SessionStart pour régénérer un index global des subjects (par exemple `SUBJECTS-INDEX.md` à la racine du repo). Configuration spécifique au projet — voir le hook intégrateur côté repo consommateur.
+Le scanner `forge scanner` (binaire `forge` du plugin SOCLE) peut tourner en hook SessionStart pour régénérer un index global des subjects (par exemple `SUBJECTS-INDEX.md` à la racine du repo). Configuration spécifique au projet — voir le hook intégrateur côté repo consommateur.
 
 ### Création paresseuse via `/documente` (v2.1+)
 

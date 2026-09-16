@@ -1,12 +1,17 @@
-# claude-forge
+# SOCLE
 
-Couche de mémoire structurée pour Claude Code — la 4ème couche, après le contexte de session, l'auto-memory et `CLAUDE.md`.
+**La mémoire d'entreprise structurée pour Claude Code** — la 4ème couche de mémoire, après le contexte de session, l'auto-memory et `CLAUDE.md`.
 
-claude-forge ajoute au harnais Claude Code une primitive qui lui manque : **la mémoire structurée par sujets, avec cycle de vie et cascade entre sujets liés**. Là où l'auto-memory et `CLAUDE.md` stockent du markdown libre, claude-forge structure les décisions, discussions, événements en artefacts typés validés par Python.
+- 🇫🇷 **S**ynthèse et **O**rganisation des **C**onnaissances et **L**eçons d'**E**ntreprise
+- 🇬🇧 **S**tructured **O**rganizational **C**ontext & **L**ifecycle **E**ngine
+
+SOCLE ajoute au harnais Claude Code une primitive qui lui manque : **la mémoire structurée par sujets, avec cycle de vie et cascade entre sujets liés**. Là où l'auto-memory et `CLAUDE.md` stockent du markdown libre, SOCLE structure les décisions, discussions, événements en artefacts typés validés par Python.
+
+> Anciennement `claude-forge` (renommé le 2026-09-16 — un plugin tiers ne doit pas laisser croire qu'il est édité par Anthropic). Les anciennes URLs GitHub redirigent. Le binaire s'appelle toujours `forge` : c'est l'outil, SOCLE est le produit.
 
 ## Différence avec claude-mem
 
-| Dimension | claude-mem | claude-forge |
+| Dimension | claude-mem | SOCLE |
 |---|---|---|
 | Axe | Temporel (continuité session-à-session) | Structurel (typage des décisions) |
 | Format | SQLite + Chroma + CLAUDE.md auto | `subjects/<name>/MEMORY.md` typés |
@@ -20,11 +25,14 @@ Les deux sont complémentaires.
 
 ## Installation
 
-À documenter — `npx claude-forge install` ou équivalent.
+```
+/plugin marketplace add rubee-labs/socle
+/plugin install socle@rubee-labs
+```
 
 ## Configuration par-repo (`.forge.yaml`)
 
-claude-forge ne suppose **aucune** arborescence imposée : chaque repo décide où il stocke sa mémoire, via un fichier `.forge.yaml` (optionnel) à la racine du pool. Le plugin est ainsi distribuable à n'importe quel repo sans hériter de la structure d'un autre.
+socle ne suppose **aucune** arborescence imposée : chaque repo décide où il stocke sa mémoire, via un fichier `.forge.yaml` (optionnel) à la racine du pool. Le plugin est ainsi distribuable à n'importe quel repo sans hériter de la structure d'un autre.
 
 ### Mise en route
 
@@ -55,7 +63,7 @@ Exemple — claude-enterprise : aucun `.forge.yaml` requis (zéro config, compor
 ## Architecture
 
 ```
-claude-forge/
+socle/
 ├── bin/                    Binaires Python (engines)
 │   ├── forge               CLI dispatcher
 │   ├── documente_engine.py
@@ -72,7 +80,7 @@ claude-forge/
 ├── rules/                  Règles d'usage
 ├── tests/                  Tests des engines
 └── subjects/               Méta-réflexion (dogfooding)
-    └── claude-forge/       Le subject qui décrit ce projet
+    └── socle/       Le subject qui décrit ce projet
 ```
 
 ## État

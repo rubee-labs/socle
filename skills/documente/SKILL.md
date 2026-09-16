@@ -107,7 +107,7 @@ Codes folder (`F0` à `F6`) : même logique, préfixe `L`.
 
 ## Workflow — Subject Pool (depuis 2026-05-04, via `forge documente`)
 
-Toutes les phases déterministes sont déléguées au binaire `forge documente` (engine Python du plugin claude-forge). Le LLM intervient uniquement pour : capture conversationnelle (Phase C), rédaction du contenu narratif des captures (Phase D body), synthèse Quick/Détails (Phase F), jugement de pertinence des fichiers impactés (Phase I).
+Toutes les phases déterministes sont déléguées au binaire `forge documente` (engine Python du plugin socle). Le LLM intervient uniquement pour : capture conversationnelle (Phase C), rédaction du contenu narratif des captures (Phase D body), synthèse Quick/Détails (Phase F), jugement de pertinence des fichiers impactés (Phase I).
 
 Convention CLI : chaque commande retourne un JSON sur stdout au format `{"ok": true|false, "version": 1, ...}`. Le skill teste `ok` du JSON, pas l'exit code.
 
@@ -366,7 +366,7 @@ Si choix **A** : continuer Phase F1 directement.
 - Benjamin a déjà refusé la migration sur ce path dans une session précédente (vérifier les `decisions/` existantes pour un marqueur `migration_subject_pool: refused`)
 - L'utilisateur a déjà précisé son intention (« je veux documenter dans le skill ») — respecter ce choix sans rappeler le menu
 
-**Important — historique de cette doctrine** : la version v2.3 (2026-05-04) proposait la migration **systématiquement** avec un garde-fou négatif vague (« skills/tools figés »). En pratique cela biaisait toutes les décisions vers subject pool, vidant les `<entité>/decisions/` (cf. issue [rubee-labs/claude-forge#1](https://github.com/rubee-labs/claude-forge/issues/1)). La v2.6 inverse : critère **positif** sur la nature de l'objet, défaut entité.
+**Important — historique de cette doctrine** : la version v2.3 (2026-05-04) proposait la migration **systématiquement** avec un garde-fou négatif vague (« skills/tools figés »). En pratique cela biaisait toutes les décisions vers subject pool, vidant les `<entité>/decisions/` (cf. issue [rubee-labs/socle#1](https://github.com/rubee-labs/socle/issues/1)). La v2.6 inverse : critère **positif** sur la nature de l'objet, défaut entité.
 
 ### Phase F1 — Identifier le contexte
 

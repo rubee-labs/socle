@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# forge — claude-forge CLI dispatcher
+# forge — socle CLI dispatcher
 #
 # Dispatch vers les engines Python du Subject Pool.
 #
@@ -63,7 +63,7 @@ case "$1" in
     ;;
   --help|-h|"")
     cat <<EOF
-forge — claude-forge CLI
+forge — socle CLI
 
 Sous-commandes :
   init [--output-dir X] [...]     Initialise le pool dans ce repo (.forge.yaml + subjects/ + types/)
@@ -81,7 +81,7 @@ Options :
   --version, -v                   Affiche la version
   --help, -h                      Affiche cette aide
 
-Documentation : https://github.com/rubee-labs/claude-forge
+Documentation : https://github.com/rubee-labs/socle
 EOF
     ;;
   *)
