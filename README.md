@@ -78,10 +78,11 @@ socle/
 ├── commands/               Slash commands
 ├── templates/              Templates de subjects
 ├── rules/                  Règles d'usage
-├── tests/                  Tests des engines
-└── subjects/               Méta-réflexion (dogfooding)
-    └── socle/       Le subject qui décrit ce projet
+└── tests/                  Tests des engines
 ```
+
+Le subject méta qui documente SOCLE lui-même (dogfooding) vit hors de ce dépôt,
+dans l'espace privé de l'auteur, depuis la publication du 2026-09-16.
 
 ## État
 
