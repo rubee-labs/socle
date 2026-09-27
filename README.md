@@ -88,6 +88,12 @@ dans l'espace privé de l'auteur, depuis la publication du 2026-09-16.
 
 v0.1.0 — extraction initiale depuis claude-enterprise (2026-05-05).
 
+v0.5.0 — checklist post-bloc intégrée (2026-09-27) : règle `rules/post-bloc.md` et hook Stop
+`hooks/check-post-bloc.py`, porté de claude-enterprise. **Activation volontaire** : ajouter
+`post_bloc: true` au `.forge.yaml` racine du dépôt (option `post_bloc_exclusions: ["prefixe/"]`).
+Le hook bloque une fois la fin de réponse si un fichier modifié pendant la session n'est pas committé
+ou si le MEMORY.md de son entité n'est pas du jour. Noms de fichiers accentués pris en charge.
+
 ## Auteur
 
 Benjamin Hamon (Rubee Labs).
