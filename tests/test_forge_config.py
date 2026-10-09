@@ -113,3 +113,35 @@ def test_forge_init_writes_config_and_scaffolds(tmp_path, monkeypatch):
     )
     res3 = init_engine.cmd_init(args_force)
     assert res3["ok"] is True
+
+
+def test_forge_init_active_post_bloc_par_defaut(tmp_path, monkeypatch):
+    _fresh()
+    monkeypatch.setenv("CLAUDE_FORGE_PROJECT_DIR", str(tmp_path))
+    import init_engine
+    import argparse
+
+    res = init_engine.cmd_init(argparse.Namespace(
+        output_dir=None, pool_root=None, types_root=None,
+        skill_visibility=None, force=False, no_post_bloc=False,
+    ))
+    assert res["ok"] is True and res["post_bloc"] is True
+    texte = (tmp_path / ".forge.yaml").read_text(encoding="utf-8")
+    # même expression que le hook Stop : la ligne écrite doit l'activer
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "hooks"))
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        "check_post_bloc", Path(__file__).resolve().parent.parent / "hooks" / "check-post-bloc.py")
+    hook = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(hook)
+    assert hook.RE_ACTIF.search(texte)
+
+    _fresh()
+    res2 = init_engine.cmd_init(argparse.Namespace(
+        output_dir=None, pool_root=None, types_root=None,
+        skill_visibility=None, force=True, no_post_bloc=True,
+    ))
+    assert res2["post_bloc"] is False
+    texte2 = (tmp_path / ".forge.yaml").read_text(encoding="utf-8")
+    assert "post_bloc: false" in texte2
+    assert not hook.RE_ACTIF.search(texte2)

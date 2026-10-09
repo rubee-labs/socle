@@ -13,9 +13,10 @@ Pour chaque fichier modifié PENDANT la session (git status ∩ mtime ≥ début
   - MEMORY.md > plafond (`memory_max_kb` du frontmatter, défaut 8)
                                                   → avertissement ajouté à la raison
 
-ACTIVATION VOLONTAIRE : le hook ne fait rien tant que le `.forge.yaml` à la racine du dépôt ne
-contient pas `post_bloc: true` (ou que SOCLE_POST_BLOC=1). Un plugin installé pour l'utilisateur
-se charge dans tous ses projets : sans interrupteur, il bloquerait partout.
+ACTIVATION PAR DÉPÔT : le hook ne fait rien tant que le `.forge.yaml` à la racine du dépôt ne
+contient pas `post_bloc: true` (ou que SOCLE_POST_BLOC=1). `forge init` l'écrit par défaut (0.6.0) :
+adopter SOCLE dans un dépôt active la checklist. Un plugin installé pour l'utilisateur se charge dans
+tous ses projets : un dépôt sans `.forge.yaml` n'est jamais bloqué.
 
 Configuration `.forge.yaml` (toutes optionnelles) :
     post_bloc: true

@@ -23,7 +23,7 @@ securite_externe: false
 
 Fusionner deux subjects qui décrivent la même entité avec des angles différents (ex: `supplier-simon` et `simon-pme-yiwu` qui sont en réalité le même fournisseur). Crée un nouveau subject consolidé, archive les deux sources, redirige les liens.
 
-Voir `entreprise/config/rules/savoirs.md` § "Subject Pool" pour le modèle.
+Voir `rules/subject-pool.md` du plugin (`../../rules/subject-pool.md` depuis le dossier de ce skill) § Modèle conceptuel.
 
 ## Quand utiliser
 

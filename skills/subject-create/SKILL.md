@@ -22,7 +22,7 @@ securite_externe: false
 
 Instancier un nouveau **subject** dans le subject pool à partir d'un **type** existant. Génère le dossier `subjects/<name>/` avec son `MEMORY.md` pré-rempli depuis le `TEMPLATE.md` du type, et la structure `events/ / analyses/ / discussions/ / decisions/`.
 
-Voir `entreprise/config/rules/savoirs.md` § "Subject Pool" pour le modèle conceptuel.
+Voir `rules/subject-pool.md` du plugin (`../../rules/subject-pool.md` depuis le dossier de ce skill) § Modèle conceptuel.
 
 ## Quand utiliser
 

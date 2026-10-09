@@ -370,7 +370,7 @@ Si choix **A** : continuer Phase F1 directement.
 
 ### Phase F1 — Identifier le contexte
 
-Déterminer le sujet, le dossier cible (cf. `entreprise/config/rules/savoirs.md` § Stockage réparti), vérifier l'existant.
+Déterminer le sujet, le dossier cible (cf. `rules/subject-pool.md` du plugin (`../../rules/subject-pool.md` depuis le dossier de ce skill) § Stockage réparti), vérifier l'existant.
 
 ### Phase F2 — Discussion (Python)
 

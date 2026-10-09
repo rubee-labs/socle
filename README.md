@@ -30,6 +30,10 @@ Les deux sont complémentaires.
 /plugin install socle@rubee-labs
 ```
 
+Puis, dans chaque dépôt qui adopte SOCLE, une fois : `/forge-init`. Il choisit où stocker la mémoire, écrit
+le `.forge.yaml` et active la checklist post-bloc : la règle est chargée à chaque début de session et le
+hook Stop vérifie commit et `MEMORY.md` du jour. Rien à recopier dans le `CLAUDE.md`.
+
 ## Configuration par-repo (`.forge.yaml`)
 
 socle ne suppose **aucune** arborescence imposée : chaque repo décide où il stocke sa mémoire, via un fichier `.forge.yaml` (optionnel) à la racine du pool. Le plugin est ainsi distribuable à n'importe quel repo sans hériter de la structure d'un autre.
@@ -93,6 +97,12 @@ v0.5.0 — checklist post-bloc intégrée (2026-09-27) : règle `rules/post-bloc
 `post_bloc: true` au `.forge.yaml` racine du dépôt (option `post_bloc_exclusions: ["prefixe/"]`).
 Le hook bloque une fois la fin de réponse si un fichier modifié pendant la session n'est pas committé
 ou si le MEMORY.md de son entité n'est pas du jour. Noms de fichiers accentués pris en charge.
+
+v0.6.0 — prêt à l'emploi (2026-10-09) : `/forge-init` écrit `post_bloc: true` par défaut
+(`--no-post-bloc` pour s'en passer) ; le hook SessionStart charge `rules/post-bloc.md` dans le contexte des
+dépôts où la checklist est active (démarrage, `/clear`, compaction). Les skills ne renvoient plus vers des
+règles de claude-enterprise : le stockage réparti des discussions et décisions est décrit dans
+`rules/subject-pool.md`.
 
 ## Auteur
 

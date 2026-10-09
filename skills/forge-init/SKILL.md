@@ -57,16 +57,18 @@ forge init --output-dir <X> --pool-root <Y> [--types-root <Z>] [--skill-visibili
 Sans flags, `forge init` applique l'auto-détection (output_dir = `entreprise/` si présent sinon racine ; pool_root = `.`). Le binaire :
 - écrit `<repo>/.forge.yaml` (refuse d'écraser un existant sauf `--force`),
 - crée `<pool-root>/subjects/` + `<types-root>/types/` avec `.gitkeep`,
+- active la checklist post-bloc (`post_bloc: true`) ; `--no-post-bloc` écrit `post_bloc: false`,
 - retourne un JSON `{ok, written, scaffolded}`.
 
 ### Phase 4 — Confirmer
 
-Afficher à l'utilisateur le `.forge.yaml` écrit et les dossiers créés. Suggérer la suite : créer un premier type (`/subject-create-type`) puis un premier subject (`/subject-create`), ou documenter directement via `/documente`.
+Afficher à l'utilisateur le `.forge.yaml` écrit et les dossiers créés. Signaler que la checklist post-bloc est active : le hook Stop la vérifie dès maintenant, et la règle (`rules/post-bloc.md`) sera chargée au prochain démarrage de session ; pour cette session, la lire maintenant. Suggérer la suite : créer un premier type (`/subject-create-type`) puis un premier subject (`/subject-create`), ou documenter directement via `/documente`.
 
 ## Gotchas
 
 - **Idempotent par le `.forge.yaml`** : une fois le fichier écrit, le nudge SessionStart se tait. Relancer n'a de sens qu'avec `--force` (changer d'emplacement).
 - **CE n'a pas besoin de ce skill** : claude-enterprise marche en zéro-config (auto-détection `entreprise/`). Ne pas y créer de `.forge.yaml`.
+- **Checklist post-bloc active par défaut** : la couper dans un dépôt = `post_bloc: false` dans son `.forge.yaml`. Un dépôt sans `.forge.yaml` n'est jamais concerné (le plugin est installé pour l'utilisateur, donc chargé partout).
 - **Le `.forge.yaml` est versionné** : il suit le repo, c'est volontaire (la config de stockage fait partie du projet).
 
 ## Critères d'évaluation
@@ -75,3 +77,4 @@ EVAL 1 : `.forge.yaml` écrit à la racine du pool avec l'emplacement choisi.
 EVAL 2 : `subjects/` et `types/` créés (avec `.gitkeep`).
 EVAL 3 : Refus d'écraser un `.forge.yaml` existant sans `--force`.
 EVAL 4 : Aucun dossier `entreprise/` parasite créé dans un repo qui n'en a pas.
+EVAL 5 : `post_bloc: true` présent dans le `.forge.yaml` écrit (sauf `--no-post-bloc`).

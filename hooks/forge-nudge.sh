@@ -1,6 +1,13 @@
 #!/usr/bin/env bash
-# forge-nudge.sh — SessionStart hook (mode nudge) du plugin socle.
+# forge-nudge.sh — SessionStart hook du plugin socle. Deux rôles :
 #
+# A. Checklist post-bloc : si le .forge.yaml racine du dépôt porte `post_bloc: true`
+#    (écrit par défaut par `forge init`) ou si SOCLE_POST_BLOC=1, imprime la règle
+#    rules/post-bloc.md. La sortie d'un hook SessionStart entre dans le contexte de
+#    Claude : la checklist ✅/⏭️ s'applique sans rien recopier dans le CLAUDE.md.
+#    Rejoué après /clear et après une compaction, qui effacent la règle.
+#
+# B. Nudge :
 # Suggère `/forge-init` UNE SEULE FOIS : si un pool subjects/ existe dans le repo
 # mais qu'aucun .forge.yaml n'est configuré. Ne fait que SUGGÉRER — n'écrit jamais
 # de fichier, ne lance jamais forge init. Le .forge.yaml (une fois créé) est le
@@ -16,6 +23,25 @@
 set -uo pipefail
 
 ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+
+# A. Checklist post-bloc (même règle d'activation que hooks/check-post-bloc.py).
+_post_bloc_actif() {
+  case "$(printf '%s' "${SOCLE_POST_BLOC:-}" | tr '[:upper:]' '[:lower:]')" in
+    1|true|yes|oui) return 0 ;;
+  esac
+  [ -f "$ROOT/.forge.yaml" ] || return 1
+  grep -Eiq '^post_bloc:[[:space:]]*(true|yes|oui)[[:space:]]*(#.*)?$' "$ROOT/.forge.yaml"
+}
+
+if _post_bloc_actif && [ -f "$PLUGIN_ROOT/rules/post-bloc.md" ]; then
+  echo "socle : checklist post-bloc active dans ce dépôt (post_bloc: true dans .forge.yaml). Règle à appliquer :"
+  echo
+  cat "$PLUGIN_ROOT/rules/post-bloc.md"
+  echo
+fi
+
+# B. Nudge.
 
 _found() {
   # _found <find-expr...> : vrai si find renvoie au moins un résultat.

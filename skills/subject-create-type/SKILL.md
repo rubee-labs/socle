@@ -21,7 +21,7 @@ securite_externe: false
 
 ## Objectif
 
-Créer un nouveau **type** dans le subject pool. Un type définit la grille d'analyse partagée par toutes ses instances : dimensions de scoring, events attendus, types liés typiques, skills associés. Voir `entreprise/config/rules/savoirs.md` § "Subject Pool" pour le modèle conceptuel.
+Créer un nouveau **type** dans le subject pool. Un type définit la grille d'analyse partagée par toutes ses instances : dimensions de scoring, events attendus, types liés typiques, skills associés. Voir `rules/subject-pool.md` du plugin (`../../rules/subject-pool.md` depuis le dossier de ce skill) § Modèle conceptuel.
 
 ## Quand utiliser
 
@@ -47,7 +47,7 @@ Si oui → recommander d'étendre l'existant, ne pas créer de doublon. Stopper 
 
 ### Phase 2 — Recueillir les paramètres du type
 
-⚠️ **Règle bilingue** (cf. `entreprise/config/rules/savoirs.md` § Nomenclature) :
+⚠️ **Règle bilingue** (cf. `rules/subject-pool.md` § Nomenclature bilingue) :
 - **Squelette/taxonomie** = anglais snake_case : nom du type, parent_type, horizon, typical_linked_types, skills.
 - **Contenu métier** = langue de l'utilisateur (français pour Rubee), snake_case pareil : `analysis_dimensions`, `expected_events`.
 
@@ -142,7 +142,7 @@ Suite : /subject-create customs-incident incident-2026-08-rotterdam
 - **Un type mal défini pollue toutes ses instances**. Mieux vaut prendre 30 min à bien définir les dimensions qu'à les corriger sur 20 instances plus tard.
 - **Ne JAMAIS créer un type "fourre-tout"** ("various", "misc", "general"). Si tu hésites, c'est qu'il y a 2 types qui se cachent — refuse et demande à découper.
 - **Le nom du type doit être au singulier en anglais kebab-case strict**. Pas de pluriel (`supplier-orders` ❌), pas de snake_case (`supplier_order` ❌), pas de français (`commande-fournisseur` ❌).
-- **Bilingue strict : ne JAMAIS proposer des `analysis_dimensions` ou `expected_events` en anglais**. C'est du contenu métier qui doit être dans la langue de l'utilisateur. Si l'utilisateur propose `cash_flow`, recommander `tresorerie`. Si `stock_alert`, recommander `alerte_stock`. La règle vit dans `entreprise/config/rules/savoirs.md` § Nomenclature.
+- **Bilingue strict : ne JAMAIS proposer des `analysis_dimensions` ou `expected_events` en anglais**. C'est du contenu métier qui doit être dans la langue de l'utilisateur. Si l'utilisateur propose `cash_flow`, recommander `tresorerie`. Si `stock_alert`, recommander `alerte_stock`. La règle vit dans `rules/subject-pool.md` § Nomenclature bilingue.
 - **Ne pas confondre type et instance**. Le type est `supplier-order`, l'instance est `order-400`. Une erreur classique : créer un type `commande-simon-300m` (= une instance déguisée).
 - **Refuser silencieusement la création d'un type existant** est un bug. Si l'utilisateur insiste après l'avertissement Phase 1, alors créer mais avec suffixe `-v2` et expliquer.
 - **Validation Benjamin obligatoire** avant écriture. Pas de création silencieuse.

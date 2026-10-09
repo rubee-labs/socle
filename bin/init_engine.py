@@ -8,10 +8,12 @@ stockage EXPLICITE et propre à chaque repo — le plugin ne suppose plus
 l'arborescence de claude-enterprise.
 
 Usage :
-  forge init [--output-dir X] [--pool-root Y] [--types-root Z] [--force]
+  forge init [--output-dir X] [--pool-root Y] [--types-root Z] [--no-post-bloc] [--force]
 
 Sans flags : auto-détection (output_dir = entreprise/ si présent sinon racine ;
 pool_root = "."). Le `.forge.yaml` écrit reflète ces choix, éditable ensuite.
+La checklist post-bloc est activée par défaut (`post_bloc: true`) : c'est
+`forge init` qui marque l'adhésion du dépôt, le hook Stop reste muet ailleurs.
 
 Convention : JSON sur stdout, `{"ok": true|false, "version": 1, ...}`.
 """
@@ -35,7 +37,7 @@ def _err(message, code="generic_error", **extra):
     return {"ok": False, "version": VERSION, "error": message, "code": code, **extra}
 
 
-def _render_yaml(output_dir, pool_root, types_root, skill_visibility):
+def _render_yaml(output_dir, pool_root, types_root, skill_visibility, post_bloc=True):
     lines = [
         "# .forge.yaml — configuration socle propre à ce repo.",
         "# Écrit par `forge init`. Toutes les clés sont optionnelles (défauts auto-détectés).",
@@ -53,6 +55,10 @@ def _render_yaml(output_dir, pool_root, types_root, skill_visibility):
     lines.append("")
     lines.append("# Valeur injectée dans le frontmatter des SKILL.md générés")
     lines.append(f"skill_visibility: {skill_visibility}")
+    lines.append("")
+    lines.append("# Checklist post-bloc (rules/post-bloc.md) : règle chargée en début de session et")
+    lines.append("# vérifiée par le hook Stop. Mettre false pour la couper dans ce dépôt.")
+    lines.append(f"post_bloc: {'true' if post_bloc else 'false'}")
     return "\n".join(lines) + "\n"
 
 
@@ -77,7 +83,8 @@ def cmd_init(args):
 
     # Écriture config
     cfg_path.write_text(
-        _render_yaml(output_dir, pool_root, types_root, skill_visibility),
+        _render_yaml(output_dir, pool_root, types_root, skill_visibility,
+                     post_bloc=not getattr(args, "no_post_bloc", False)),
         encoding="utf-8",
     )
 
@@ -102,6 +109,7 @@ def cmd_init(args):
         output_dir=output_dir,
         pool_root=pool_root,
         types_root=types_root,
+        post_bloc=not getattr(args, "no_post_bloc", False),
         scaffolded=scaffolded,
     )
 
@@ -112,6 +120,7 @@ def main():
     parser.add_argument("--pool-root", default=None, help='dossier des subjects/ ("." = racine)')
     parser.add_argument("--types-root", default=None, help="dossier des types/ (défaut = pool-root)")
     parser.add_argument("--skill-visibility", default=None, help="visibilité injectée dans les SKILL.md générés")
+    parser.add_argument("--no-post-bloc", action="store_true", help="écrire post_bloc: false (checklist post-bloc coupée)")
     parser.add_argument("--force", action="store_true", help="écraser un .forge.yaml existant")
     args = parser.parse_args()
 

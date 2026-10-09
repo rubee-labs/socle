@@ -426,10 +426,32 @@ status: active                    # active | archived
 
 ---
 
+## Stockage réparti des discussions et décisions
+
+Hors subject pool, discussions et décisions ne sont **pas centralisées** : elles vivent **au plus près de
+l'élément concerné** (un outil, un skill, un service, un projet), dans deux dossiers :
+
+- **`discussions/`** : le cheminement (pourquoi, comment, alternatives envisagées).
+- **`decisions/`** : le résultat formel (quoi, quand, par qui, paramètres exacts).
+
+Exemples : `tools/<outil>/discussions/`, `skills/<skill>/decisions/`, `services/<service>/decisions/`. Quand on
+travaille sur un élément, on charge son dossier : ses discussions et décisions viennent avec, sans index central.
+
+- **Discussion** : `discussions/YYYY-MM-DD-sujet-court.md`, frontmatter `date`, `sujet`,
+  `statut: en_cours | aboutie`, `decision` (slug de la décision si aboutie).
+- **Décision** : `decisions/YYYY-MM-DD-sujet-court.yaml`, structure libre, avec deux champs MADR à la racine :
+  `options_considerees` (option / retenue / raison) et `confirmation` (preuve + échéance). Modèle :
+  `templates/decision.body.yaml` ; `write-capture` avertit si l'un manque.
+
+Un objet métier durable, qui accumule des événements, relève du subject pool (`subjects/<slug>/`) plutôt que
+de ce stockage réparti.
+
+---
+
 ## Rapport au pattern existant
 
 - **CE-Lab / WM-Lab / Alter-Lab** continuent d'exister sans modification. Ces 3 Labs sont des subjects actifs de longue date (instances du type `strategic-vision`). `/CE-analyse`, `/WM-analyse`, `/alter-analyse` restent inchangés.
-- **`discussions/` + `decisions/` répartis** dans les services restent valides (cf. `entreprise/config/rules/savoirs.md` § Stockage réparti). Les nouveaux fichiers utilisent le frontmatter étendu, les anciens migrent **opportunistiquement** quand on les touche.
+- **`discussions/` + `decisions/` répartis** dans les services restent valides (cf. § Stockage réparti ci-dessus). Les nouveaux fichiers utilisent le frontmatter étendu, les anciens migrent **opportunistiquement** quand on les touche.
 - **`savoirs/`** reste pour les savoirs procéduraux établis (glossaires, SOP). Les subjects sont pour les sujets en cours d'accumulation et de maturation.
 
 ---
