@@ -31,6 +31,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from forge_lib import find_subjects, get_project_dir, load_forge_config, parse_frontmatter
 from documente_lib import patch_frontmatter_file, parse_nested_dict_block
+from convert_lib import convert_memory_text, new_memory_text
 
 VERSION = 1
 
@@ -706,6 +707,41 @@ def cmd_patch_section(args):
     return _ok(action=action, path=str(md), size_kb_after=size_kb, max_kb=max_kb, over=size_kb > max_kb)
 
 
+def cmd_convert(args):
+    """Convertit (ou crée) le MEMORY.md d'un dossier au format unique (0.7.0).
+
+    Déjà subject (forging_state présent) → noop, rien n'est écrit. Absent →
+    MEMORY.md minimal. Ancien format → en-tête complété, sections rangées,
+    rien de supprimé (convert_lib).
+    """
+    project_dir = get_project_dir()
+    p = Path(args.path)
+    if not p.is_absolute():
+        p = project_dir / args.path
+    md = p / "MEMORY.md"
+    name = args.name or p.name
+    today = _dt.date.today().isoformat()
+    rel = str(p.relative_to(project_dir)) if p.is_relative_to(project_dir) else str(p)
+    if md.is_file():
+        old = md.read_text(encoding="utf-8")
+        fm = parse_frontmatter(md) or {}
+        if "forging_state" in fm:
+            return _ok(action="noop", path=rel, type=fm.get("type"), name=fm.get("name") or name)
+        new = convert_memory_text(old, name=name, type_name=args.type, today=today)
+        action = "converted"
+        type_used = fm.get("type") or args.type
+    else:
+        new = new_memory_text(name=name, type_name=args.type, today=today)
+        action = "created"
+        type_used = args.type
+    size_kb = round(len(new.encode("utf-8")) / 1024, 1)
+    if args.dry_run:
+        return _ok(action=action, dry_run=True, path=rel, type=type_used, name=name, size_kb_after=size_kb)
+    p.mkdir(parents=True, exist_ok=True)
+    md.write_text(new, encoding="utf-8")
+    return _ok(action=action, dry_run=False, path=rel, type=type_used, name=name, size_kb_after=size_kb)
+
+
 def main():
     parser = argparse.ArgumentParser(prog="documente_engine.py")
     sub = parser.add_subparsers(dest="cmd", required=True)
@@ -772,6 +808,12 @@ def main():
     p_sect.add_argument("--expected-hash", default=None)
     p_sect.add_argument("--dry-run", action="store_true")
 
+    p_conv = sub.add_parser("convert", help="Convertit ou crée le MEMORY.md d'un dossier au format unique (0.7.0)")
+    p_conv.add_argument("path")
+    p_conv.add_argument("--type", required=True, help="type si l'en-tête n'en a pas")
+    p_conv.add_argument("--name", default=None, help="name si l'en-tête n'en a pas (défaut : nom du dossier)")
+    p_conv.add_argument("--dry-run", action="store_true")
+
     args = parser.parse_args()
 
     handlers = {
@@ -787,6 +829,7 @@ def main():
         "cascade-last-event": cmd_cascade_last_event,
         "check-memory": cmd_check_memory,
         "patch-section": cmd_patch_section,
+        "convert": cmd_convert,
     }
 
     t_start = time.perf_counter()
