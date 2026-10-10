@@ -29,7 +29,8 @@ import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from forge_lib import find_subjects, get_project_dir, load_forge_config, parse_frontmatter
+from forge_lib import find_subjects, get_project_dir, iter_memory_files, load_forge_config, parse_frontmatter
+from subject_lib import DEFAULT_CAPABILITIES, load_type_index, resolve_type, type_capabilities
 from documente_lib import patch_frontmatter_file, parse_nested_dict_block
 from convert_lib import convert_memory_text, new_memory_text
 
@@ -80,84 +81,74 @@ def cmd_list_subjects(args):
     return _ok(subjects=sorted(subjects, key=lambda s: s["path"]))
 
 
-def _detect_service_root(p: Path, project_dir: Path):
-    """Si p est sous services/<x>/ (à toute profondeur), retourne le path absolu de services/<x>/.
-    Sinon None. Le service root inclut p lui-même si p == services/<x>/."""
-    try:
-        rel = p.relative_to(project_dir)
-    except ValueError:
-        return None
-    parts = rel.parts
-    if len(parts) >= 2 and parts[0] == "services":
-        return project_dir / "services" / parts[1]
-    return None
-
-
 def cmd_prepare(args):
-    """Phase 0a + 0b + 1 : détecte contexte, vérifie existence, retourne état.
+    """Phase A (0.7.0) : un dossier est un subject si son MEMORY.md porte forging_state.
 
-    v2.7 : retourne aussi service_root, service_structure_exists, proposed_default_path
-    pour permettre à la Phase L0.0 du skill de décider s'il faut créer la structure
-    discussions/+decisions/ au niveau service.
+    Plus d'aiguillage par chemin. Rend l'état (subject, à convertir, à créer),
+    le type (en-tête > type_by_path > choix de Claude) et ses capacités, qui
+    disent quelles phases de /documente s'appliquent.
     """
     project_dir = get_project_dir()
-    raw = args.path
-    p = Path(raw)
+    p = Path(args.path)
     if not p.is_absolute():
-        p = project_dir / raw
-
-    parts = p.parts
-    is_subject_pool = "subjects" in parts and parts.index("subjects") < len(parts) - 1
-
+        p = project_dir / args.path
     rel_path = str(p.relative_to(project_dir)) if p.is_relative_to(project_dir) else str(p)
-
-    # Détection service root + statut structure (utile en mode folder comme en subject pool)
-    service_root_abs = _detect_service_root(p, project_dir)
-    if service_root_abs is not None:
-        service_root_rel = str(service_root_abs.relative_to(project_dir))
-        has_discussions = (service_root_abs / "discussions").is_dir()
-        has_decisions = (service_root_abs / "decisions").is_dir()
-        service_structure_exists = has_discussions and has_decisions
-    else:
-        service_root_rel = None
-        service_structure_exists = None
-
-    if not is_subject_pool:
-        # En mode folder : si le service existe mais pas la structure, proposer le service root
-        # comme path par défaut (Phase F0.0 du skill).
-        proposed_default_path = (
-            service_root_rel
-            if (service_root_abs is not None and service_structure_exists is False)
-            else None
-        )
-        return _ok(
-            is_subject_pool=False,
-            subject_exists=False,
-            needs_creation=False,
-            recommended_workflow="folder",
-            path=rel_path,
-            service_root=service_root_rel,
-            service_structure_exists=service_structure_exists,
-            proposed_default_path=proposed_default_path,
-        )
-
     memory_md = p / "MEMORY.md"
-    subject_exists = memory_md.is_file()
-    fm = parse_frontmatter(memory_md) if subject_exists else None
-    inferred_type = (fm.get("type") if fm else None)
-
+    exists = memory_md.is_file()
+    fm = parse_frontmatter(memory_md) if exists else None
+    is_subject = bool(fm) and "forging_state" in fm
+    rt = resolve_type(p, project_dir)
+    type_index = load_type_index(project_dir)
+    if rt["type"]:
+        caps, known = type_capabilities(rt["type"], type_index)
+    else:
+        caps, known = list(DEFAULT_CAPABILITIES), False
     return _ok(
-        is_subject_pool=True,
-        subject_exists=subject_exists,
         path=rel_path,
-        type=inferred_type,
+        is_subject=is_subject,
+        subject_exists=exists,
+        needs_conversion=exists and not is_subject,
+        needs_creation=not exists,
+        type=rt["type"],
+        type_source=rt["source"],
+        type_known=known,
+        capabilities=caps,
+        known_types=sorted(type_index),
+        name_pattern=(type_index.get(rt["type"]) or {}).get("name_pattern") if rt["type"] else None,
+        default_name=p.name,
         current_frontmatter=fm,
-        needs_creation=not subject_exists,
-        recommended_workflow="subject_pool",
-        service_root=service_root_rel,
-        service_structure_exists=service_structure_exists,
-        proposed_default_path=None,
     )
+
+
+def cmd_migrate(args):
+    """Liste les MEMORY.md à l'ancien format et le type que chacun recevrait.
+
+    Lecture seule : il n'y a pas de conversion en masse (design 2026-10-10 §3),
+    /documente convertit au fil de l'eau.
+    """
+    if not args.dry_run:
+        return _err(
+            "forge migrate n'écrit rien : relancer avec --dry-run. "
+            "La conversion se fait au fil de l'eau par /documente.",
+            code="dry_run_required",
+        )
+    project_dir = get_project_dir()
+    config = load_forge_config(project_dir)
+    pending = []
+    for memory in iter_memory_files(project_dir):
+        fm = parse_frontmatter(memory)
+        if fm and "forging_state" in fm:
+            continue
+        rt = resolve_type(memory.parent, project_dir, config)
+        pending.append({
+            "path": str(memory.parent.relative_to(project_dir)),
+            "type": rt["type"],
+            "type_source": rt["source"],
+        })
+    by_source = {}
+    for item in pending:
+        by_source[item["type_source"]] = by_source.get(item["type_source"], 0) + 1
+    return _ok(pending=pending, total=len(pending), by_source=by_source)
 
 
 def cmd_infer_type(args):
@@ -814,6 +805,9 @@ def main():
     p_conv.add_argument("--name", default=None, help="name si l'en-tête n'en a pas (défaut : nom du dossier)")
     p_conv.add_argument("--dry-run", action="store_true")
 
+    p_mig = sub.add_parser("migrate", help="Liste les MEMORY.md à convertir (lecture seule)")
+    p_mig.add_argument("--dry-run", action="store_true")
+
     args = parser.parse_args()
 
     handlers = {
@@ -830,6 +824,7 @@ def main():
         "check-memory": cmd_check_memory,
         "patch-section": cmd_patch_section,
         "convert": cmd_convert,
+        "migrate": cmd_migrate,
     }
 
     t_start = time.perf_counter()

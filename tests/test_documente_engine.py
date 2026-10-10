@@ -429,7 +429,7 @@ class TestPrepare(unittest.TestCase):
         repo_root = _consumer_root()
         result = run_engine("prepare", "services/achats/subjects/order-398", cwd=str(repo_root))
         self.assertTrue(result["ok"])
-        self.assertTrue(result["is_subject_pool"])
+        self.assertTrue(result["is_subject"])
         self.assertTrue(result["subject_exists"])
         self.assertIn("type", result)
         self.assertIn("current_frontmatter", result)
@@ -439,15 +439,15 @@ class TestPrepare(unittest.TestCase):
         repo_root = _consumer_root()
         result = run_engine("prepare", "services/achats/subjects/order-99999", cwd=str(repo_root))
         self.assertTrue(result["ok"])
-        self.assertTrue(result["is_subject_pool"])
-        self.assertFalse(result["subject_exists"])
+        self.assertFalse(result["is_subject"])
         self.assertTrue(result["needs_creation"])
 
-    def test_non_subject_pool_path(self):
+    def test_entity_path_reports_conversion_state(self):
         repo_root = _consumer_root()
         result = run_engine("prepare", "entreprise/config", cwd=str(repo_root))
         self.assertTrue(result["ok"])
-        self.assertFalse(result["is_subject_pool"])
+        self.assertIn("needs_conversion", result)
+        self.assertIn("capabilities", result)
 
 
 class TestListSubjects(unittest.TestCase):

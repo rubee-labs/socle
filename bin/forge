@@ -26,6 +26,10 @@ case "$1" in
     shift
     exec python3 "$BIN_DIR/documente_engine.py" "$@"
     ;;
+  migrate)
+    shift
+    exec python3 "$BIN_DIR/documente_engine.py" migrate "$@"
+    ;;
   engine)
     shift
     exec python3 "$BIN_DIR/forge_engine.py" "$@"
@@ -68,6 +72,7 @@ forge — socle CLI
 Sous-commandes :
   init [--output-dir X] [...]     Initialise le pool dans ce repo (.forge.yaml + subjects/ + types/)
   documente <subcommand> [args]   Engine /documente (prepare, infer-type, write-capture, ...)
+  migrate --dry-run               Liste les MEMORY.md à l'ancien format et leur type (n'écrit rien)
   engine <subject-path>           Cycle γ et re-synthèse Quick (forge_engine)
   scanner [args]                  Régénérateur des index globaux (SUBJECTS-INDEX, METRICS)
   autolink <subcommand> [args]    Typed graph (extract, graph-query, reconcile)
