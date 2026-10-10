@@ -3,8 +3,9 @@ name: documente
 description: >-
   When the user asks to document a subject (decision, discussion, or session
   outcome) OR to re-synthesize a subject after new external events. Single
-  orchestrator entry point for the subject pool: lazy-creates the type (with
-  user validation) and the instance (silent) if missing, captures
+  orchestrator entry point for the subject pool: recognizes any folder with a MEMORY.md as a subject (type from the header,
+  then .forge.yaml type_by_path, then Claude's choice), converts legacy
+  MEMORY.md in place, creates missing ones silently — never asks a question, captures
   conversation-derived discussion and decision when present, regenerates
   Quick + Détails from all sub-files, propagates to linked_subjects (1 level),
   and normalizes legacy forging_state values on write (lifecycle is 2 manual
@@ -17,7 +18,7 @@ type_anthropic: 4
 visibilite: entreprise
 auteur: Benjamin
 date_creation: 2026-03-31
-version: 3.0
+version: 4.0
 tags: [documentation, decision, discussion, memory, subject-pool, forge, orchestrator, workflow]
 effort: medium
 outils_requis: []
@@ -30,8 +31,8 @@ securite_externe: false
 
 **Orchestrateur unique du subject pool.** Combine quatre rôles dans un seul verbe utilisateur :
 
-1. **Création paresseuse du type** (v2.1) : si le type n'existe pas, demander à l'utilisateur de le créer (workflow interactif `/subject-create-type`). C'est la seule étape qui peut requérir une validation utilisateur en amont.
-2. **Création paresseuse de l'instance** (v2.1) : si le subject path n'existe pas (mais le type oui), invoquer `/subject-create` silencieusement, sans intervention utilisateur.
+1. **Tout dossier qui a un MEMORY.md est un subject** (SOCLE 0.7.0, design 2026-10-10). Le type est porté par l'en-tête, jamais par le chemin. Un MEMORY.md à l'ancien format est converti sur place au premier passage (`forge documente convert`), un dossier sans MEMORY.md reçoit le sien. **Aucune question** : `/documente` tourne en fin de cycle d'agents autonomes qui ne peuvent pas répondre.
+2. **Nommage et typage automatiques** : nom = dossier existant, sinon `name_pattern` du type, sinon choix de Claude ; type = en-tête, sinon `type_by_path` du `.forge.yaml`, sinon choix de Claude parmi `known_types`.
 3. **Capture verticale historique** (ex-`/documente` 1.0) : extraire de la conversation une discussion ou décision tranchée, écrire les fichiers `discussions/` et `decisions/` avec frontmatters structurés.
 4. **Re-synthèse continue** (ex-`/forge` archivé) : lire tous les sous-fichiers (`events/`, `analyses/`, `discussions/`, `decisions/`), régénérer `## Quick` + `## Détails` du `MEMORY.md`, propager aux `linked_subjects` sur 1 niveau, normaliser un `forging_state` legacy vers le cycle à 2 états (`actif` / `archived`, refonte 2026-09-14 — aucune transition automatique, seules les clôtures/réouvertures manuelles existent).
 
@@ -44,12 +45,7 @@ Le mot **« forge »** désigne le pattern subject pool et le moteur Python sous
 - `<subject-path>` (optionnel depuis v2.7) : chemin vers le dossier du subject (peut être inexistant — sera créé). Ex: `services/marketing/subjects/google-ads-brumeaux/`.
 - `--type <type>` (optionnel) : type du subject. Utilisé par les skills appelants pour éviter l'inférence. Ex: `--type marketing-campaign`. Si omis, `/documente` infère ou demande.
 
-**Inférence du path quand omis (v2.7)** : si l'utilisateur invoque `/documente` sans argument, le LLM doit inférer un path depuis le contexte de session **avant** d'appeler `forge documente prepare`. Heuristique en cascade :
-1. Si la conversation porte sur un fichier identifiable (skill, MCP, tool, brief) → remonter au service propriétaire (`services/<x>/`).
-2. Si la conversation porte sur un objet métier durable (commande, fournisseur, campagne) → proposer le path subject pool correspondant (`services/<x>/subjects/<name>/`).
-3. Si rien d'identifiable → demander à Benjamin avec deux propositions concrètes (pas de menu vide).
-
-Une fois le path inféré, `forge documente prepare` retourne `service_root` + `service_structure_exists` + `proposed_default_path`. La Phase F0.0 ci-dessous traite le cas où la structure folder est absente au niveau service.
+**Inférence du path quand omis** : le LLM choisit seul le dossier d'après la conversation, sans question. Un fichier identifiable (skill, outil, agent) donne son dossier ; un objet métier durable donne son subject existant (`forge documente list-subjects`) ou un nouveau dossier nommé selon le `name_pattern` du type. Doublon possible : même objet → enrichir l'existant, sinon créer.
 
 ## Quand utiliser
 
@@ -61,9 +57,9 @@ Une fois le path inféré, `forge documente prepare` retourne `service_root` + `
 
 ## Gotchas
 
-- **Création paresseuse v2.1** : si le subject path n'existe pas, `/documente` le crée automatiquement (via `/subject-create`) après avoir inféré ou reçu son type. Si le type lui-même n'existe pas, `/documente` **demande validation** avant d'invoquer `/subject-create-type` (acte structurel rare). Les skills appelants (/control-tower, /optimisation-campagne-google) doivent passer l'argument `--type` pour éviter l'inférence.
 - **0 intervention sur création d'instance** : le pas `/subject-create` est silencieux. Si tu vois un prompt sur les linked_subjects pendant un appel automatique, c'est un bug — `/subject-create` doit utiliser des valeurs par défaut quand appelé depuis `/documente`.
-- **Identifier le bon subject (ou dossier)** : si subject pool, le chemin doit pointer vers `<...>/subjects/<name>/`. Si le `MEMORY.md` n'existe pas, Phase B (création paresseuse) gère la création. En contexte classique (sans subjects/ dans le path), stocker au plus près du sujet (cf. workflow folder ci-dessous).
+- **Aucune question pour nommer, typer ou classer** (0.7.0) : `prepare` donne le type ou `type_source: claude` ; dans ce cas Claude choisit dans `known_types` et le passe à `convert --type`. Jamais d'`AskUserQuestion`, jamais de marque `a_revoir`.
+- **Capacités du type** : `prepare.capabilities` dit quelles phases s'appliquent. Sans `links` : pas de Phase F.1 autolink, H ni H.5. Sans `events` : pas de `last_event` à patcher en Phase G. Une phase sautée l'est en silence.
 - **Une décision porte ses options écartées et sa preuve d'application (v2.9)** : clés `options_considerees` et `confirmation` à la racine du corps YAML (MADR). `write-capture` avertit sans refuser ; l'avertissement doit apparaître dans le récap.
 - **Ne pas créer de décision si la discussion n'est pas aboutie** : si le statut est `en_cours` / `open`, créer uniquement la discussion. La décision viendra quand ce sera tranché.
 - **Phases E-H lisent les sous-dossiers, ne les modifient pas** : seule la Phase D (`write-capture`) écrit dans `discussions/` et `decisions/`. Le reste lit puis régénère le `MEMORY.md` (frontmatter + Quick + Détails).
@@ -73,9 +69,6 @@ Une fois le path inféré, `forge documente prepare` retourne `service_root` + `
 - **Idempotent** : 2 invocations consécutives sans nouvel input doivent produire un diff vide.
 - **Commit atomique** : committer discussion + decision + memory.md (subject + cascade) ensemble dans un seul commit.
 - **Propagation = proposition, pas imposition** : la Phase I (`scan-impacted` + jugement LLM) propose les modifications aux fichiers exécutants. L'utilisateur valide chaque modification.
-- **Critère subject pool vs entité (v2.6)** : à chaque invocation `/documente` sur un path non-subject-pool, appliquer le critère positif de Phase F0 (voir détail dans la section Phase F0). Le **défaut est l'entité** (`<entité>/decisions/`), pas le subject pool. Subject pool est réservé aux **objets métier durables avec cycle de vie** (suppliers, commandes, campagnes, décisions architecturales long-terme). Une modification de code/comportement d'UNE entité (skill, MCP, tool) reste dans son `decisions/` — pas de proposition de migration. Ne pas re-proposer si Benjamin a refusé sur ce path précédemment (marqueur `migration_subject_pool: refused` dans une décision).
-- **Structure service absente (v2.7)** : si `forge documente prepare` retourne `service_structure_exists: false` avec un `service_root` identifié (ex: `services/marketing/` existe mais `services/marketing/discussions/` et `services/marketing/decisions/` n'existent pas), la Phase F0.0 propose la création de la structure au niveau service par défaut (cohérent avec `services/achats/decisions/`, `services/tech/decisions/`). Subject pool reste une alternative explicite, mais n'est PAS proposé pour les modifications de code d'entité — seulement pour objets métier durables (cf. critère Phase F0). Une seule `AskUserQuestion` suffit (pas deux comme l'incident 2026-05-11 sur marketing).
-- **Folder aussi instrumenté Python (v2.3)** : depuis la bascule, les Phases F2/F3/F5/F6 du workflow folder invoquent `documente_engine.py` (`write-capture`, `scan-impacted`, `commit-atomic`). Phase F4 (MAJ MEMORY.md format markdown) reste LLM only car le format n'est pas du frontmatter mais des sections markdown.
 - **Fichiers temp uniques par invocation (v2.4)** : utiliser `mktemp /tmp/documente-*-body.XXXXXX` pour les body files passés à `write-capture`. Sinon 2 `/documente` parallèles écrasent leurs body files mutuellement (race condition observée le 2026-05-04 entre `/documente skills/documente` et `/documente knowledge-coordinator`). **Attention syntaxe BSD/macOS** : les `XXXXXX` doivent être en SUFFIXE final, pas suivis d'une extension (`.md` literal écrirait XXXXXX littéralement). L'extension n'est pas requise — `write-capture` lit le contenu, pas le nom. Conserver la variable shell (`$DOC_BODY`) entre Phase C/F2 et Phase D/F3, puis `rm -f` après écriture.
 
 ## Communication en temps réel (v2.5)
@@ -99,13 +92,12 @@ Codes par phase (subject pool) :
 - `▸ I scan-impacted` — count candidats / count pertinents proposés
 - `▸ J commit+push` — count fichiers, succès push
 
-Codes folder (`F0` à `F6`) : même logique, préfixe `L`.
 
 **Ne pas afficher si phase skip** (ex: pas de cascade, aucune décision capturée). Préférer un silence à un `▸ X skip` redondant.
 
 **Récap final obligatoire** après Phase J : 1 ligne `✓ /documente terminé — <count phases> phases, <count fichiers> fichiers, <commit-sha-court>`.
 
-## Workflow — Subject Pool (depuis 2026-05-04, via `forge documente`)
+## Workflow (unique depuis 0.7.0, via `forge documente`)
 
 Toutes les phases déterministes sont déléguées au binaire `forge documente` (engine Python du plugin socle). Le LLM intervient uniquement pour : capture conversationnelle (Phase C), rédaction du contenu narratif des captures (Phase D body), synthèse Quick/Détails (Phase F), jugement de pertinence des fichiers impactés (Phase I).
 
@@ -117,23 +109,23 @@ Convention CLI : chaque commande retourne un JSON sur stdout au format `{"ok": t
 forge documente prepare <subject-path>
 ```
 
-Parser le JSON retourné. Brancher selon :
-- `is_subject_pool: false` → suivre le **workflow folder** ci-dessous (Phase F1+)
-- `subject_exists: false` et `needs_creation: true` → enchaîner sur **Phase B** (création paresseuse)
-- `subject_exists: true` → enchaîner sur **Phase C** (capture conversationnelle)
+Parser le JSON retourné :
+- `needs_creation: true` ou `needs_conversion: true` → **Phase B**.
+- `is_subject: true` → **Phase C**.
 
-### Phase B — Création paresseuse (interactif si type absent)
+Garder `capabilities` pour la suite : chaque phase marquée « (capacité X) » n'est exécutée que si X y figure.
+
+### Phase B — Création ou conversion (Python, sans question)
+
+1. Type : `prepare.type`, sinon (`type_source: claude`) le type le plus juste parmi `prepare.known_types`, choisi par Claude d'après le contenu du dossier.
+2. Nom : `prepare.default_name` pour un dossier existant ; pour un nouveau dossier, appliquer `prepare.name_pattern` (ou, à défaut, un slug kebab-case court tiré du contexte).
+3. Si le type a un `TEMPLATE.md` à côté de son `REFERENCE.md` et que le dossier est neuf → `/subject-create <type> <name>` (Skill tool, silencieux). Sinon :
 
 ```bash
-forge documente infer-type <subject-path>
+forge documente convert <path> --type <type> [--name <name>]
 ```
 
-Parser le résultat :
-- `strategy: from_frontmatter | single_parent_type | from_naming` + `type_exists: true` → utiliser ce type, invoquer `/subject-create <type> <name>` silencieusement (Skill tool)
-- `strategy: ambiguous` → présenter les `candidates` à Benjamin, demander le choix
-- `strategy: none` ou `type_exists: false` → demander confirmation **avant** d'invoquer `/subject-create-type` (interactif, acte structurel rare)
-
-Une fois l'instance créée, repasser par Phase A pour confirmer `subject_exists: true`.
+4. Repasser par Phase A (`is_subject: true` attendu), puis Phase C. Une conversion est committée avec le reste du bloc en Phase J.
 
 ### Phase C — Capture conversation (LLM, irréductible)
 
@@ -204,7 +196,7 @@ Le JSON contient : `current_state`, `current_conviction`, `last_event`, `stats`,
 
 ### Phase F — Régénérer Quick + Détails (LLM)
 
-**F.1 — Extraire les typed edges (Python autolink)**
+**F.1 — Extraire les typed edges (Python autolink, capacité links)**
 
 Avant de rédiger le Quick, invoquer l'engine autolink pour récupérer les relations typées sortantes du subject (extraction déterministe, zéro LLM, basée sur les `linked_subjects` du frontmatter croisés avec `typical_linked_types` du type) :
 
@@ -218,16 +210,19 @@ Sortie JSON `{ok, subject_name, subject_type, edges: [{name, target_slug, target
 
 À partir de `forge_result.current_state`, `events_summary`, `active_decisions_summary`, et des `edges` extraits en F.1, rédiger :
 
-- `## Quick` (<100 mots, ton synthétique factuel). Inclure une ligne **`Liens forts`** listant les typed edges, format `<relation> <target_slug>` séparés par ` ; `. Exemple :
+- `## Quick` (<100 mots, ton synthétique factuel). Avec la capacité links, inclure une ligne **`Liens forts`** listant les typed edges, format `<relation> <target_slug>` séparés par ` ; `. Exemple :
   ```
   Liens forts : ordered_from supplier:weifang ; contains product-line:guirlande-guinguette ; shipped_via freight-forwarder:dhl
   ```
   Si aucun edge typé n'existe (subject sans `linked_subjects`), omettre la ligne. Si seulement des edges génériques (`name: linked` faute de `typical_linked_types` enrichi), les lister quand même mais Benjamin saura que la doctrine du type mérite d'être enrichie.
-- `## Détails` (synthèse narrative, **préserver les sous-sections custom** comme `### Notes libres`, `### Stress tests à prévoir` — **sauf les sous-sections datées** `### Décision du AAAA-MM-JJ …`, `### Exécution du …`, `### Checkpoint du …` : ce sont des recopies ou un journal, traitées en F.3, jamais préservées telles quelles)
+- `## Doctrine en vigueur` : une ligne par règle.
+- `## Décisions actives` : au plus 10, chacune en pointeur vers son fichier `decisions/`.
+- `## Règles apprises`.
+- `## Détails` : contexte et paramètres en cours, **préserver les sous-sections custom** (`### Notes libres`, `### Stress tests à prévoir`, sections versées par une conversion), **sauf les sous-sections datées** `### Décision du AAAA-MM-JJ …`, `### Exécution du …`, `### Checkpoint du …`, traitées en F.3.
 
-Écrire ces sections dans le `MEMORY.md` via Edit (le frontmatter sera patché en Phase G séparément). Le `## Détails` est **réécrit en entier** à chaque invocation directe, pas seulement le `## Quick`.
+Écrire ces sections dans le `MEMORY.md` via `forge documente patch-section` (une section par appel) (le frontmatter sera patché en Phase G séparément). Le `## Détails` est **réécrit en entier** à chaque invocation directe, pas seulement le `## Quick`.
 
-**F.3 — Borne du MEMORY.md (Python pour le diagnostic, LLM pour la rédaction)** — même règle que le workflow folder (F4), appliquée aux subjects (incident 2026-10-10 : un subject à 66 Ko, 25 sections `### Décision du …` recopiées dans le `## Détails`, jamais signalé car seul le folder était borné) :
+**F.3 — Borne du MEMORY.md (Python pour le diagnostic, LLM pour la rédaction)** — borne commune à tous les subjects (incident 2026-10-10 : un subject à 66 Ko, 25 sections `### Décision du …` recopiées dans le `## Détails`, jamais signalé):
 
 ```bash
 forge documente check-memory <subject-path>
@@ -235,8 +230,8 @@ forge documente check-memory <subject-path>
 
 Afficher `▸ F.3 check-memory (<size_kb>/<max_kb> Ko, <n> titres datés, <m> lignes de journal)`. Si `over` est vrai ou si `journal_headings` / `journal_lines` est non vide :
 1. Pour chaque sous-section datée dont le contenu existe déjà dans `decisions/` ou `discussions/` (même date, même objet), la **remplacer par une ligne de pointeur** (`- AAAA-MM-JJ — <objet> → decisions/<fichier>.yaml`). Aucun contenu n'est perdu : pas de validation requise.
-2. Ce qui n'existe nulle part ailleurs (exécution, checkpoint, ancien Quick, tableau d'inventaire) part **tel quel** dans `rapports/AAAA-MM-JJ-<slug>.md` (Write), puis pointeur. **Validation explicite** de l'utilisateur avant de retirer ce contenu du MEMORY.
-3. `## Détails` borné = contexte, paramètres en cours, doctrine (1 ligne par règle), **≤ 10 décisions actives en pointeurs**, stress tests, notes libres. Plafond `memory_max_kb` (défaut 8 Ko).
+2. Ce qui n'existe nulle part ailleurs (exécution, checkpoint, ancien Quick, tableau d'inventaire) part **tel quel** dans `rapports/AAAA-MM-JJ-<slug>.md` (Write), puis pointeur. Aucune validation : le contenu est recopié à l'identique, rien n'est perdu (0.7.0 — `/documente` tourne sans question, y compris en fin de cycle d'agents autonomes).
+3. Format borné : `## Doctrine en vigueur` (1 ligne par règle), `## Décisions actives` (**≤ 10, en pointeurs**), `## Détails` (contexte, paramètres en cours, stress tests, notes libres). Plafond `memory_max_kb` (défaut 8 Ko).
 4. Écrire via `forge documente patch-section <subject-path> --section "## Détails" --body-file <f>` (préserve le reste octet pour octet) ; vérifier que les balises `<!-- okf-links:start -->` / `<!-- okf-links:end -->` qui encadrent `## Liens` sont intactes après le patch. Si `over` reste vrai, l'annoncer dans le récap.
 
 ### Phase G — Patch frontmatter (Python)
@@ -264,7 +259,7 @@ Si `current_state_was_legacy: true` dans `forge_result` :
 
 `transition_proposal` est toujours `null` depuis 2026-05-10 (aucune transition automatique) — une clôture `actif → archived` passe par une demande explicite de l'utilisateur, jamais par le moteur.
 
-### Phase H — Cascade horizontale (Python pour mécanique, LLM pour Quick)
+### Phase H — Cascade horizontale (Python pour mécanique, LLM pour Quick, capacité links)
 
 Pour chaque entry de `forge_result.cascade` :
 
@@ -276,7 +271,7 @@ forge documente cascade-last-event \
 
 Puis le LLM régénère le `## Quick` du linked subject (Edit), **PAS** le `## Détails` (réservé à l'invocation directe sur ce subject).
 
-### Phase H.5 — Validation typed graph (Python autolink, non bloquante)
+### Phase H.5 — Validation typed graph (Python autolink, non bloquante, capacité links)
 
 Après cascade, ré-invoquer autolink sur le subject racine pour valider la cohérence du typed graph **après** les éventuelles modifications de `linked_subjects` :
 
@@ -322,174 +317,6 @@ Si la commande retourne `noop: true` (idempotent — 2ᵉ invocation sans nouvel
 2. **`/cross-modal-review`** — Si la session s'apprête à s'appuyer durablement sur la synthèse du subject (référence pour d'autres décisions, base d'un skill, doctrine), suggérer d'invoquer `/cross-modal-review` pour vérifier que le Quick + Détails tiennent la route. Pas de déclenchement auto — pure suggestion.
 
 Ces hints sont des signaux pédagogiques — la décision reste humaine. Le pattern Garry Tan repose volontairement sur l'humain qui dit « skillify it » plutôt que sur une détection automatique (qui produirait du bruit sur des workflows non répétés ou trop vagues).
-
-## Workflow — Classique (folder, hors subject pool)
-
-Quand Phase A (`prepare`) détecte un contexte non-subject-pool (`is_subject_pool: false`), exécuter Phase F0.0 (création structure si absente) puis Phase F0 (proposition migration) puis suivre Phases F1-F6.
-
-Depuis 2026-05-04, les phases déterministes (F2 discussion, F3 decision, F5 scan, F6 commit) sont instrumentées Python via `documente_engine.py` — mêmes commandes génériques que le workflow subject pool. Phase F4 (MAJ MEMORY.md format markdown) reste LLM only.
-
-### Phase F0.0 — Création de structure service si absente (v2.7)
-
-Avant tout : lire les champs `service_root`, `service_structure_exists`, `proposed_default_path` de la sortie `prepare`. Trois cas :
-
-**Cas 1 — Pas de `service_root` identifié** (path hors `services/<x>/`, ex: `entreprise/architecture/...`) → passer directement à Phase F0.
-
-**Cas 2 — `service_structure_exists: true`** (le service a déjà `discussions/` ET `decisions/`) → passer directement à Phase F0.
-
-**Cas 3 — `service_structure_exists: false`** (le service `<service_root>` existe mais n'a pas la structure folder) → présenter UN choix unique à Benjamin via `AskUserQuestion` :
-
-```
-Le service <service_root> n'a pas encore de structure discussions/+decisions/.
-[A] Créer <service_root>/discussions/ + <service_root>/decisions/ et y stocker (recommandé — cohérent avec services/achats/, services/tech/)
-[B] Créer un subject pool (objet métier durable seulement, cf. critère F0)
-```
-
-Si **A** (défaut) : `mkdir -p <service_root>/discussions <service_root>/decisions`, puis utiliser `<service_root>` comme dossier cible pour Phases F2-F6. Sauter Phase F0 (la décision est déjà prise : on stocke en entité).
-
-Si **B** : enchaîner sur Phase F0 standard (qui reproposera le critère et invoquera `/subject-create-type` + `/subject-create` si validé).
-
-**Anti-pattern à éviter** : poser deux questions successives (« où stocker ? » puis « créer la structure ? »). Incident 2026-05-11 sur `services/marketing/` → 2 `AskUserQuestion` au lieu d'une. La Phase F0.0 doit aboutir en **une seule** interaction utilisateur.
-
-### Phase F0 — Critère subject pool vs entité (v2.6)
-
-Avant de poursuivre en folder, **classifier la décision** selon ce critère positif. Le défaut est **A (entité)** — ne proposer **B (subject pool)** que si les conditions sont clairement remplies.
-
-**A. Stocker dans `<entité>/decisions/` (folder, défaut) si** :
-- La décision **modifie le code ou le comportement d'UNE entité spécifique** (skill, MCP, tool)
-- La décision est **ponctuelle** : prise → code livré → fini (pas d'états successifs ni d'itérations)
-- Exemples : ajout d'un préfixe à `WRITE_PREFIXES`, fix bug HTTP timeout, refacto d'une fonction, ajout d'un paramètre optionnel, refonte d'un SKILL, création d'un nouveau skill
-
-**B. Migrer vers subject pool si** :
-- La décision concerne un **OBJET MÉTIER DURABLE** qui vit dans le temps avec des états successifs
-- L'objet va vivre puis se clore (**cycle de vie** `actif → archived`, avec réouvertures possibles)
-- La décision sera **révisée, complétée, contestée** plus tard — ce n'est pas une décision finale unique
-- L'objet est **lié à plusieurs entités** ou n'est pas naturellement rattaché à un fichier de code
-- Exemples : commande d'achat (order-398), relation fournisseur (supplier-weifang), campagne marketing (google-ads-skylantern), décision architecturale long-terme (ce-admin-v2)
-
-**C. Doute** : demander à l'utilisateur, lui présenter A et B avec les critères ci-dessus. **Le défaut est A**, pas B.
-
-Si choix **B** (migration explicitement justifiée par les critères ci-dessus) : invoquer `/subject-create-type <type>` (interactif) si nécessaire, puis `/subject-create <type> <name>`, puis `mv` les discussions/ et decisions/ existantes vers le nouveau path. Une fois la migration faite, repasser par Phase A pour relancer en mode subject pool.
-
-Si choix **A** : continuer Phase F1 directement.
-
-**Ne pas proposer B (migration) si** :
-- Les critères de B ne sont **clairement pas remplis** (cas le plus fréquent : modification de code d'un skill/MCP/tool)
-- Benjamin a déjà refusé la migration sur ce path dans une session précédente (vérifier les `decisions/` existantes pour un marqueur `migration_subject_pool: refused`)
-- L'utilisateur a déjà précisé son intention (« je veux documenter dans le skill ») — respecter ce choix sans rappeler le menu
-
-**Important — historique de cette doctrine** : la version v2.3 (2026-05-04) proposait la migration **systématiquement** avec un garde-fou négatif vague (« skills/tools figés »). En pratique cela biaisait toutes les décisions vers subject pool, vidant les `<entité>/decisions/` (cf. issue [rubee-labs/socle#1](https://github.com/rubee-labs/socle/issues/1)). La v2.6 inverse : critère **positif** sur la nature de l'objet, défaut entité.
-
-### Phase F1 — Identifier le contexte
-
-Déterminer le sujet, le dossier cible (cf. `rules/subject-pool.md` du plugin (`../../rules/subject-pool.md` depuis le dossier de ce skill) § Stockage réparti), vérifier l'existant.
-
-### Phase F2 — Discussion (Python)
-
-Composer le body de la discussion (LLM, narratif, sans frontmatter) dans un fichier temporaire UNIQUE par invocation (utiliser `mktemp` — sinon 2 `/documente` parallèles s'écrasent) :
-
-```bash
-DOC_BODY=$(mktemp /tmp/documente-discussion-body.XXXXXX)
-cat > "$DOC_BODY" << 'EOF'
-[Contenu narratif rédigé par le LLM : cheminement, alternatives, conclusion]
-EOF
-```
-
-Puis écrire le fichier via le binaire :
-
-```bash
-forge documente write-capture <dossier> \
-  --kind discussion --slug YYYY-MM-DD-sujet-court \
-  --body-file "$DOC_BODY" \
-  --frontmatter '{"date": "YYYY-MM-DD", "sujet": "Description courte", "statut": "en_cours|aboutie", "decision": "YYYY-MM-DD-sujet-court"}'
-```
-
-Le frontmatter folder a un format différent du subject pool (`sujet`, `statut`, `decision` au lieu de `type`, `produced_by`, `status`, `resulting_decision`) — c'est passé en JSON donc géré nativement.
-
-### Phase F3 — Décision (si aboutie, Python)
-
-Si la discussion est aboutie, composer le body décision dans un fichier temp unique puis invoquer write-capture :
-
-```bash
-DOC_DECISION=$(mktemp /tmp/documente-decision-body.XXXXXX)
-cat > "$DOC_DECISION" << 'EOF'
-[Contenu YAML/markdown du body décision]
-EOF
-
-forge documente write-capture <dossier> \
-  --kind decision --slug YYYY-MM-DD-sujet-court \
-  --body-file "$DOC_DECISION" \
-  --frontmatter '{"date": "YYYY-MM-DD", "sujet": "...", "parameters": {...}, "affects": [...]}'
-
-# Cleanup
-rm -f "$DOC_BODY" "$DOC_DECISION"
-```
-
-Mêmes champs MADR `options_considerees` + `confirmation` qu'en Phase D (modèle `templates/decision.body.yaml`) ; afficher `warnings` de `write-capture` si présents.
-
-Mettre à jour la discussion existante via Edit pour passer `statut: aboutie` + lien (Phase F4 inchangée).
-
-### Phase F3.5 — Vérification de cohérence (LLM, hors binaire)
-
-Le binaire `check-coherence` ne s'applique pas au folder (il lit le frontmatter du MEMORY.md format subject pool). En folder, le LLM lit la section "Décisions actives" du MEMORY.md (markdown) et compare manuellement avec la nouvelle décision. Si conflit, alerter Benjamin avant Phase F3.
-
-### Phase F4 — Re-synthèse bornée du MEMORY.md (Python pour le diagnostic et l'écriture, LLM pour la rédaction)
-
-Décision CE 2026-09-06 : le MEMORY.md d'une entité est une **synthèse bornée**, jamais un journal en append. Incident de référence : `services/finance/tools/factures/MEMORY.md` passé de 33 Ko à 187 Ko en 7 semaines (318 lignes de journal de runs), non relu avant un niveau 2 → 4 doublons publiés (2026-08-06).
-
-**F4.1 — Diagnostic (Python)**
-
-```bash
-forge documente check-memory <dossier>
-```
-
-JSON : `size_kb`, `max_kb` (frontmatter `memory_max_kb`, défaut 8), `over`, `derniere_maj`, `derniere_maj_today`, `sections`, `journal_lines` (lignes datées `- YYYY-MM-DD …` par section : signature d'un journal), `journal_headings` (titres `###` datés par section : recopies de décisions ou journal en sous-sections), `decisions_actives`, `has_quick`. Afficher `▸ F4 check-memory (<size_kb>/<max_kb> Ko, <n> lignes de journal)`.
-
-**F4.2 — Rédiger les sections bornées (LLM)** — à partir du MEMORY.md actuel, de la discussion/décision écrites en F2/F3 et, si `journal_lines` non vide, des lignes de journal à évacuer :
-
-| Section | Contenu | Borne |
-|---|---|---|
-| `## Quick` | état, dernier run/événement (date + pointeur `rapports/…`), prochaines étapes, risques | < 100 mots |
-| `## Doctrine en vigueur` | règles actives, état courant, pas l'historique ; intégrer la nouvelle décision si elle change une règle | 1 ligne par règle |
-| `## Décisions actives` | les plus récentes, une ligne chacune avec pointeur `decisions/<fichier>.yaml` ; les plus anciennes sortent de la liste mais restent dans `decisions/` | ≤ 10 |
-| `## Décisions annulées` | règle inversée + raison + date (si F3.5 a trouvé une contradiction) | 1 ligne par annulation |
-| `## Règles apprises` | contraintes découvertes en session (gotchas durables), extraites notamment du journal évacué | 1 ligne par règle |
-
-Interdits : section `## État` ou tout journal daté dans le MEMORY ; un run écrit `<entité>/rapports/YYYY-MM-DD-<slug>.md`. Si `journal_lines` ou `journal_headings` non vide, proposer à l'utilisateur de déplacer ces lignes en un fichier `rapports/<date-min>-au-<date-max>-journal.md` (Write) puis remplacer la section par son Quick — **validation explicite** avant de retirer du contenu (relecture humaine, `/cross-modal-review` recommandé sur les fichiers > 30 Ko).
-
-**F4.3 — Écrire (Python, une commande par section)**
-
-```bash
-DOC_SECTION=$(mktemp /tmp/documente-section.XXXXXX)
-cat > "$DOC_SECTION" << 'EOF'
-[corps de la section]
-EOF
-forge documente patch-section <dossier> --section "## Quick" --body-file "$DOC_SECTION" --touch-derniere-maj
-rm -f "$DOC_SECTION"
-```
-
-`patch-section` remplace uniquement le corps de la section visée (ou la crée en fin de fichier), conserve le reste octet pour octet, met `derniere_maj` à aujourd'hui avec `--touch-derniere-maj`, refuse si `--expected-hash` (de `compute-hash`) ne correspond plus (`stale_hash`). Retourne `size_kb_after` / `over` : si `over` reste vrai après re-synthèse, l'annoncer dans le récap (le hook Stop de CE le rappellera au prochain bloc). Ne pas patcher une section dont le contenu n'a pas changé (idempotence : 2 invocations sans nouvel input = diff vide).
-
-Le format MEMORY.md folder reste du markdown structuré (pas de frontmatter étendu) : `patch-frontmatter` ne s'applique pas, seul `derniere_maj` est géré via `--touch-derniere-maj`.
-
-### Phase F5 — Propagation (Python pour scan, LLM pour jugement)
-
-```bash
-forge documente scan-impacted <dossier>
-```
-
-Le scanner remonte les parents et liste tous les `SKILL.md`, `agent.yaml`, `brief.yaml`, `config.yaml`. Le LLM juge la pertinence de chaque candidat et propose les modifications à Benjamin (ne pas modifier sans validation).
-
-### Phase F6 — Commit + push (Python)
-
-```bash
-forge documente commit-atomic \
-  --paths "<dossier>/discussions/<file>,<dossier>/decisions/<file>,<dossier>/MEMORY.md" \
-  --message "docs: <type> — <sujet court>" \
-  --push
-```
-
-Types de message : `discussion`, `decision`, `decision + memory`. Si `noop: true` retourné → afficher « rien à committer ».
 
 ## Exemples
 
@@ -544,7 +371,7 @@ Push : OK
 ## Critères d'évaluation
 
 EVAL 1 : Bon dossier
-Question: La discussion/décision est-elle créée dans le bon `subjects/<name>/discussions|decisions/` (subject pool) ou au plus près du sujet (folder) ?
+Question: La discussion/décision est-elle créée dans le `discussions/` ou `decisions/` du dossier du subject concerné ?
 Pass: Fichier au bon endroit
 Fail: Au mauvais endroit ou absent
 
@@ -584,7 +411,7 @@ Pass: Commit avec message descriptif + push réussi
 Fail: Fichiers non committés
 
 EVAL 9 : Subject Pool format
-Question: Si subject pool, frontmatters étendus présents (type, produced_by, status, resulting_decision) ET MEMORY.md du subject re-synthétisé en Phases 5-6 (pas un MEMORY.md de service) ?
+Question: Si subject pool, frontmatters étendus présents (type, produced_by, status, resulting_decision) ET MEMORY.md du subject re-synthétisé en Phases 5-6 (format unique : Quick, Doctrine en vigueur, Décisions actives, Règles apprises, Détails) ?
 Pass: Format respecté
 Fail: Format classique appliqué dans un contexte subject pool
 
@@ -593,17 +420,12 @@ Question: Une 2ᵉ invocation consécutive sans nouvel input produit-elle un dif
 Pass: Aucun fichier modifié, pas de commit
 Fail: Diff non-vide alors que rien n'a changé en amont
 
-EVAL 11 : Création paresseuse type (v2.1)
-Question: Si le type n'existe pas, /documente a-t-il demandé validation avant d'invoquer /subject-create-type ?
-Pass: Question explicite affichée à Benjamin avec 3 options (créer / type existant / annuler)
-Fail: Type créé silencieusement, ou /documente plante au lieu de gérer la création paresseuse
+EVAL 11 : Zéro question (0.7.0)
+Question: /documente a-t-il nommé, typé, converti ou créé le subject sans aucune AskUserQuestion ?
+Pass: Type et nom fixés depuis prepare (en-tête, type_by_path, name_pattern) ou choisis par Claude, conversion faite et committée
+Fail: Question posée à l'utilisateur, ou bloc arrêté faute de réponse
 
 EVAL 12 : Création paresseuse instance (v2.1)
 Question: Si le subject path n'existe pas mais le type oui, /subject-create a-t-il été invoqué silencieusement (0 intervention utilisateur) ?
 Pass: Subject créé sans prompt sur linked_subjects, valeurs par défaut appliquées
 Fail: Prompt utilisateur affiché alors que c'est un appel automatique depuis /documente
-
-EVAL 13 : Création de structure service (v2.7)
-Question: Si le service cible existe sans discussions/+decisions/, Phase F0.0 a-t-elle posé UNE seule question (A créer structure / B subject pool) avant d'agir ?
-Pass: 1 AskUserQuestion, choix A → mkdir des deux dossiers + stockage au niveau service ; choix B → enchaînement Phase F0 normale
-Fail: Aucun prompt (création silencieuse), OU 2 prompts successifs (incident 2026-05-11), OU bascule subject pool par défaut alors que la décision concerne du code d'entité

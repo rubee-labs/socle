@@ -16,6 +16,8 @@ Il généralise le pattern CE-Lab / WM-Lab / Alter-Lab à tous les sujets de l'e
 
 ### Localisation
 
+**Depuis SOCLE 0.7.0 (design 2026-10-10), un subject est reconnu à son en-tête, pas à son chemin** : tout `MEMORY.md` dont le frontmatter porte `forging_state` est un subject, qu'il vive sous `subjects/` ou ailleurs (`entreprise/tools/x/`, `services/amazon/`, `entreprise/projets/y/`). Le type vient de l'en-tête, sinon de `type_by_path` dans `.forge.yaml`, sinon du choix de Claude. Les types génériques `skill`, `skill-cas`, `tool`, `agent`, `service` et `projet` sont livrés dans `types/` du plugin ; chaque type déclare ses `capabilities` (`memory`, `decisions`, `lifecycle`, `events`, `links`). Le dossier `subjects/` reste l'emplacement par défaut des objets métier, sans être une condition :
+
 ```
 services/<X>/
 ├── types/                         ← grilles partagées
@@ -118,20 +120,11 @@ Aucun de ces skills n'a de déclencheur automatique — la décision reste humai
 
 Le scanner `forge scanner` (binaire `forge` du plugin SOCLE) peut tourner en hook SessionStart pour régénérer un index global des subjects (par exemple `SUBJECTS-INDEX.md` à la racine du repo). Configuration spécifique au projet — voir le hook intégrateur côté repo consommateur.
 
-### Création paresseuse via `/documente` (v2.1+)
+### Création et conversion via `/documente` (0.7.0)
 
-`/documente` est l'**entry point unique** : tu n'as jamais à invoquer `/subject-create-type` ou `/subject-create` directement (sauf cas particulier). Quand tu (ou un skill appelant) invoques `/documente <path> [--type <type>]` :
+`/documente <path>` sans `MEMORY.md` le crée ; sur un `MEMORY.md` à l'ancien format (sans `forging_state`), il le convertit sur place dans le même commit (`forge documente convert`, rien n'est supprimé). Aucune question : nom = dossier, `name_pattern` du type ou choix de Claude ; type = en-tête, `type_by_path` ou choix de Claude. `forge migrate --dry-run` liste ce qui reste à convertir.
 
-1. **Si le subject existe** → re-synthèse normale (Phases 1-9).
-2. **Si le subject n'existe pas mais le type existe** → `/subject-create` invoqué silencieusement, puis re-synthèse continue.
-3. **Si ni le subject ni le type n'existent** → `/documente` te demande explicitement de valider la création du type. Si tu valides, `/subject-create-type` tourne en mode interactif (analysis_dimensions, expected_events, etc.), puis `/subject-create` silencieux, puis re-synthèse.
-
-Cette logique est ancrée dans `/documente` Phase 0a-0e. Les skills appelants (`/control-tower`, `/optimisation-campagne-google`) n'ont qu'à invoquer `/documente <path> --type <type>` — la création paresseuse est transparente.
-
-**Cas exceptionnels où invoquer `/subject-create-type` ou `/subject-create` directement** :
-- Création préventive d'un type avant que le premier subject n'arrive (ex: anticiper un nouveau service).
-- Création d'un subject sans `/documente` derrière (rare, ex: import depuis une source externe).
-Dans ces cas-là, les skills restent invocables individuellement comme avant.
+`/subject-create-type` et `/subject-create` restent invocables à part (création préventive d'un type, import depuis une source externe).
 
 ---
 
