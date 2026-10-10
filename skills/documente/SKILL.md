@@ -223,9 +223,21 @@ Sortie JSON `{ok, subject_name, subject_type, edges: [{name, target_slug, target
   Liens forts : ordered_from supplier:weifang ; contains product-line:guirlande-guinguette ; shipped_via freight-forwarder:dhl
   ```
   Si aucun edge typé n'existe (subject sans `linked_subjects`), omettre la ligne. Si seulement des edges génériques (`name: linked` faute de `typical_linked_types` enrichi), les lister quand même mais Benjamin saura que la doctrine du type mérite d'être enrichie.
-- `## Détails` (synthèse narrative, **préserver les sous-sections custom** comme `### Notes libres`, `### Stress tests à prévoir`)
+- `## Détails` (synthèse narrative, **préserver les sous-sections custom** comme `### Notes libres`, `### Stress tests à prévoir` — **sauf les sous-sections datées** `### Décision du AAAA-MM-JJ …`, `### Exécution du …`, `### Checkpoint du …` : ce sont des recopies ou un journal, traitées en F.3, jamais préservées telles quelles)
 
-Écrire ces sections dans le `MEMORY.md` via Edit (le frontmatter sera patché en Phase G séparément).
+Écrire ces sections dans le `MEMORY.md` via Edit (le frontmatter sera patché en Phase G séparément). Le `## Détails` est **réécrit en entier** à chaque invocation directe, pas seulement le `## Quick`.
+
+**F.3 — Borne du MEMORY.md (Python pour le diagnostic, LLM pour la rédaction)** — même règle que le workflow folder (F4), appliquée aux subjects (incident 2026-10-10 : un subject à 66 Ko, 25 sections `### Décision du …` recopiées dans le `## Détails`, jamais signalé car seul le folder était borné) :
+
+```bash
+forge documente check-memory <subject-path>
+```
+
+Afficher `▸ F.3 check-memory (<size_kb>/<max_kb> Ko, <n> titres datés, <m> lignes de journal)`. Si `over` est vrai ou si `journal_headings` / `journal_lines` est non vide :
+1. Pour chaque sous-section datée dont le contenu existe déjà dans `decisions/` ou `discussions/` (même date, même objet), la **remplacer par une ligne de pointeur** (`- AAAA-MM-JJ — <objet> → decisions/<fichier>.yaml`). Aucun contenu n'est perdu : pas de validation requise.
+2. Ce qui n'existe nulle part ailleurs (exécution, checkpoint, ancien Quick, tableau d'inventaire) part **tel quel** dans `rapports/AAAA-MM-JJ-<slug>.md` (Write), puis pointeur. **Validation explicite** de l'utilisateur avant de retirer ce contenu du MEMORY.
+3. `## Détails` borné = contexte, paramètres en cours, doctrine (1 ligne par règle), **≤ 10 décisions actives en pointeurs**, stress tests, notes libres. Plafond `memory_max_kb` (défaut 8 Ko).
+4. Écrire via `forge documente patch-section <subject-path> --section "## Détails" --body-file <f>` (préserve le reste octet pour octet) ; vérifier que les balises `<!-- okf-links:start -->` / `<!-- okf-links:end -->` qui encadrent `## Liens` sont intactes après le patch. Si `over` reste vrai, l'annoncer dans le récap.
 
 ### Phase G — Patch frontmatter (Python)
 
@@ -431,7 +443,7 @@ Décision CE 2026-09-06 : le MEMORY.md d'une entité est une **synthèse bornée
 forge documente check-memory <dossier>
 ```
 
-JSON : `size_kb`, `max_kb` (frontmatter `memory_max_kb`, défaut 8), `over`, `derniere_maj`, `derniere_maj_today`, `sections`, `journal_lines` (lignes datées `- YYYY-MM-DD …` par section : signature d'un journal), `decisions_actives`, `has_quick`. Afficher `▸ F4 check-memory (<size_kb>/<max_kb> Ko, <n> lignes de journal)`.
+JSON : `size_kb`, `max_kb` (frontmatter `memory_max_kb`, défaut 8), `over`, `derniere_maj`, `derniere_maj_today`, `sections`, `journal_lines` (lignes datées `- YYYY-MM-DD …` par section : signature d'un journal), `journal_headings` (titres `###` datés par section : recopies de décisions ou journal en sous-sections), `decisions_actives`, `has_quick`. Afficher `▸ F4 check-memory (<size_kb>/<max_kb> Ko, <n> lignes de journal)`.
 
 **F4.2 — Rédiger les sections bornées (LLM)** — à partir du MEMORY.md actuel, de la discussion/décision écrites en F2/F3 et, si `journal_lines` non vide, des lignes de journal à évacuer :
 
@@ -443,7 +455,7 @@ JSON : `size_kb`, `max_kb` (frontmatter `memory_max_kb`, défaut 8), `over`, `de
 | `## Décisions annulées` | règle inversée + raison + date (si F3.5 a trouvé une contradiction) | 1 ligne par annulation |
 | `## Règles apprises` | contraintes découvertes en session (gotchas durables), extraites notamment du journal évacué | 1 ligne par règle |
 
-Interdits : section `## État` ou tout journal daté dans le MEMORY ; un run écrit `<entité>/rapports/YYYY-MM-DD-<slug>.md`. Si `journal_lines` non vide, proposer à l'utilisateur de déplacer ces lignes en un fichier `rapports/<date-min>-au-<date-max>-journal.md` (Write) puis remplacer la section par son Quick — **validation explicite** avant de retirer du contenu (relecture humaine, `/cross-modal-review` recommandé sur les fichiers > 30 Ko).
+Interdits : section `## État` ou tout journal daté dans le MEMORY ; un run écrit `<entité>/rapports/YYYY-MM-DD-<slug>.md`. Si `journal_lines` ou `journal_headings` non vide, proposer à l'utilisateur de déplacer ces lignes en un fichier `rapports/<date-min>-au-<date-max>-journal.md` (Write) puis remplacer la section par son Quick — **validation explicite** avant de retirer du contenu (relecture humaine, `/cross-modal-review` recommandé sur les fichiers > 30 Ko).
 
 **F4.3 — Écrire (Python, une commande par section)**
 

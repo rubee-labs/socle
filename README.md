@@ -113,3 +113,8 @@ Benjamin Hamon (Rubee Labs).
 **PolyForm Shield 1.0.0** — voir [LICENSE.md](LICENSE.md).
 
 Source visible, usage libre y compris commercial **en interne**. Seule interdiction : s'en servir pour proposer un produit ou un service **concurrent** de SOCLE ou des prestations de Rubee Labs bâties dessus. Ce n'est donc pas une licence open source au sens de l'OSI.
+
+v0.6.1 — MEMORY.md borné aussi pour les subjects (2026-10-10) : `/documente` sur un subject réécrit tout le
+`## Détails` et passe par `check-memory` (étape F.3) ; les sous-sections datées (`### Décision du …`) deviennent
+des pointeurs vers `decisions/`, le contenu unique part dans `rapports/`. `check-memory` rend `journal_headings`
+(titres `###` datés), la forme de journal que `journal_lines` ne voyait pas.

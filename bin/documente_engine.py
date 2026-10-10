@@ -595,6 +595,9 @@ def cmd_cascade_last_event(args):
 DEFAULT_MEMORY_MAX_KB = 8
 RE_SECTION = re.compile(r"^## .*$", re.M)
 RE_JOURNAL_LINE = re.compile(r"^\s*-\s+\**\d{4}-\d{2}-\d{2}", re.M)
+# Titres de sous-section datés (« ### Décision du 2026-08-04 … », « ### Exécution du … ») :
+# l'autre forme de journal, celle qui avait gonflé un subject à 66 Ko (incident 2026-10-10).
+RE_JOURNAL_HEADING = re.compile(r"^###+ .*\d{4}-\d{2}-\d{2}", re.M)
 RE_DERNIERE_MAJ = re.compile(r"^(derniere_maj:\s*).*$", re.M)
 RE_MAX_KB = re.compile(r"^memory_max_kb:\s*(\d+)", re.M)
 
@@ -641,10 +644,14 @@ def cmd_check_memory(args):
     m_maj = re.search(r"^derniere_maj:\s*[\"']?(\d{4}-\d{2}-\d{2})", fm, re.M)
     sections = _sections(body)
     journal = {}
+    journal_headings = {}
     for title, s, e in sections:
         n = len(RE_JOURNAL_LINE.findall(body[s:e]))
         if n:
             journal[title] = n
+        h = len(RE_JOURNAL_HEADING.findall(body[s:e]))
+        if h:
+            journal_headings[title] = h
     decisions = 0
     for title, s, e in sections:
         if re.match(r"^## D[ée]cisions actives", title):
@@ -658,6 +665,7 @@ def cmd_check_memory(args):
         derniere_maj_today=(m_maj.group(1) == _dt.date.today().isoformat()) if m_maj else False,
         sections=[title for title, _, _ in sections],
         journal_lines=journal,
+        journal_headings=journal_headings,
         decisions_actives=decisions,
         has_quick=any(re.match(r"^## (⚡ )?Quick", title) for title, _, _ in sections),
     )

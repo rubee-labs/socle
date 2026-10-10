@@ -59,6 +59,53 @@ def test_check_memory_over_default_cap(tmp_path):
     assert r["max_kb"] == 8 and r["over"] is True and r["has_quick"] is True
 
 
+SUBJECT_SAMPLE = """---
+name: google-ads-x
+type: marketing-campaign
+---
+
+## Quick
+
+État : actif.
+
+## Détails
+
+### Contexte du compte
+
+Compte X.
+
+### Décision du 2026-08-04 (J+180) — cible 3,5
+
+Récit recopié de la décision.
+
+### Exécution du 2026-08-22 — promo poussée
+
+Récit.
+
+### Stress tests à prévoir
+
+- [ ] test
+"""
+
+
+def test_check_memory_titres_dates_comptes_comme_journal(tmp_path):
+    # Incident 2026-10-10 : 25 sections « ### Décision du AAAA-MM-JJ » recopiées dans
+    # le ## Détails d'un subject (66 Ko) — journal_lines rendait {} car il ne voyait
+    # que les puces datées.
+    md = tmp_path / "MEMORY.md"
+    md.write_text(SUBJECT_SAMPLE, encoding="utf-8")
+    r = run("check-memory", str(tmp_path))
+    assert r["journal_lines"] == {}
+    assert r["journal_headings"] == {"## Détails": 2}
+
+
+def test_check_memory_sans_titre_date(tmp_path):
+    md = tmp_path / "MEMORY.md"
+    md.write_text(SAMPLE, encoding="utf-8")
+    r = run("check-memory", str(tmp_path))
+    assert r["journal_headings"] == {}
+
+
 def test_patch_section_replace_keeps_rest(tmp_path):
     md = tmp_path / "MEMORY.md"
     md.write_text(SAMPLE, encoding="utf-8")
