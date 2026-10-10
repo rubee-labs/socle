@@ -117,15 +117,62 @@ def load_forge_config(project_dir=None) -> dict:
     domain_roots = _as_list(raw.get("domain_roots"), _DEFAULT_DOMAIN_ROOTS)
     skill_visibility = raw.get("skill_visibility") or _DEFAULT_SKILL_VISIBILITY
 
+    # type_by_path (0.7.0) : règles emplacement → type, lues dans l'ordre, la
+    # première qui correspond gagne. Une règle incomplète est ignorée en silence
+    # (contrat : load_forge_config ne lève jamais).
+    type_by_path = []
+    for item in (raw.get("type_by_path") or []):
+        if isinstance(item, str):
+            # parse_simple_yaml rend les `- {k: v}` sous forme de chaîne
+            item = parse_inline_dict(item)
+        if isinstance(item, dict) and item.get("pattern") and item.get("type"):
+            type_by_path.append({"pattern": str(item["pattern"]), "type": str(item["type"])})
+
     config = {
         "output_dir": output_dir,
         "pool_roots": pool_roots,
         "types_roots": types_roots,
         "domain_roots": domain_roots,
         "skill_visibility": str(skill_visibility),
+        "type_by_path": type_by_path,
     }
     _CONFIG_CACHE[cache_key] = config
     return config
+
+
+# Dossiers jamais parcourus pour trouver des MEMORY.md (repris de forge_scanner,
+# + fixtures). Les dossiers cachés et _archive* sont exclus en plus.
+_WALK_EXCLUDE_DIRS = {".git", "node_modules", "venv", "__pycache__", ".claude", "templates", "fixtures"}
+
+
+def iter_memory_files(project_dir):
+    """Rend tous les MEMORY.md du dépôt, convertis ou non, dans un ordre stable."""
+    project_dir = Path(project_dir)
+    for root, dirs, files in os.walk(project_dir):
+        dirs[:] = sorted(
+            d for d in dirs
+            if d not in _WALK_EXCLUDE_DIRS
+            and not d.startswith(".")
+            and not d.startswith("_archive")
+        )
+        if "MEMORY.md" in files:
+            yield Path(root) / "MEMORY.md"
+
+
+def find_subjects(project_dir=None):
+    """Liste les subjects : tout MEMORY.md dont l'en-tête porte forging_state.
+
+    Le chemin ne compte pas (design 2026-10-10, SOCLE 0.7.0). Un MEMORY.md à
+    l'ancien format n'est pas un subject tant que /documente ne l'a pas converti.
+    Rend [(chemin du MEMORY.md, frontmatter)], trié par chemin.
+    """
+    project_dir = Path(project_dir) if project_dir else get_project_dir()
+    out = []
+    for memory in iter_memory_files(project_dir):
+        fm = parse_frontmatter(memory)
+        if fm and "forging_state" in fm:
+            out.append((memory, fm))
+    return sorted(out, key=lambda x: str(x[0]))
 
 
 def parse_frontmatter(path):

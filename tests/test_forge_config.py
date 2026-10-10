@@ -145,3 +145,23 @@ def test_forge_init_active_post_bloc_par_defaut(tmp_path, monkeypatch):
     texte2 = (tmp_path / ".forge.yaml").read_text(encoding="utf-8")
     assert "post_bloc: false" in texte2
     assert not hook.RE_ACTIF.search(texte2)
+
+
+def test_type_by_path_absent_liste_vide(tmp_path):
+    _fresh()
+    assert load_forge_config(tmp_path)["type_by_path"] == []
+
+
+def test_type_by_path_lu_dans_l_ordre(tmp_path):
+    _fresh()
+    (tmp_path / ".forge.yaml").write_text(
+        "type_by_path:\n"
+        '  - {pattern: "*/skills/*/cas/*", type: skill-cas}\n'
+        '  - {pattern: "*/skills/*", type: skill}\n'
+        "  - {pattern: incomplet}\n",
+        encoding="utf-8",
+    )
+    assert load_forge_config(tmp_path)["type_by_path"] == [
+        {"pattern": "*/skills/*/cas/*", "type": "skill-cas"},
+        {"pattern": "*/skills/*", "type": "skill"},
+    ]
