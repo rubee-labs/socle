@@ -42,6 +42,7 @@ from pathlib import Path
 
 from forge_lib import (
     days_since,
+    find_subjects,
     get_project_dir,
     load_forge_config,
     parse_frontmatter,
@@ -225,90 +226,57 @@ def _normalize_linked_records(linked_records):
 # ------------------------------------------------------ resolution des liens
 
 
-def _candidate_subject_roots() -> list[Path]:
-    """Liste les racines ou chercher des subjects/ (pilotées par .forge.yaml)."""
-    roots = []
-    for top in _CONFIG["pool_roots"]:
-        top_path = PROJECT_DIR if top == "." else PROJECT_DIR / top
-        if not top_path.is_dir():
-            continue
-        # services/<X>/subjects/, entreprise/subjects/, humains/<nom>/subjects/
-        if (top_path / "subjects").is_dir():
-            roots.append(top_path / "subjects")
-        for child in top_path.iterdir():
-            if not child.is_dir() or child.name.startswith("."):
-                continue
-            sub = child / "subjects"
-            if sub.is_dir():
-                roots.append(sub)
-    # Dédoublonnage (le root "." peut re-balayer des roots nommés), ordre préservé.
-    return list(dict.fromkeys(roots))
+_SUBJECTS_CACHE = None
+
+
+def _all_subjects():
+    """find_subjects une fois par processus : resolve_link est appelé par lien."""
+    global _SUBJECTS_CACHE
+    if _SUBJECTS_CACHE is None:
+        _SUBJECTS_CACHE = find_subjects(PROJECT_DIR)
+    return _SUBJECTS_CACHE
+
+
+def _unique(paths):
+    paths = list(dict.fromkeys(paths))
+    return paths[0] if len(paths) == 1 else None
 
 
 def resolve_link(link: str, current_subject_path: Path) -> Path | None:
-    """Resout un linked_subject vers le path absolu de son MEMORY.md.
+    """Résout un linked_subject vers le MEMORY.md de sa cible (0.7.0).
 
-    Heuristique, premiere qui matche gagne :
-      1. slug exact -> <base>/<slug>/MEMORY.md
-      2. <type>:<name> -> <base>/<type>-<name>/MEMORY.md
-      3. <type>:<name> -> <base>/<name>/MEMORY.md (verif type: dans frontmatter)
-      4. grep "^name: <name>" dans tous les MEMORY.md des roots
-      5. None
+    1. par `name:` de l'en-tête (type vérifié pour un lien `<type>:<name>`) ;
+    2. sinon par nom de dossier : `<slug>`, `<type>-<name>`, ou `<name>` avec
+       vérification du type (formes historiques, toujours valides).
+    Deux cibles à la même étape → None : les homonymes sont signalés par le
+    scanner (alerte duplicate_name), jamais résolus au hasard.
+    `current_subject_path` est gardé pour la compatibilité de signature.
     """
     if not isinstance(link, str) or not link.strip():
         return None
     link = link.strip()
-
-    # 1. Chercher d'abord dans le meme parent que le subject courant (mode rapide)
-    same_parent = current_subject_path.parent
-    candidate = same_parent / link / "MEMORY.md"
-    if candidate.is_file():
-        return candidate
-
-    # 2. Format <type>:<name>
+    type_part, name_part = None, link
     if ":" in link:
         type_part, _, name_part = link.partition(":")
-        type_part = type_part.strip()
-        name_part = name_part.strip()
-        candidate = same_parent / f"{type_part}-{name_part}" / "MEMORY.md"
-        if candidate.is_file():
-            return candidate
-        candidate = same_parent / name_part / "MEMORY.md"
-        if candidate.is_file():
-            fm = parse_frontmatter(candidate) or {}
-            if fm.get("type") == type_part:
-                return candidate
+        type_part, name_part = type_part.strip(), name_part.strip()
+    subjects = _all_subjects()
 
-    # 3. Chercher dans toutes les racines connues
-    roots = _candidate_subject_roots()
-    for root in roots:
-        # 3a. slug direct
-        candidate = root / link / "MEMORY.md"
-        if candidate.is_file():
-            return candidate
-        # 3b. <type>-<name>
-        if ":" in link:
-            type_part, _, name_part = link.partition(":")
-            candidate = root / f"{type_part.strip()}-{name_part.strip()}" / "MEMORY.md"
-            if candidate.is_file():
-                return candidate
-            candidate = root / name_part.strip() / "MEMORY.md"
-            if candidate.is_file():
-                fm = parse_frontmatter(candidate) or {}
-                if fm.get("type") == type_part.strip():
-                    return candidate
+    def type_ok(fm):
+        return type_part is None or str(fm.get("type")) == type_part
 
-    # 4. grep par name dans tous les MEMORY.md des roots
-    target_name = link.partition(":")[2].strip() if ":" in link else link
-    for root in roots:
-        if not root.is_dir():
-            continue
-        for memory in root.glob("*/MEMORY.md"):
-            fm = parse_frontmatter(memory) or {}
-            if fm.get("name") == target_name:
-                return memory
+    by_name = [m for m, fm in subjects if str(fm.get("name") or "") == name_part and type_ok(fm)]
+    if by_name:
+        return _unique(by_name)
 
-    return None
+    if type_part is None:
+        by_folder = [m for m, fm in subjects if m.parent.name == link]
+    else:
+        by_folder = [
+            m for m, fm in subjects
+            if m.parent.name == f"{type_part}-{name_part}"
+            or (m.parent.name == name_part and type_ok(fm))
+        ]
+    return _unique(by_folder) if by_folder else None
 
 
 # ------------------------------------------------------- detection transition
