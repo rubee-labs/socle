@@ -5,7 +5,7 @@
 - 🇫🇷 **S**ynthèse et **O**rganisation des **C**onnaissances et **L**eçons d'**E**ntreprise
 - 🇬🇧 **S**tructured **O**rganizational **C**ontext & **L**ifecycle **E**ngine
 
-SOCLE ajoute au harnais Claude Code une primitive qui lui manque : **la mémoire structurée par sujets, avec cycle de vie et cascade entre sujets liés**. Là où l'auto-memory et `CLAUDE.md` stockent du markdown libre, SOCLE structure les décisions, discussions, événements en artefacts typés validés par Python.
+SOCLE ajoute au harnais Claude Code une primitive qui lui manque : **la mémoire structurée par sujets, avec cycle de vie et cascade entre sujets liés**. Là où l'auto-memory et `CLAUDE.md` stockent du markdown libre, SOCLE structure les décisions, discussions, événements en artefacts typés validés par Python. Chaque sujet s'enrichit au fil du temps : les événements, discussions et décisions s'accumulent, et son `MEMORY.md` est re-synthétisé à chaque étape. SOCLE impose aussi une checklist de fin de bloc (discussion, décision, mémoire, commit, push), vérifiée par un hook.
 
 > Anciennement `claude-forge` (renommé le 2026-09-16 — un plugin tiers ne doit pas laisser croire qu'il est édité par Anthropic). Les anciennes URLs GitHub redirigent. Le binaire s'appelle toujours `forge` : c'est l'outil, SOCLE est le produit.
 
@@ -16,7 +16,7 @@ SOCLE ajoute au harnais Claude Code une primitive qui lui manque : **la mémoire
 | Axe | Temporel (continuité session-à-session) | Structurel (typage des décisions) |
 | Format | SQLite + Chroma + CLAUDE.md auto | `subjects/<name>/MEMORY.md` typés |
 | Auteur | Claude (auto) | **Co-écrit** humain + Claude |
-| Cycle de vie | aucun | 2 états (`actif` → `archived`), transitions manuelles |
+| Cycle de vie | aucun | historique cumulatif par sujet (événements → discussions → décisions → mémoire re-synthétisée), archivage manuel |
 | Linked subjects, cascade | aucun | oui |
 | Décisions vs discussions | aucun | deux artefacts distincts |
 | Validation Python | aucune | oui (frontmatter typé) |
