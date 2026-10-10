@@ -34,6 +34,7 @@ from pathlib import Path
 
 from forge_lib import (
     days_since,
+    find_subjects,
     get_project_dir,
     load_forge_config,
     parse_frontmatter,
@@ -42,6 +43,7 @@ from forge_lib import (
     parse_simple_yaml,
     parse_value,
 )
+from subject_lib import has_capability, load_type_index
 
 PROJECT_DIR = get_project_dir()
 # Emplacement de sortie + groupage de domaine pilotés par la config par-repo
@@ -74,28 +76,42 @@ def normalize_state(raw):
 
 
 def find_subject_memory_files():
-    """Trouve tous les MEMORY.md qui portent un frontmatter de subject.
+    """Délègue à forge_lib.find_subjects : une seule découverte pour tout SOCLE (0.7.0)."""
+    return find_subjects(PROJECT_DIR)
 
-    Exclut les fixtures de test et les dossiers archivés pour éviter
-    de compter des subjects fictifs ou retirés du service actif.
-    """
-    subjects = []
-    for root, dirs, files in os.walk(PROJECT_DIR):
-        dirs[:] = [
-            d for d in dirs
-            if d not in EXCLUDE_DIRS
-            and not d.startswith(".")
-            and not d.startswith("_archive")
-            and d != "fixtures"
-        ]
-        for f in files:
-            if f != "MEMORY.md":
-                continue
-            path = Path(root) / f
-            frontmatter = parse_frontmatter(path)
-            if frontmatter and "forging_state" in frontmatter:
-                subjects.append((path, frontmatter))
-    return subjects
+
+_TYPE_INDEX = None
+
+
+def _type_index():
+    global _TYPE_INDEX
+    if _TYPE_INDEX is None:
+        _TYPE_INDEX = load_type_index(PROJECT_DIR)
+    return _TYPE_INDEX
+
+
+def detect_identity_alerts(subjects, project_dir, type_index):
+    """Homonymes (même name : liens non résolus) et types sans REFERENCE.md."""
+    alerts = []
+    by_name = {}
+    for path, fm in subjects:
+        rel = str(path.parent.relative_to(project_dir))
+        by_name.setdefault(str(fm.get("name") or path.parent.name), []).append(rel)
+        t = fm.get("type")
+        if not t or str(t) not in type_index:
+            alerts.append({
+                "type": "unknown_type",
+                "subject": rel,
+                "detail": f"type « {t or '—'} » sans REFERENCE.md, capacités par défaut",
+            })
+    for name, rels in sorted(by_name.items()):
+        if len(rels) > 1:
+            alerts.append({
+                "type": "duplicate_name",
+                "subject": name,
+                "detail": ", ".join(sorted(rels)) + " : liens vers ce nom non résolus",
+            })
+    return alerts
 
 
 def detect_overdue_decisions(subjects, project_dir=None):
@@ -149,6 +165,7 @@ def detect_alerts(subjects):
     alerts = []
 
     alerts.extend(detect_overdue_decisions(subjects))
+    alerts.extend(detect_identity_alerts(subjects, PROJECT_DIR, _type_index()))
 
     for path, fm in subjects:
         rel_path = path.relative_to(PROJECT_DIR)
@@ -156,7 +173,7 @@ def detect_alerts(subjects):
         state = normalize_state(state_raw)
 
         # Alerte stagnation : subject `actif` depuis >30j sans last_event
-        if state == "actif":
+        if state == "actif" and has_capability(fm, _type_index(), "events"):
             last_event = fm.get("last_event")
             last_date = None
             if isinstance(last_event, dict):
@@ -237,7 +254,7 @@ def compute_metrics(subjects):
             pass
 
         # Stagnation : subject `actif` sans event depuis >30j
-        if state == "actif":
+        if state == "actif" and has_capability(fm, _type_index(), "events"):
             last_event = fm.get("last_event")
             last_date = None
             if isinstance(last_event, dict):
@@ -375,18 +392,24 @@ def regenerate_index(subjects):
         items = by_state[state]
         lines.append(f"## {state} ({len(items)})")
         lines.append("")
-        for path, fm in sorted(items, key=lambda x: str(x[0])):
-            name = fm.get("name") or path.parent.name
-            stype = fm.get("type", "?")
-            rel = path.parent.relative_to(PROJECT_DIR)
-            links = fm.get("linked_subjects") or []
-            link_preview = ", ".join(str(l) for l in links[:3])
-            if len(links) > 3:
-                link_preview += f" (+{len(links) - 3})"
-            lines.append(f"- **{name}** ({stype}) — `{rel}/`")
-            if link_preview:
-                lines.append(f"  - liens : {link_preview}")
-        lines.append("")
+        by_type = {}
+        for path, fm in items:
+            by_type.setdefault(str(fm.get("type") or "?"), []).append((path, fm))
+        for stype in sorted(by_type):
+            group = by_type[stype]
+            lines.append(f"### {stype} ({len(group)})")
+            lines.append("")
+            for path, fm in sorted(group, key=lambda x: str(x[0])):
+                name = fm.get("name") or path.parent.name
+                rel = path.parent.relative_to(PROJECT_DIR)
+                links = fm.get("linked_subjects") or []
+                link_preview = ", ".join(str(l) for l in links[:3])
+                if len(links) > 3:
+                    link_preview += f" (+{len(links) - 3})"
+                lines.append(f"- **{name}** — `{rel}/`")
+                if link_preview:
+                    lines.append(f"  - liens : {link_preview}")
+            lines.append("")
 
     write_if_changed(INDEX_FILE, "\n".join(lines))
 

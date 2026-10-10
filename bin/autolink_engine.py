@@ -26,6 +26,7 @@ import sys
 from pathlib import Path
 
 from forge_lib import (
+    find_subjects,
     get_project_dir,
     parse_frontmatter,
     parse_subject_slug,
@@ -143,8 +144,8 @@ def extract_typed_edges(subject_path, type_index=None, known_types=None):
 
 
 def _iter_subjects(project_dir):
-    """Itère sur tous les MEMORY.md de subjects dans le repo."""
-    for memory in project_dir.rglob("subjects/*/MEMORY.md"):
+    """Itère sur les MEMORY.md de tous les subjects, où qu'ils soient (0.7.0)."""
+    for memory, _fm in find_subjects(project_dir):
         yield memory
 
 

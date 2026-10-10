@@ -231,6 +231,7 @@ typical_linked_types: []
             (sd / "MEMORY.md").write_text(f"""---
 name: order-{n}
 type: supplier-order
+forging_state: actif
 linked_subjects:
   - supplier:simon
 ---
@@ -241,6 +242,7 @@ linked_subjects:
         (sd / "MEMORY.md").write_text("""---
 name: simon
 type: supplier
+forging_state: actif
 linked_subjects: []
 ---
 """, encoding="utf-8")

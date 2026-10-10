@@ -29,7 +29,7 @@ import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from forge_lib import get_project_dir, load_forge_config, parse_frontmatter
+from forge_lib import find_subjects, get_project_dir, load_forge_config, parse_frontmatter
 from documente_lib import patch_frontmatter_file, parse_nested_dict_block
 
 VERSION = 1
@@ -64,37 +64,18 @@ def _err(message, code="generic_error", **extra):
 
 
 def cmd_list_subjects(args):
-    """Liste tous les subjects du repo (avec MEMORY.md ayant forging_state)."""
+    """Liste tous les subjects du dépôt : MEMORY.md avec forging_state, où qu'il soit (0.7.0)."""
     project_dir = get_project_dir()
     subjects = []
-    seen = set()
-    for root in load_forge_config(project_dir)["pool_roots"]:
-        if root == ".":
-            # Pool plat : subjects/ directement à la racine — glob NON récursif
-            # pour éviter de re-balayer (et dédoublonner) les roots nommés.
-            root_dir = project_dir
-            matches = root_dir.glob("subjects/*/MEMORY.md")
-        else:
-            root_dir = project_dir / root
-            matches = root_dir.rglob("subjects/*/MEMORY.md")
-        if not root_dir.is_dir():
-            continue
-        for memory_md in matches:
-            rp = memory_md.resolve()
-            if rp in seen:
-                continue
-            seen.add(rp)
-            fm = parse_frontmatter(memory_md)
-            if not fm or "forging_state" not in fm:
-                continue
-            last_event = fm.get("last_event")
-            last_event_date = last_event.get("date") if isinstance(last_event, dict) else None
-            subjects.append({
-                "path": str(memory_md.parent.relative_to(project_dir)),
-                "forging_state": fm.get("forging_state"),
-                "type": fm.get("type"),
-                "last_event_date": last_event_date,
-            })
+    for memory_md, fm in find_subjects(project_dir):
+        last_event = fm.get("last_event")
+        last_event_date = last_event.get("date") if isinstance(last_event, dict) else None
+        subjects.append({
+            "path": str(memory_md.parent.relative_to(project_dir)),
+            "forging_state": fm.get("forging_state"),
+            "type": fm.get("type"),
+            "last_event_date": last_event_date,
+        })
     return _ok(subjects=sorted(subjects, key=lambda s: s["path"]))
 
 
