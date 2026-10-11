@@ -8,10 +8,17 @@ niveau. Le bloc okf-links est recopié tel quel, en fin de fichier.
 """
 
 import re
+import unicodedata
 
 CANONICAL_SECTIONS = ["Quick", "Doctrine en vigueur", "Décisions actives", "Règles apprises", "Détails", "Liens"]
 OKF_START = "<!-- okf-links:start -->"
 _FM_RE = re.compile(r"^---\n(.*?)\n---\n?", re.DOTALL)
+
+
+def _fold(title):
+    """Clé d'appariement d'un titre : minuscules, sans accents (« Regles apprises » = « Règles apprises »)."""
+    nfkd = unicodedata.normalize("NFKD", title.strip().lower())
+    return "".join(c for c in nfkd if not unicodedata.combining(c))
 
 
 def _frontmatter(text):
@@ -79,12 +86,12 @@ def convert_memory_text(text, *, name, type_name, today):
         body, okf_tail = body[:idx], body[idx:]
     preamble, sections = _split_sections(body)
 
-    canon = {c.lower(): c for c in CANONICAL_SECTIONS}
+    canon = {_fold(c): c for c in CANONICAL_SECTIONS}
     kept = {c: [] for c in CANONICAL_SECTIONS}
     present = set()
     extras = []
     for title, lines in sections:
-        key = canon.get(title.lower())
+        key = canon.get(_fold(title))
         if key and not (key == "Liens" and okf_tail):
             present.add(key)
             kept[key].extend(_trim(lines) + [""])

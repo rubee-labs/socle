@@ -155,3 +155,14 @@ def test_convert_dry_run_n_ecrit_rien(tmp_path):
     r = _run("convert", "x", "--type", "tool", "--dry-run", project=tmp_path)
     assert r["action"] == "converted" and r["dry_run"] is True
     assert (d / "MEMORY.md").read_text(encoding="utf-8") == ANCIEN
+
+
+def test_titres_canoniques_sans_accents_reconnus():
+    # 24 MEMORY.md de CE écrivent « Decisions actives » / « Regles apprises » sans accents :
+    # ils doivent atterrir dans la section canonique, pas sous ## Détails.
+    ancien = "---\ntype: service\n---\n\n## Decisions actives\n\n1. D1 → decisions/a.yaml\n\n## Regles apprises\n\n- R1\n"
+    out = convert_memory_text(ancien, name="x", type_name="service", today="2026-10-11")
+    assert "## Décisions actives\n\n1. D1 → decisions/a.yaml" in out
+    assert "## Règles apprises\n\n- R1" in out
+    assert "### Decisions actives" not in out
+    assert "### Regles apprises" not in out
