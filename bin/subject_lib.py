@@ -84,6 +84,9 @@ def resolve_type(subject_dir, project_dir, config=None):
         rel = subject_dir.resolve().relative_to(project_dir.resolve()).as_posix()
     except ValueError:
         rel = subject_dir.as_posix()
+    if "subjects" in rel.split("/"):
+        # Sous subjects/, le type vient de l'en-tête ou de Claude, jamais de l'emplacement.
+        return {"type": None, "source": "claude"}
     for rule in config.get("type_by_path", []):
         if fnmatch(rel, rule["pattern"]):
             return {"type": rule["type"], "source": "type_by_path"}

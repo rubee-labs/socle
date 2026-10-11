@@ -82,7 +82,7 @@ Format strict, une seule ligne par phase :
 
 Codes par phase (subject pool) :
 - `▸ A prepare` — résultat de `prepare` (subject pool oui/non, exists oui/non)
-- `▸ B infer-type` — stratégie d'inférence + type retenu (ou « création paresseuse demandée » si validation requise)
+- `▸ B convert` — type retenu et sa source (en-tête / `type_by_path` / Claude), nom, action (`converted` / `created`) — jamais de question
 - `▸ C capture` — décision tranchée détectée / discussion seule / rien à capturer
 - `▸ D write-capture` — fichiers écrits (`1 discussion`, `1 discussion + 1 décision`, ou `skip`)
 - `▸ E forge_engine` — `current_state`, transitions appliquées, count events

@@ -101,3 +101,13 @@ def test_sans_regle_choix_de_claude(tmp_path):
     root = _repo(tmp_path)
     d = _dir(root, "docs/notes", "entite: notes")
     assert resolve_type(d, root) == {"type": None, "source": "claude"}
+
+
+def test_graine_sous_subjects_ignore_type_by_path(tmp_path):
+    # Revue finale : services/achats/subjects/order-396 (graine sans type) recevait
+    # « service » via services/* et ce type était figé. Sous subjects/, seul
+    # l'en-tête ou Claude décide (design §2 : « ce qui est sous */subjects/* garde
+    # le type de son en-tête »).
+    root = _repo(tmp_path, CE_RULES)
+    d = _dir(root, "services/achats/subjects/order-396", "entite: order-396")
+    assert resolve_type(d, root) == {"type": None, "source": "claude"}
