@@ -290,39 +290,56 @@ def cmd_compute_hash(args):
 
 
 def cmd_commit_atomic(args):
-    """Stage les paths, commit, et push optionnellement."""
-    paths = [p.strip() for p in args.paths.split(",") if p.strip()]
-    if not paths:
+    """Stage les paths, commit (ces paths seulement), et push optionnellement.
+
+    Chemins relatifs résolus depuis le dossier projet (`CLAUDE_FORGE_PROJECT_DIR`,
+    sinon la racine git) — les mêmes chemins que `prepare`, `write-capture`, etc. ;
+    à défaut depuis la racine git (0.7.2). Le message est committé tel quel : les
+    trailers (Co-Authored-By…) sont à la charge de l'appelant.
+    """
+    raw = [p.strip() for p in args.paths.split(",") if p.strip()]
+    if not raw:
         return _err("no paths provided", code="invalid_args")
 
+    project_dir = get_project_dir()
     try:
         repo_root_out = subprocess.run(
-            ["git", "rev-parse", "--show-toplevel"],
+            ["git", "-C", str(project_dir), "rev-parse", "--show-toplevel"],
             capture_output=True, text=True, check=True,
         )
         repo_root = repo_root_out.stdout.strip()
     except subprocess.CalledProcessError:
         return _err("not a git repository", code="not_git")
 
+    paths = []
+    for p in raw:
+        cand = Path(p)
+        if not cand.is_absolute():
+            depuis_projet = project_dir / p
+            depuis_racine = Path(repo_root) / p
+            cand = depuis_projet if (depuis_projet.exists() or not depuis_racine.exists()) else depuis_racine
+        paths.append(str(cand))
+
     try:
         subprocess.run(
-            ["git", "-C", repo_root, "add", *paths],
+            ["git", "-C", repo_root, "add", "--", *paths],
             capture_output=True, text=True, check=True,
         )
     except subprocess.CalledProcessError as e:
         return _err(f"git add failed: {e.stderr}", code="git_add_failed")
 
     diff = subprocess.run(
-        ["git", "-C", repo_root, "diff", "--cached", "--name-only"],
+        ["git", "-C", repo_root, "diff", "--cached", "--name-only", "--", *paths],
         capture_output=True, text=True, check=True,
     )
     if not diff.stdout.strip():
         return _ok(noop=True, commit_sha=None, paths=paths, repo=repo_root)
 
-    full_message = args.message + "\n\nCo-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
     try:
+        # `-- paths` : seuls ces chemins entrent dans le commit, même si d'autres
+        # fichiers étaient déjà indexés (commit atomique au sens strict).
         subprocess.run(
-            ["git", "-C", repo_root, "commit", "-m", full_message],
+            ["git", "-C", repo_root, "commit", "-m", args.message, "--", *paths],
             capture_output=True, text=True, check=True,
         )
     except subprocess.CalledProcessError as e:
@@ -570,7 +587,14 @@ RE_SECTION = re.compile(r"^## .*$", re.M)
 RE_JOURNAL_LINE = re.compile(r"^\s*-\s+\**\d{4}-\d{2}-\d{2}", re.M)
 # Titres de sous-section datés (« ### Décision du 2026-08-04 … », « ### Exécution du … ») :
 # l'autre forme de journal, celle qui avait gonflé un subject à 66 Ko (incident 2026-10-10).
-RE_JOURNAL_HEADING = re.compile(r"^###+ .*\d{4}-\d{2}-\d{2}", re.M)
+# 0.7.2 : seulement un titre qui COMMENCE par une date ou par un mot de journal
+# (Décision, Exécution, Checkpoint, Run, Session, Journal, Bilan, Point) suivi d'une date.
+# Un titre thématique daté (« ### Vague 3 P4 — bench_engine (2026-05-24) ») n'est pas un journal.
+RE_JOURNAL_HEADING = re.compile(
+    r"^###+\s+(?:\d{4}-\d{2}-\d{2}"
+    r"|(?:D[ée]cision|Ex[ée]cution|Checkpoint|Run|Session|Journal|Bilan|Point)\b[^\n]*?\d{4}-\d{2}-\d{2})",
+    re.M | re.I,
+)
 RE_DERNIERE_MAJ = re.compile(r"^(derniere_maj:\s*).*$", re.M)
 RE_MAX_KB = re.compile(r"^memory_max_kb:\s*(\d+)", re.M)
 

@@ -232,6 +232,7 @@ La doctrine complète du modèle est dans [`rules/subject-pool.md`](rules/subjec
 
 | Version | Date | Changement principal |
 |---|---|---|
+| 0.7.2 | 2026-10-11 | Correctifs : seuls les vrais titres de journal sont déplacés (plus les titres thématiques datés) ; `commit-atomic` lit les chemins depuis le dossier projet, ne committe que ses chemins et n'ajoute plus de trailer ; `rapports/` committé ; `## Détails` réécrit seulement si la borne l'exige. |
 | 0.7.1 | 2026-10-11 | Correctifs : titres sans accents reconnus à la conversion ; `type_by_path` ignoré sous `subjects/`. |
 | 0.7.0 | 2026-10-10 | Subject reconnu par son en-tête, où qu'il soit ; types génériques et capacités ; `/documente` en un seul circuit, sans question ; conversion sur place ; `forge migrate --dry-run` ; liens résolus par `name`. |
 | 0.6.1 | 2026-10-10 | `MEMORY.md` borné aussi pour les subjects ; titres datés détectés comme journal. |

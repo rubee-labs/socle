@@ -218,9 +218,9 @@ Sortie JSON `{ok, subject_name, subject_type, edges: [{name, target_slug, target
 - `## Doctrine en vigueur` : une ligne par règle.
 - `## Décisions actives` : au plus 10, chacune en pointeur vers son fichier `decisions/`.
 - `## Règles apprises`.
-- `## Détails` : contexte et paramètres en cours, **préserver les sous-sections custom** (`### Notes libres`, `### Stress tests à prévoir`, sections versées par une conversion), **sauf les sous-sections datées** `### Décision du AAAA-MM-JJ …`, `### Exécution du …`, `### Checkpoint du …`, traitées en F.3.
+- `## Détails` : contexte et paramètres en cours, **préserver les sous-sections custom** (`### Notes libres`, `### Stress tests à prévoir`, sections versées par une conversion), **sauf les sous-sections de journal** — titre qui commence par une date (`### 2026-08-04 — …`) ou par un mot de journal suivi d'une date (`### Décision du …`, `### Exécution du …`, `### Checkpoint du …`, `### Bilan du …`) — traitées en F.3. Un titre thématique qui contient une date (`### Vague 3 — bench (2026-05-24)`) n'est pas un journal : il est préservé.
 
-Écrire ces sections dans le `MEMORY.md` via `forge documente patch-section` (une section par appel) (le frontmatter sera patché en Phase G séparément). Le `## Détails` est **réécrit en entier** à chaque invocation directe, pas seulement le `## Quick`.
+Écrire ces sections dans le `MEMORY.md` via `forge documente patch-section` (une section par appel) (le frontmatter sera patché en Phase G séparément). Le `## Détails` n'est **réécrit en entier** que si F.3 l'exige (`over` vrai, `journal_headings` ou `journal_lines` non vide) ou si une conversion vient d'y verser du contenu ; sinon, mise à jour ciblée des seuls passages que la session change. Sans nouvel élément, aucune section n'est réécrite (règle d'idempotence, cf. Gotchas).
 
 **F.3 — Borne du MEMORY.md (Python pour le diagnostic, LLM pour la rédaction)** — borne commune à tous les subjects (incident 2026-10-10 : un subject à 66 Ko, 25 sections `### Décision du …` recopiées dans le `## Détails`, jamais signalé):
 
@@ -298,7 +298,7 @@ Le scanner remonte les parents du subject jusqu'à la racine du repo et liste to
 
 ```bash
 forge documente commit-atomic \
-  --paths "<subject-path>/MEMORY.md,<subject-path>/discussions/<file>,<subject-path>/decisions/<file>,<linked1>/MEMORY.md,..." \
+  --paths "<subject-path>/MEMORY.md,<subject-path>/discussions/<file>,<subject-path>/decisions/<file>,<subject-path>/rapports/<file>,<linked1>/MEMORY.md,..." \
   --message "docs: <type> — <sujet court>
 
 - subject racine : <subject-path>
@@ -307,6 +307,8 @@ forge documente commit-atomic \
 ```
 
 Si la commande retourne `noop: true` (idempotent — 2ᵉ invocation sans nouvel input) → afficher « rien à re-synthétiser », pas de commit vide.
+
+`--paths` liste **tout** ce que le bloc a écrit : `MEMORY.md` (y compris converti en Phase B), discussion, décision, fichiers `rapports/` créés en F.3, `MEMORY.md` des subjects liés. Chemins relatifs au même dossier projet que les autres commandes (`CLAUDE_FORGE_PROJECT_DIR`, sinon la racine git) ; seuls ces chemins entrent dans le commit, même si d'autres fichiers sont indexés. Le message est committé tel quel : y mettre soi-même les trailers (Co-Authored-By…).
 
 ### Hints post-commit (suggestions humaines, non-bloquantes)
 

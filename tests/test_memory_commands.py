@@ -151,3 +151,42 @@ def test_patch_section_idempotent(tmp_path):
     once = md.read_text(encoding="utf-8")
     run("patch-section", str(md), "--section", "## Doctrine en vigueur", "--body-file", str(body))
     assert md.read_text(encoding="utf-8") == once
+
+
+THEMATIQUE_SAMPLE = """---
+name: x
+type: projet
+forging_state: actif
+---
+
+## Quick
+
+q
+
+## Détails
+
+### Vague 3 P4 — bench_engine (2026-05-24)
+
+Tableau de référence.
+
+### Cycle de vie — 2 états (depuis 2026-09-14)
+
+Doctrine.
+
+### 2026-08-04 — run de nuit
+
+Journal.
+
+### Bilan du 2026-09-01
+
+Journal.
+"""
+
+
+def test_check_memory_titre_thematique_date_pas_journal(tmp_path):
+    # 0.7.2 : un titre thématique qui contient une date n'est pas un journal ;
+    # seuls « ### <date> … » et « ### <mot de journal> … <date> » le sont.
+    md = tmp_path / "MEMORY.md"
+    md.write_text(THEMATIQUE_SAMPLE, encoding="utf-8")
+    r = run("check-memory", str(tmp_path))
+    assert r["journal_headings"] == {"## Détails": 2}

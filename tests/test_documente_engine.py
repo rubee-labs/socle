@@ -296,6 +296,40 @@ class TestCommitAtomic(unittest.TestCase):
         self.assertFalse(result["noop"])
 
 
+    def test_chemins_relatifs_au_projet_et_commit_limite_aux_paths(self):
+        # 0.7.2 : pool dans un sous-dossier (CLAUDE_FORGE_PROJECT_DIR), chemins
+        # relatifs à ce pool ; un fichier déjà indexé hors --paths n'entre pas
+        # dans le commit ; aucun trailer ajouté au message.
+        pool = self.tmpdir / "pool"
+        (pool / "subjects" / "s").mkdir(parents=True)
+        (pool / "subjects" / "s" / "MEMORY.md").write_text("m", encoding="utf-8")
+        (self.tmpdir / "autre.md").write_text("x", encoding="utf-8")
+        subprocess.run(["git", "add", "autre.md"], cwd=self.tmpdir, check=True)
+        env_old = os.environ.get("CLAUDE_FORGE_PROJECT_DIR")
+        os.environ["CLAUDE_FORGE_PROJECT_DIR"] = str(pool)
+        try:
+            result = run_engine(
+                "commit-atomic",
+                "--paths", "subjects/s/MEMORY.md",
+                "--message", "pool relatif",
+                cwd=str(pool),
+            )
+        finally:
+            if env_old is None:
+                os.environ.pop("CLAUDE_FORGE_PROJECT_DIR", None)
+            else:
+                os.environ["CLAUDE_FORGE_PROJECT_DIR"] = env_old
+        self.assertTrue(result["ok"], result)
+        files = subprocess.run(["git", "show", "--name-only", "--format=%B", "HEAD"],
+                               cwd=self.tmpdir, capture_output=True, text=True).stdout
+        self.assertIn("pool/subjects/s/MEMORY.md", files)
+        self.assertNotIn("autre.md", files)
+        self.assertNotIn("Co-Authored-By", files)
+        staged = subprocess.run(["git", "diff", "--cached", "--name-only"],
+                                cwd=self.tmpdir, capture_output=True, text=True).stdout
+        self.assertIn("autre.md", staged)
+
+
 class TestPatchFrontmatter(unittest.TestCase):
 
     def setUp(self):
