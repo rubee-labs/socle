@@ -120,4 +120,6 @@ des pointeurs vers `decisions/`, le contenu unique part dans `rapports/`. `check
 (titres `###` datés), la forme de journal que `journal_lines` ne voyait pas.
 
 
+v0.7.1 — correctifs de la revue 0.7.0 (2026-10-11) : la conversion reconnaît les titres canoniques sans accents (`## Decisions actives`, `## Regles apprises`) ; sous `subjects/`, `type_by_path` est ignoré (une graine sans type n'est plus figée sur le type de son emplacement, Claude choisit).
+
 v0.7.0 — subject reconnu par son en-tête (2026-10-10) : tout `MEMORY.md` dont l'en-tête porte `forging_state` est un subject, où qu'il soit. Type = en-tête, puis `type_by_path` (`.forge.yaml`, facultatif), puis choix de Claude ; types génériques `skill`, `skill-cas`, `tool`, `agent`, `service`, `projet` livrés dans `types/`, capacités par type. `/documente` n'a plus qu'un circuit, sans question : la phase F0 et le workflow folder disparaissent, un ancien `MEMORY.md` est converti sur place au premier passage (`forge documente convert`, rien n'est supprimé). `forge migrate --dry-run` liste ce qui reste à convertir. `resolve_link` cherche par `name` d'en-tête partout et refuse les homonymes (alerte `duplicate_name`). Spec : `docs/superpowers/specs/2026-10-10-subject-par-en-tete-design.md`.
