@@ -19,11 +19,7 @@ themes, plugins, and a mobile app. This bridge does **not** migrate Forge to
 Obsidian — Forge stays the source of truth on disk. The plugin just makes
 Forge's relationships visible inside Obsidian.
 
-This is the "Obsidian as a reader for Forge" scenario discussed in the
-2026-05-26 Forge-Lab analysis [Optimike Obsidian MCP][analysis] — a lightweight
-alternative to adopting a full Obsidian MCP server.
-
-[analysis]: https://github.com/rubee-labs/benjamin-perso/blob/main/Forge-lab/analyses/2026-05-26-optimike-obsidian-mcp-bridge.md
+It is a lightweight alternative to adopting a full Obsidian MCP server.
 
 ## Status
 
