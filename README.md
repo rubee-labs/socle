@@ -118,3 +118,6 @@ v0.6.1 — MEMORY.md borné aussi pour les subjects (2026-10-10) : `/documente` 
 `## Détails` et passe par `check-memory` (étape F.3) ; les sous-sections datées (`### Décision du …`) deviennent
 des pointeurs vers `decisions/`, le contenu unique part dans `rapports/`. `check-memory` rend `journal_headings`
 (titres `###` datés), la forme de journal que `journal_lines` ne voyait pas.
+
+
+v0.7.0 — subject reconnu par son en-tête (2026-10-10) : tout `MEMORY.md` dont l'en-tête porte `forging_state` est un subject, où qu'il soit. Type = en-tête, puis `type_by_path` (`.forge.yaml`, facultatif), puis choix de Claude ; types génériques `skill`, `skill-cas`, `tool`, `agent`, `service`, `projet` livrés dans `types/`, capacités par type. `/documente` n'a plus qu'un circuit, sans question : la phase F0 et le workflow folder disparaissent, un ancien `MEMORY.md` est converti sur place au premier passage (`forge documente convert`, rien n'est supprimé). `forge migrate --dry-run` liste ce qui reste à convertir. `resolve_link` cherche par `name` d'en-tête partout et refuse les homonymes (alerte `duplicate_name`). Spec : `docs/superpowers/specs/2026-10-10-subject-par-en-tete-design.md`.
