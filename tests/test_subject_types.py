@@ -111,3 +111,16 @@ def test_graine_sous_subjects_ignore_type_by_path(tmp_path):
     root = _repo(tmp_path, CE_RULES)
     d = _dir(root, "services/achats/subjects/order-396", "entite: order-396")
     assert resolve_type(d, root) == {"type": None, "source": "claude"}
+
+
+def test_types_sous_dossiers_exclus_ignores(tmp_path):
+    """node_modules, .git et dossiers cachés sont élagués (0.7.3), un type imbriqué reste trouvé."""
+    root = _repo(tmp_path)
+    for rel, name in (("node_modules/pkg/types/fantome", "fantome"),
+                      (".cache/types/cache", "cache"),
+                      ("services/a/b/types/profond", "profond")):
+        _dir(root, rel)
+        (root / rel / "REFERENCE.md").write_text(f"---\ntype: {name}\n---\n", encoding="utf-8")
+    idx = load_type_index(root)
+    assert "profond" in idx and idx["profond"]["source"] == "repo"
+    assert "fantome" not in idx and "cache" not in idx

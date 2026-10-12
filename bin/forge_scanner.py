@@ -448,8 +448,6 @@ def main():
 
     alerts = detect_alerts(subjects)
     metrics = compute_metrics(subjects)
-    regenerate_index(subjects)
-    regenerate_metrics(metrics)
 
     # Résumé KPIs pour la ligne Health-check (refonte 2026-09-14 : 2 états)
     by_state = metrics["by_state"]
@@ -460,8 +458,12 @@ def main():
     )
 
     if args.status:
+        # Compteur seul : n'écrit rien (0.7.3 — réécrivait les deux index à chaque appel).
         print(f"Forge: {len(alerts)} alerte(s) — {summary}")
         return
+
+    regenerate_index(subjects)
+    regenerate_metrics(metrics)
 
     output = format_alerts(alerts)
     if output:

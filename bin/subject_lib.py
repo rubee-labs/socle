@@ -8,6 +8,7 @@ type il a (en-tête > type_by_path > choix de Claude) et ce que ce type sait fai
 Python 3 stdlib uniquement.
 """
 
+import os
 from fnmatch import fnmatch
 from pathlib import Path
 
@@ -20,11 +21,18 @@ _SKIP_PARTS = {".git", "node_modules", "fixtures", "venv", "__pycache__"}
 
 
 def _iter_reference_files(root):
-    for ref in sorted(Path(root).rglob("types/*/REFERENCE.md")):
-        rel_parts = ref.relative_to(root).parts
-        if any(p in _SKIP_PARTS or p.startswith(".") for p in rel_parts):
-            continue
-        yield ref
+    """REFERENCE.md des types (`types/<type>/REFERENCE.md`).
+
+    Les dossiers exclus sont élagués pendant le parcours, pas filtrés après :
+    un rglob traversait node_modules et .git (×8 sur `prepare` dans un gros dépôt).
+    """
+    found = []
+    for cur, dirs, files in os.walk(root):
+        dirs[:] = [d for d in dirs if d not in _SKIP_PARTS and not d.startswith(".")]
+        cur = Path(cur)
+        if cur.parent.name == "types" and "REFERENCE.md" in files:
+            found.append(cur / "REFERENCE.md")
+    yield from sorted(found)
 
 
 def load_type_index(project_dir):

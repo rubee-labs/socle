@@ -29,3 +29,23 @@ def test_creates_missing_file(tmp_path):
     f = tmp_path / "sub" / "METRICS.md"
     assert forge_scanner.write_if_changed(f, "x") is True
     assert f.read_text(encoding="utf-8") == "x"
+
+
+def test_status_n_ecrit_rien(tmp_path):
+    """`scanner --status` est un compteur : aucun index écrit (0.7.3)."""
+    import os
+    import subprocess
+    subj = tmp_path / "subjects" / "demo"
+    subj.mkdir(parents=True)
+    (subj / "MEMORY.md").write_text("---\nname: demo\nforging_state: actif\n---\n\n## Quick\n",
+                                    encoding="utf-8")
+    (tmp_path / ".forge.yaml").write_text("output_dir: .\n", encoding="utf-8")
+    scanner = Path(__file__).resolve().parents[1] / "bin" / "forge_scanner.py"
+    env = dict(os.environ, CLAUDE_FORGE_PROJECT_DIR=str(tmp_path))
+    avant = sorted(p for p in tmp_path.rglob("*"))
+    r = subprocess.run([sys.executable, str(scanner), "--status"], env=env,
+                       capture_output=True, text=True)
+    assert r.returncode == 0 and "Forge:" in r.stdout
+    assert sorted(p for p in tmp_path.rglob("*")) == avant
+    subprocess.run([sys.executable, str(scanner)], env=env, capture_output=True, check=True)
+    assert list(tmp_path.rglob("SUBJECTS-INDEX.md"))

@@ -151,7 +151,7 @@ Les skills délèguent toute la mécanique à `forge`, qui répond en JSON (`{"o
 | `forge documente <cmd>` | Moteur de `/documente` : `prepare`, `convert`, `write-capture`, `check-memory`, `patch-section`, `patch-frontmatter`, `cascade-last-event`, `scan-impacted`, `commit-atomic`… |
 | `forge migrate --dry-run` | Liste les `MEMORY.md` encore à l'ancien format et le type que chacun recevrait. N'écrit rien. |
 | `forge engine <dossier>` | Calcule l'état d'un subject (événements, décisions, propagation). |
-| `forge scanner` | Régénère `SUBJECTS-INDEX.md` et `SUBJECT-POOL-METRICS.md`, et lève les alertes : `stagnation`, `decision_echue`, `duplicate_name`, `unknown_type`, `merger_candidate`. |
+| `forge scanner` | Régénère `SUBJECTS-INDEX.md` et `SUBJECT-POOL-METRICS.md`, et lève les alertes : `stagnation`, `decision_echue`, `duplicate_name`, `unknown_type`, `merger_candidate`. `--status` affiche seulement le compteur, sans rien écrire. |
 | `forge autolink <cmd>` | Graphe typé : `extract`, `graph-query`, `reconcile`. |
 | `forge graph render` | Graphe interactif des subjects en HTML (filtres par type et état). |
 | `forge okf-sync <cmd>` | Écrit les liens dans le corps des `MEMORY.md` (section `## Liens`), lisibles par un lecteur de l'Open Knowledge Format (OKF). |
@@ -232,6 +232,7 @@ La doctrine complète du modèle est dans [`rules/subject-pool.md`](rules/subjec
 
 | Version | Date | Changement principal |
 |---|---|---|
+| 0.7.3 | 2026-10-12 | Performance : la liste des types n'explore plus `node_modules` ni `.git` (`prepare` et `scanner` 4 à 5 fois plus rapides dans un gros dépôt) ; `forge scanner --status` n'écrit plus les index. |
 | 0.7.2 | 2026-10-11 | Correctifs : seuls les vrais titres de journal sont déplacés (plus les titres thématiques datés) ; `commit-atomic` lit les chemins depuis le dossier projet, ne committe que ses chemins et n'ajoute plus de trailer ; `rapports/` committé ; `## Détails` réécrit seulement si la borne l'exige. |
 | 0.7.1 | 2026-10-11 | Correctifs : titres sans accents reconnus à la conversion ; `type_by_path` ignoré sous `subjects/`. |
 | 0.7.0 | 2026-10-10 | Subject reconnu par son en-tête, où qu'il soit ; types génériques et capacités ; `/documente` en un seul circuit, sans question ; conversion sur place ; `forge migrate --dry-run` ; liens résolus par `name`. |
