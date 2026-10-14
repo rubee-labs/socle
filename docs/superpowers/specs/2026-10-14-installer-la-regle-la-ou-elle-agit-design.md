@@ -1,6 +1,8 @@
 # Installer la règle là où elle agit — design
 
-Date : 2026-10-14. Demandeur : Benjamin. Version cible : SOCLE 0.8.0. Statut : à valider.
+Date : 2026-10-14. Demandeur : Benjamin. Version cible : SOCLE 0.8.0. **Statut : abandonné le 2026-10-14.**
+
+Raison, d'après Benjamin : le projet est trop ambitieux et complexifie trop SOCLE, qui doit rester une mémoire simple. Ce document reste comme trace, pour qu'on ne re-propose pas la même approche.
 
 ## Problème
 
