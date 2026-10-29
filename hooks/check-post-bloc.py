@@ -13,6 +13,13 @@ Pour chaque fichier modifié PENDANT la session (git status ∩ mtime ≥ début
   - MEMORY.md > plafond (`memory_max_kb` du frontmatter, défaut 8)
                                                   → avertissement ajouté à la raison
 
+Travail hors du dépôt (0.7.4) : si le transcript montre que la session a écrit (Write, Edit,
+NotebookEdit) ou committé/poussé (`git -C <dépôt> commit|push`, `cd <dépôt> && git commit`) dans
+UN AUTRE dépôt git, et qu'elle n'a écrit aucun MEMORY.md du dépôt courant (`forge documente
+patch-section|write-capture|commit-atomic`, ou Write/Edit d'un MEMORY.md) → item memory
+manquant (bloque) : documenter le subject du THÈME dans ce dépôt, ou justifier ⏭️. Incident
+CE du 29/10/2026 : code dans eaisy et todos, rien de documenté, le hook ne voyait rien.
+
 ACTIVATION PAR DÉPÔT : le hook ne fait rien tant que le `.forge.yaml` à la racine du dépôt ne
 contient pas `post_bloc: true` (ou que SOCLE_POST_BLOC=1). `forge init` l'écrit par défaut (0.6.0) :
 adopter SOCLE dans un dépôt active la checklist. Un plugin installé pour l'utilisateur se charge dans
@@ -54,6 +61,13 @@ RE_DERNIERE_MAJ = re.compile(r"^derniere_maj:\s*[\"']?(\d{4}-\d{2}-\d{2})", re.M
 RE_MAX_KB = re.compile(r"^memory_max_kb:\s*(\d+)", re.M)
 RE_ACTIF = re.compile(r"^post_bloc:\s*(true|yes|oui)\s*(#.*)?$", re.M | re.I)
 RE_EXCLUSIONS = re.compile(r"^post_bloc_exclusions:\s*\[(.*?)\]", re.M)
+
+OUTILS_ECRITURE = ("Write", "Edit", "NotebookEdit")
+_CHEMIN = r"""("[^"]+"|'[^']+'|\S+)"""
+RE_GIT_C = re.compile(r"\bgit\s+(?:-c\s+\S+\s+)*-C\s+" + _CHEMIN + r"(?:\s+-c\s+\S+)*\s+(?:commit|push)\b")
+RE_CD = re.compile(r"(?:^|[;&|(]\s*)cd\s+" + _CHEMIN)
+RE_GIT_ECRIT = re.compile(r"\bgit\s+(?:-c\s+\S+\s+)*(?:commit|push)\b")
+RE_DOCUMENTE = re.compile(r"\bforge\s+documente\s+(?:patch-section|write-capture|commit-atomic)\b")
 
 
 def _git(root, *args, timeout=5):
@@ -198,6 +212,72 @@ def _debut_session(payload):
         return None
 
 
+def _appels_outils(payload):
+    """(nom, entrée) de chaque appel d'outil de la session principale, lus dans le transcript."""
+    chemin = payload.get("transcript_path")
+    if not chemin or not os.path.isfile(chemin):
+        return
+    with open(chemin, encoding="utf-8", errors="replace") as f:
+        for line in f:
+            try:
+                e = json.loads(line)
+            except ValueError:
+                continue
+            contenu = (e.get("message") or {}).get("content") if isinstance(e, dict) else None
+            if not isinstance(contenu, list):
+                continue
+            for c in contenu:
+                if isinstance(c, dict) and c.get("type") == "tool_use" and isinstance(c.get("input"), dict):
+                    yield c.get("name"), c["input"]
+
+
+def _depot_de(chemin):
+    """Racine git (dossier qui contient .git) d'un chemin absolu, ou None."""
+    try:
+        p = Path(chemin).expanduser()
+    except Exception:
+        return None
+    if not p.is_absolute():
+        return None
+    for d in (p, *p.parents):
+        if (d / ".git").exists():
+            return d
+    return None
+
+
+def _travail_hors_depot(root, payload):
+    """Dépôts git autres que root où la session a écrit ou committé, si aucun MEMORY.md de root
+    n'a été écrit pendant la session ; sinon liste vide."""
+    racine = root.resolve()
+    autres, documente = set(), False
+    for nom, entree in _appels_outils(payload):
+        chemins = []
+        if nom in OUTILS_ECRITURE:
+            fp = entree.get("file_path") or entree.get("notebook_path") or ""
+            try:
+                if Path(fp).name == "MEMORY.md" and Path(fp).resolve().is_relative_to(racine):
+                    documente = True
+            except Exception:
+                pass
+            chemins.append(fp)
+        elif nom == "Bash":
+            cmd = str(entree.get("command") or "")
+            if RE_DOCUMENTE.search(cmd):
+                documente = True
+            chemins += [m.group(1).strip("\"'") for m in RE_GIT_C.finditer(cmd)]
+            # Un `cd` vaut pour toute la suite de la commande, jusqu'au `cd` suivant.
+            cds = list(RE_CD.finditer(cmd))
+            for i, m in enumerate(cds):
+                fin = cds[i + 1].start() if i + 1 < len(cds) else len(cmd)
+                if RE_GIT_ECRIT.search(cmd, m.end(), fin):
+                    chemins.append(m.group(1).strip("\"'"))
+        for c in chemins:
+            d = _depot_de(c) if c else None
+            if d is not None and d.resolve() != racine:
+                autres.add(d.name)
+    return [] if documente else sorted(autres)
+
+
 # ---------------------------------------------------------------------------
 # Entités et MEMORY.md
 # ---------------------------------------------------------------------------
@@ -264,7 +344,11 @@ def evaluer(payload, aujourd_hui=None):
         if mtime + 1 < debut:
             continue  # modifié avant la session : pas à cette session de le committer
         touches.append(rel)
-    if not touches:
+    try:
+        hors_depot = _travail_hors_depot(root, payload)
+    except Exception:
+        hors_depot = []
+    if not touches and not hors_depot:
         return None
 
     par_entite, hors_entite = {}, []
@@ -288,7 +372,14 @@ def evaluer(payload, aujourd_hui=None):
         apercu = ", ".join(hors_entite[:3]) + (" …" if len(hors_entite) > 3 else "")
         blocs.append(f"hors entité : {len(hors_entite)} fichier(s) non committé(s) ({apercu})")
 
-    empreinte = hashlib.sha1("\n".join(sorted(touches)).encode("utf-8")).hexdigest()[:12]
+    if hors_depot:
+        blocs.append(
+            f"travail dans {', '.join(hors_depot)} sans /documente : documenter le subject du thème "
+            f"dans ce dépôt (grep -rl --include=MEMORY.md '<thème>' .), pas le MEMORY.md du dépôt du code"
+        )
+
+    cle = sorted(touches) + [f"hors-depot:{d}" for d in hors_depot]
+    empreinte = hashlib.sha1("\n".join(cle).encode("utf-8")).hexdigest()[:12]
     reason = (
         "Checklist post-bloc incomplète — " + " ; ".join(blocs)
         + ". Terminer memory (/documente <path>) → commit ciblé → push, ou justifier ⏭️ en 1 ligne."

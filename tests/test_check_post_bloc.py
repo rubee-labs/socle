@@ -168,3 +168,92 @@ def test_journal_par_defaut_dans_git_dir(repo, transcript, run_hook):
     (repo / ENTITE / "cli.py").write_text("x", encoding="utf-8")
     assert run_hook(repo, {"transcript_path": transcript()}, log=False)["decision"] == "block"
     assert (repo / ".git" / "socle" / "post_bloc_hook.log").is_file()
+
+
+# --- travail dans un autre dépôt sans /documente (0.7.4, incident CE du 29/10/2026) ----------
+
+def _outil(nom, **entree):
+    return {"type": "assistant", "message": {"content": [{"type": "tool_use", "name": nom, "input": entree}]}}
+
+
+@pytest.fixture
+def autre_depot(tmp_path):
+    r = tmp_path / "eaisy"
+    r.mkdir()
+    _git(r, "init", "-q")
+    return r
+
+
+@pytest.fixture
+def transcript_outils(transcript):
+    def _make(*evenements):
+        chemin = transcript()
+        with open(chemin, "a", encoding="utf-8") as f:
+            for e in evenements:
+                f.write(json.dumps(e) + "\n")
+        return chemin
+    return _make
+
+
+def test_commit_dans_un_autre_depot_sans_documente_bloque(repo, autre_depot, transcript_outils, run_hook):
+    t = transcript_outils(_outil("Bash", command=f"git -C {autre_depot} commit -q -m x"))
+    res = run_hook(repo, {"transcript_path": t})
+    assert res and res["decision"] == "block"
+    assert "eaisy" in res["reason"] and "/documente" in res["reason"]
+    assert "subject" in res["reason"] and "thème" in res["reason"]
+
+
+def test_ecriture_dans_un_autre_depot_sans_documente_bloque(repo, autre_depot, transcript_outils, run_hook):
+    (autre_depot / "admin").mkdir()
+    t = transcript_outils(_outil("Write", file_path=str(autre_depot / "admin" / "todos.py"), content="x"))
+    res = run_hook(repo, {"transcript_path": t})
+    assert res and "eaisy" in res["reason"]
+
+
+def test_documente_ecrit_leve_le_blocage(repo, autre_depot, transcript_outils, run_hook):
+    t = transcript_outils(
+        _outil("Bash", command=f"git -C {autre_depot} push -q origin main"),
+        _outil("Bash", command="forge documente commit-atomic --paths x/MEMORY.md --message m --push"),
+    )
+    assert run_hook(repo, {"transcript_path": t}) is None
+
+
+def test_memory_edite_dans_le_depot_leve_le_blocage(repo, autre_depot, transcript_outils, run_hook):
+    t = transcript_outils(
+        _outil("Bash", command=f"git -C {autre_depot} commit -m x"),
+        _outil("Edit", file_path=str(repo / ENTITE / "MEMORY.md"), old_string="a", new_string="b"),
+    )
+    assert run_hook(repo, {"transcript_path": t}) is None
+
+
+def test_documente_prepare_seul_ne_suffit_pas(repo, autre_depot, transcript_outils, run_hook):
+    t = transcript_outils(
+        _outil("Bash", command=f"git -C {autre_depot} commit -m x"),
+        _outil("Bash", command=f"cd {autre_depot} && forge documente prepare docs"),
+    )
+    assert run_hook(repo, {"transcript_path": t})["decision"] == "block"
+
+
+def test_commit_dans_le_depot_courant_ou_hors_git_ignore(repo, tmp_path, transcript_outils, run_hook):
+    t = transcript_outils(
+        _outil("Bash", command=f"git -C {repo} commit -m x"),
+        _outil("Write", file_path=str(tmp_path / "scratch" / "notes.md"), content="x"),
+    )
+    assert run_hook(repo, {"transcript_path": t}) is None
+
+
+def test_autre_depot_signale_une_seule_fois(repo, autre_depot, transcript_outils, run_hook):
+    t = transcript_outils(_outil("Bash", command=f"git -C {autre_depot} commit -m x"))
+    assert run_hook(repo, {"transcript_path": t})["decision"] == "block"
+    assert run_hook(repo, {"transcript_path": t}) is None
+
+
+def test_cd_puis_commit_apres_point_virgule_ou_pipe(repo, autre_depot, transcript_outils, run_hook):
+    cmd = f"cd {autre_depot} && grep -rn x . | head -5; git add -A && git commit -q -m fusion"
+    res = run_hook(repo, {"transcript_path": transcript_outils(_outil("Bash", command=cmd))})
+    assert res and "eaisy" in res["reason"]
+
+
+def test_cd_vers_le_depot_courant_puis_commit_ignore(repo, autre_depot, transcript_outils, run_hook):
+    cmd = f"cd {autre_depot} && git status; cd {repo} && git commit -m x"
+    assert run_hook(repo, {"transcript_path": transcript_outils(_outil("Bash", command=cmd))}) is None

@@ -232,6 +232,7 @@ La doctrine complète du modèle est dans [`rules/subject-pool.md`](rules/subjec
 
 | Version | Date | Changement principal |
 |---|---|---|
+| 0.7.4 | 2026-10-29 | Hook post-bloc : une session qui écrit ou committe dans un autre dépôt git sans écrire aucun MEMORY.md du dépôt courant est bloquée une fois (« documenter le subject du thème »). Lu dans le transcript : Write/Edit, `git -C … commit/push`, `cd … ; git commit`. |
 | 0.7.3 | 2026-10-12 | Performance : la liste des types n'explore plus `node_modules` ni `.git` (`prepare` et `scanner` 4 à 5 fois plus rapides dans un gros dépôt) ; `forge scanner --status` n'écrit plus les index. |
 | 0.7.2 | 2026-10-11 | Correctifs : seuls les vrais titres de journal sont déplacés (plus les titres thématiques datés) ; `commit-atomic` lit les chemins depuis le dossier projet, ne committe que ses chemins et n'ajoute plus de trailer ; `rapports/` committé ; `## Détails` réécrit seulement si la borne l'exige. |
 | 0.7.1 | 2026-10-11 | Correctifs : titres sans accents reconnus à la conversion ; `type_by_path` ignoré sous `subjects/`. |

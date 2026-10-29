@@ -43,6 +43,11 @@ bloque la fin de réponse **une seule fois**, avec la raison. Réponse attendue 
 justifier ⏭️ en une ligne (par exemple un fichier qui appartient à une autre session). Un MEMORY.md au-dessus
 de son plafond ajoute un avertissement : re-synthèse attendue au prochain `/documente`.
 
+Travail dans un autre dépôt (0.7.4) : si la session a écrit ou committé dans un autre dépôt git (lu dans le
+transcript) sans écrire aucun MEMORY.md du dépôt courant, le hook bloque aussi une fois. Le bon geste est
+`/documente` sur le subject qui porte le **thème** du travail (`grep -rl --include=MEMORY.md '<thème>' .`),
+pas sur le MEMORY.md du dépôt où vit le code. Un ⏭️ n'est valable qu'après cette recherche.
+
 ## Activation
 
 `/forge-init` écrit `post_bloc: true` dans le `.forge.yaml` : un dépôt qui adopte SOCLE a la checklist d'office.

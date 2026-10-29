@@ -10,7 +10,7 @@
       "name": "socle",
       "source": "./",
       "description": "SOCLE — Structured Organizational Context & Lifecycle Engine. Enterprise memory layer for Claude Code: subjects that build up over time (events, discussions, typed decisions, re-synthesized memory), cross-subject cascade, enforced end-of-work checklist. The 4th memory layer. (FR: Synthèse et Organisation des Connaissances et Leçons d'Entreprise)",
-      "version": "0.7.3",
+      "version": "0.7.4",
       "author": {
         "name": "Benjamin Hamon"
       }
