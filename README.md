@@ -126,6 +126,7 @@ Deux hooks la font respecter dans les dépôts où `post_bloc: true` figure au `
 
 - **SessionStart** : charge la règle dans le contexte de Claude au démarrage, après `/clear` et après une compaction. Rien à recopier dans le `CLAUDE.md`.
 - **Stop** : bloque une seule fois la fin de réponse si un fichier modifié pendant la session n'est pas committé, ou si le `MEMORY.md` du sujet concerné n'est pas daté du jour. Claude finit la checklist ou justifie l'exception en une ligne.
+- **Stop, travail hors dépôt** (0.7.4) : bloque aussi une fois si la session a écrit ou committé dans **un autre dépôt git** sans écrire aucun `MEMORY.md` du dépôt courant. Le hook le lit dans le transcript (Write/Edit, `git -C <dépôt> commit|push`, `cd <dépôt> … git commit|push`). Le geste attendu : `/documente` sur le sujet qui porte le **thème** du travail (`grep -rl --include=MEMORY.md '<thème>' .`), pas sur le `MEMORY.md` du dépôt où vit le code. Un `forge documente prepare` seul ne compte pas.
 
 Un dépôt sans `.forge.yaml` n'est jamais concerné : le plugin est installé pour l'utilisateur, donc chargé dans tous ses projets. Pour couper la checklist dans un dépôt : `post_bloc: false`.
 
